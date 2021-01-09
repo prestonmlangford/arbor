@@ -1,29 +1,37 @@
 use std::collections::HashMap;
+use super::Action;
 
 #[derive(Copy,Clone,Debug)]
-pub enum Node {
+pub struct Edge<A: Action> {
+    action: A,
+    hash: u64,
+}
+
+
+#[derive(Clone,Debug)]
+pub enum Node<A: Action> {
     Unexplored,
     Terminal,
-    Leaf(f32),
-    Branch(f32,u32),
+    Leaf(f32,u32),
+    Branch(f32,u32,Vec<Edge<A>>),
 }
 
 
 #[derive(Default)]
-pub struct Tree {
-    table: HashMap<u64,Node>,
+pub struct Tree<A: Action> {
+    table: HashMap<u64,Node<A>>,
 }
 
-impl Tree {
-    pub fn get(&self, key: u64) -> Node {
-        *self.table.get(&key).unwrap_or(&Node::Unexplored)
+impl<A: Action> Tree<A> {
+    pub fn get(&mut self, key: &Edge<A>) -> &mut Node<A> {
+        self.table.entry(key.hash).or_insert(Node::Unexplored)
     }
 
-    pub fn set(&mut self, key: u64, val: Node) {
-        self.table.insert(key, val);
+    pub fn set(&mut self, key: &Edge<A>, val: Node<A>) {
+        self.table.insert(key.hash, val);
     }
 
-    pub fn new() -> Tree {
-        Tree{..Tree::default()}
+    pub fn new() -> Tree<A> {
+        Tree{table: HashMap::new()}
     }
 }
