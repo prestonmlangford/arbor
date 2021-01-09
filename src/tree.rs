@@ -3,8 +3,8 @@ use super::Action;
 
 #[derive(Copy,Clone,Debug)]
 pub struct Edge<A: Action> {
-    action: A,
-    hash: u64,
+    pub action: A,
+    pub hash: u64,
 }
 
 
@@ -23,11 +23,11 @@ pub struct Tree<A: Action> {
 }
 
 impl<A: Action> Tree<A> {
-    pub fn get(&mut self, key: &Edge<A>) -> &mut Node<A> {
+    pub fn get(&mut self, key: Edge<A>) -> &mut Node<A> {
         self.table.entry(key.hash).or_insert(Node::Unexplored)
     }
 
-    pub fn set(&mut self, key: &Edge<A>, val: Node<A>) {
+    pub fn set(&mut self, key: Edge<A>, val: Node<A>) {
         self.table.insert(key.hash, val);
     }
 
