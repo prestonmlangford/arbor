@@ -22,7 +22,7 @@ pub struct Tree<A: Action> {
 
 impl<A: Action> Tree<A> {
     
-    pub fn get(&mut self, key: u64) -> &Node<A> {
+    pub fn get(&mut self, key: u64) -> &mut Node<A> {
         self.table.entry(key).or_insert(Node::Unexplored)
     }
 

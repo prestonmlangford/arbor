@@ -33,14 +33,23 @@ impl<A: Action,S: GameState<A>> MCTS<A,S> {
     
     fn backpropagate(&mut self,path: Vec<u64>, value: f32) {
         for hash in path.iter() {
-            let update = match self.tree.get(*hash) {
-                Node::Unexplored => Node::Leaf(value,1),
-                Node::Terminal => panic!("Found terminal node in backpropagation"),
-                Node::Leaf(q,n) => Node::Leaf(q + value, n + 1),
-                Node::Branch(q,n,e) => Node::Branch(q + value, n + 1, e.clone()),
-            };
-            
-            self.tree.set(*hash,update);
+            let node = self.tree.get(*hash);
+            match node {
+                Node::Unexplored => {
+                    *node = Node::Leaf(value,1)
+                },
+                Node::Terminal => {
+                    panic!("Found terminal node in backpropagation")
+                },
+                Node::Leaf(q,n) => {
+                    *q += value;
+                    *n += 1;
+                },
+                Node::Branch(q,n,_) => {
+                    *q += value;
+                    *n += 1;
+                },
+            }
         }
     }
     
