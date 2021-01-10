@@ -13,4 +13,9 @@ rand = "0.6"
 
 [lib]
 name = "mcts"
-path = "src/lib.rs"
+path = "mcts/lib.rs"
+
+
+[[bin]]
+name = "tictactoe"
+path = "tictactoe/main.rs"

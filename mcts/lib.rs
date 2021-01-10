@@ -1,4 +1,4 @@
-mod randxorshift;
+pub mod randxorshift;
 mod tree;
 pub mod mcts;
 use std::fmt::Debug;
