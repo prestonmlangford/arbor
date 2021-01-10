@@ -22,8 +22,12 @@ pub struct Tree<A: Action> {
 
 impl<A: Action> Tree<A> {
     
-    pub fn get(&mut self, key: u64) -> &mut Node<A> {
+    pub fn get_mut(&mut self, key: u64) -> &mut Node<A> {
         self.table.entry(key).or_insert(Node::Unexplored)
+    }
+    
+    pub fn get(&self,key: u64) -> &Node<A> {
+        self.table.get(&key).unwrap_or(&Node::Unexplored)
     }
 
     pub fn set(&mut self, key: u64, val: Node<A>) {

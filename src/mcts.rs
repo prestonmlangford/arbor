@@ -22,8 +22,11 @@ impl<A: Action,S: GameState<A>> MCTS<A,S> {
     }
     
     pub fn search(&mut self, time: Duration) -> A {
-        let mut path = Vec::new();
-        select(&mut self.tree, &self.state, &mut path, &mut self.rand);
+        
+        let mut path = select(&self.tree, self.state.hash(), &mut self.rand);
+        if let Some(state) = self.state.make_path(path.iter().map(|e| e.action)){
+            
+        }
         
         //PMLFIXME needs to lookup best move from the game tree
         //The types work though!
@@ -34,14 +37,17 @@ impl<A: Action,S: GameState<A>> MCTS<A,S> {
 fn expand<A: Action, S: GameState<A>>(state: &Box<S>) -> Vec<Edge<A>> {
     let mut e = Vec::new();
     for a in state.actions().iter() {
-        let next = state.make(a);
-        e.push(Edge{
-            hash: next.hash(),
-            action: *a,
-        });
+        if let Some(next) = state.make(*a){
+            e.push(Edge{
+                hash: next.hash(),
+                action: *a,
+            });
+        }
     }
     e
 }   
+
+
 
 fn random_policy<A: Action>(
     rand: &mut RandXorShift,
@@ -57,7 +63,7 @@ fn backpropagate<A: Action>(
     value: f32) 
 {
     if let Some(hash) = path.pop() {
-        let node = tree.get(hash);
+        let node = tree.get_mut(hash);
         match node {
             Node::Unexplored => {
                 *node = Node::Leaf(value,1);
@@ -79,36 +85,55 @@ fn backpropagate<A: Action>(
     }
 }
 
-fn select<A: Action, S: GameState<A>>(
-    tree: &mut Tree<A>, 
-    state: &Box<S>, 
-    path: &mut Vec<u64>,
-    rand: &mut RandXorShift) -> f32 
+// fn select_old<A: Action, S: GameState<A>>(
+//     tree: &mut Tree<A>, 
+//     state: &Box<S>, 
+//     path: &mut Vec<u64>,
+//     rand: &mut RandXorShift) -> f32 
+// {
+//     let node = tree.get(state.hash());
+//     match node {
+//         Node::Unexplored => {
+//             path.push(state.hash());
+//             state.value()
+//         },
+//         Node::Terminal => {
+//             path.push(state.hash());
+//             1.0
+//         },
+//         Node::Leaf(q,n) => {
+//             if *n < 10 {
+//                 path.push(state.hash());
+//                 state.value()
+//             } else {
+//                 expand(&state);
+//                 select_old(tree, state, path, rand)
+//             }
+//         },
+//         Node::Branch(q,n,e) => {
+//             path.push(state.hash());
+//             let edge = random_policy(rand,e);
+//             let next = state.make(&edge.action);
+//             select_old(tree,&next,path,rand)
+//         },
+//     }
+// }
+
+fn select<A: Action>(
+    tree: &Tree<A>,
+    root: u64,
+    rand: &mut RandXorShift) -> Vec<Edge<A>>
 {
-    let node = tree.get(state.hash());
+    let node = tree.get(root);
     match node {
-        Node::Unexplored => {
-            path.push(state.hash());
-            state.value()
-        },
-        Node::Terminal => {
-            path.push(state.hash());
-            1.0
-        },
-        Node::Leaf(q,n) => {
-            if *n < 10 {
-                path.push(state.hash());
-                state.value()
-            } else {
-                expand(&state);
-                select(tree, state, path, rand)
-            }
-        },
         Node::Branch(q,n,e) => {
-            path.push(state.hash());
-            let edge = random_policy(rand,e);
-            let next = state.make(&edge.action);
-            select(tree,&next,path,rand)
+            let next = random_policy(rand,e);
+            let mut path = select(tree,next.hash,rand);
+            path.push(next);
+            path
         },
+        Node::Unexplored |
+        Node::Terminal |
+        Node::Leaf(_,_) => Vec::new(),
     }
 }
