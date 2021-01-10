@@ -19,7 +19,7 @@ impl<A: Action,S: GameState<A>> MCTS<A,S> {
             rand: RandXorShift::from_entropy(),
         }
     }
-
+    
     pub fn search(&self, time: Duration) -> A {
         
         //PMLFIXME needs to lookup best move from the game tree
@@ -30,28 +30,49 @@ impl<A: Action,S: GameState<A>> MCTS<A,S> {
     fn random_policy(&mut self, edges: &Vec<Edge<A>>) -> Edge<A> {
         *edges.choose(&mut self.rand).unwrap()
     }
-
-    fn select(&mut self, state: &Box<S>, node: &Node<A>) {
-        match node {
-            Node::Unexplored => (),
-            Node::Terminal => (),
-            Node::Leaf(q,n) => (),
-            Node::Branch(q,n,e) => {
-                let edge = self.random_policy(e);
-                let next = state.make(&edge.action);
-                let node = self.tree.get(edge);
-                //self.select(&state,&node)
-            },
+    
+    fn backpropagate(&mut self,path: Vec<u64>, value: f32) {
+        for hash in path.iter() {
+            let update = match self.tree.get(*hash) {
+                Node::Unexplored => Node::Leaf(value,1),
+                Node::Terminal => panic!("Found terminal node in backpropagation"),
+                Node::Leaf(q,n) => Node::Leaf(q + value, n + 1),
+                Node::Branch(q,n,e) => Node::Branch(q + value, n + 1, e.clone()),
+            };
+            
+            self.tree.set(*hash,update);
         }
     }
+    
+    // fn select(&mut self, state: &Box<S>, node: &Node<A>) {
+    //     match node {
+    //         Node::Unexplored => {
+    //             let value = state.value();
+    //             let update = Node::Leaf(value,1);
+    //             self.tree.set(state.hash(), update);
+    //         },
+    //         Node::Terminal => {
+                
+    //         },
+    //         Node::Leaf(q,n) => {
+    //             if *n < 10 {
+    //                 let update = Node::Leaf()
+    //                 self.tree.set(state.hash(),)
+    //             }
+    //         },
+    //         Node::Branch(q,n,e) => {
+    //             let edge = self.random_policy(e);
+    //             let next = state.make(&edge.action);
+    //             let node = self.tree.get(edge.hash);
+    //             //self.select(&state,&node)
+    //         },
+    //     }
+    // }
     
     fn expand(&mut self,state: &S) {
         for a in state.actions().iter() {
             let next = state.make(a);
-            let hash = next.hash();
-            let edge = Edge{hash,action: *a};
-            let node = Node::Unexplored;
-            self.tree.set(edge, node);
+            self.tree.set(next.hash(), Node::Unexplored);
         }
     }   
 }
