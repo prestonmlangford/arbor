@@ -1,9 +1,9 @@
 mod randxorshift;
 mod tree;
 pub mod mcts;
+use std::fmt::Debug;
 
-
-pub trait Action: Copy + Clone {}
+pub trait Action: Copy + Clone + Debug  {}
 
 pub trait GameState<A: Action> {
     fn value(&self) -> f32;

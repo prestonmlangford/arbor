@@ -22,10 +22,11 @@ impl<A: Action,S: GameState<A>> MCTS<A,S> {
     }
     
     pub fn search(&mut self, time: Duration) -> A {
-        
         let mut path = select(&self.tree, self.state.hash(), &mut self.rand);
         if let Some(state) = self.state.make_path(path.iter().map(|e| e.action)){
             
+        } else {
+            println!("Bad path! {:?}",path);
         }
         
         //PMLFIXME needs to lookup best move from the game tree
@@ -34,20 +35,44 @@ impl<A: Action,S: GameState<A>> MCTS<A,S> {
     }
 }
 
-fn expand<A: Action, S: GameState<A>>(state: &Box<S>) -> Vec<Edge<A>> {
-    let mut e = Vec::new();
-    for a in state.actions().iter() {
-        if let Some(next) = state.make(*a){
-            e.push(Edge{
-                hash: next.hash(),
-                action: *a,
-            });
-        }
+fn expand<A: Action, S: GameState<A>>(
+    tree: &mut Tree<A>,
+    state: &Box<S>,
+    threshold: u32) 
+{
+    let mut node = tree.get_mut(state.hash());
+    match node {
+        Node::Leaf(q,n) => {
+            if *n > threshold {
+                let mut e = Vec::new();
+                for a in state.actions().iter() {
+                    if let Some(next) = state.make(*a){
+                        e.push(Edge{
+                            hash: next.hash(),
+                            action: *a,
+                        });
+                    }
+                }
+                *node = Node::Branch(*q,*n,e);
+            }
+        },
+        _ => (),
     }
-    e
 }   
 
 
+// fn expand<A: Action, S: GameState<A>>(state: &Box<S>) -> Vec<Edge<A>> {
+//     let mut e = Vec::new();
+//     for a in state.actions().iter() {
+//         if let Some(next) = state.make(*a){
+//             e.push(Edge{
+//                 hash: next.hash(),
+//                 action: *a,
+//             });
+//         }
+//     }
+//     e
+// }   
 
 fn random_policy<A: Action>(
     rand: &mut RandXorShift,
