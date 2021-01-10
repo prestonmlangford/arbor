@@ -102,10 +102,4 @@ mod tests {
         println!("r2: {}",r2);
         println!("r3: {}",r3);
     }
-    
-    fn test_avg(){
-        
-    }
-    
-    
 }
