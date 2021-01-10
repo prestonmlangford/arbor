@@ -22,68 +22,65 @@ impl<A: Action,S: GameState<A>> MCTS<A,S> {
     }
     
     pub fn search(&mut self, time: Duration) -> A {
-        let mut path = select(&self.tree, self.state.hash(), &mut self.rand);
-        if let Some(state) = self.state.make_path(path.iter().map(|e| e.action)){
-            
-        } else {
-            println!("Bad path! {:?}",path);
-        }
         
+        let mut path = Vec::new();
+        select(&mut self.tree, &mut self.state,&mut path, &mut self.rand);
+        let value = self.state.value();
+        backpropagate(&mut self.tree, &mut self.state,&mut path, value);
+
         //PMLFIXME needs to lookup best move from the game tree
         //The types work though!
         *self.state.actions().iter().next().unwrap()
     }
 }
 
-fn expand<A: Action, S: GameState<A>>(
-    tree: &mut Tree<A>,
-    state: &Box<S>,
-    threshold: u32) 
-{
-    let mut node = tree.get_mut(state.hash());
-    match node {
-        Node::Leaf(q,n) => {
-            if *n > threshold {
-                let mut e = Vec::new();
-                for a in state.actions().iter() {
-                    if let Some(next) = state.make(*a){
-                        e.push(Edge{
-                            hash: next.hash(),
-                            action: *a,
-                        });
-                    }
-                }
-                *node = Node::Branch(*q,*n,e);
-            }
-        },
-        _ => (),
-    }
-}   
-
-
-// fn expand<A: Action, S: GameState<A>>(state: &Box<S>) -> Vec<Edge<A>> {
-//     let mut e = Vec::new();
-//     for a in state.actions().iter() {
-//         if let Some(next) = state.make(*a){
-//             e.push(Edge{
-//                 hash: next.hash(),
-//                 action: *a,
-//             });
-//         }
+// fn expand<A: Action, S: GameState<A>>(
+//     tree: &mut Tree<A>,
+//     state: &Box<S>,
+//     threshold: u32) 
+// {
+//     let mut node = tree.get_mut(state.hash());
+//     match node {
+//         Node::Leaf(q,n) => {
+//             if *n > threshold {
+//                 let mut e = Vec::new();
+//                 for a in state.actions().iter() {
+//                     if let Some(next) = state.make(*a){
+//                         e.push(Edge{
+//                             hash: next.hash(),
+//                             action: *a,
+//                         });
+//                     }
+//                 }
+//                 *node = Node::Branch(*q,*n,e);
+//             }
+//         },
+//         _ => (),
 //     }
-//     e
 // }   
+
+
+fn expand<A: Action, S: GameState<A>>(state: &mut Box<S>) -> Vec<A> {
+    let mut e = Vec::new();
+    for a in state.actions().iter() {
+        state.make(*a);
+        e.push(*a);
+        state.unmake();
+    }
+    e
+}
 
 fn random_policy<A: Action>(
     rand: &mut RandXorShift,
-    edges: &Vec<Edge<A>>) -> Edge<A> 
+    edges: &Vec<A>) -> A
 {
     *edges.choose(rand).unwrap()
 }
 
 
-fn backpropagate<A: Action>(
+fn backpropagate<A: Action, S: GameState<A>>(
     tree: &mut Tree<A>,
+    state: &mut Box<S>,
     path: &mut Vec<u64>,
     value: f32) 
 {
@@ -105,8 +102,8 @@ fn backpropagate<A: Action>(
                 *n += 1;
             },
         }
-        
-        backpropagate(tree, path, value);
+        state.unmake();
+        backpropagate(tree,state,path,value);
     }
 }
 
@@ -144,21 +141,30 @@ fn backpropagate<A: Action>(
 //     }
 // }
 
-fn select<A: Action>(
-    tree: &Tree<A>,
-    root: u64,
-    rand: &mut RandXorShift) -> Vec<Edge<A>>
+fn select<A: Action, S: GameState<A>>(
+    tree: &mut Tree<A>,
+    state: &mut Box<S>,
+    path: &mut Vec<u64>,
+    rand: &mut RandXorShift)
 {
-    let node = tree.get(root);
+    let node = tree.get_mut(state.hash());
     match node {
-        Node::Branch(q,n,e) => {
+        Node::Branch(_,_,e) => {
+            //PMLFIXME change out with UCT policy
             let next = random_policy(rand,e);
-            let mut path = select(tree,next.hash,rand);
-            path.push(next);
-            path
+            state.make(next);
+            path.push(state.hash());
+            select(tree,state,path,rand);
+        },
+        Node::Leaf(q,n) => {
+            //PMLFIXME make this threshold an adjustable parameter
+            if *n > 10 {
+                let edges = expand(state);
+                *node = Node::Branch(*q,*n,edges);
+                select(tree,state,path,rand);
+            }
         },
         Node::Unexplored |
-        Node::Terminal |
-        Node::Leaf(_,_) => Vec::new(),
+        Node::Terminal => (),
     }
 }

@@ -1,18 +1,12 @@
 use std::collections::HashMap;
 use super::Action;
 
-#[derive(Copy,Clone,Debug)]
-pub struct Edge<A: Action> {
-    pub action: A,
-    pub hash: u64,
-}
-
 #[derive(Clone,Debug)]
 pub enum Node<A: Action> {
     Unexplored,
     Terminal,
     Leaf(f32,u32),
-    Branch(f32,u32,Vec<Edge<A>>),
+    Branch(f32,u32,Vec<A>),
 }
 
 #[derive(Default)]
