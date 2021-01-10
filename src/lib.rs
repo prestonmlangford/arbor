@@ -5,7 +5,7 @@ use std::fmt::Debug;
 
 pub trait Action: Copy + Clone + Debug  {}
 
-pub trait GameState<A: Action>: Copy + Clone + Debug {
+pub trait GameState<A: Action>: Debug {
     fn value(&self) -> f32;
     fn actions(&self) -> Vec<A>;
     fn make(&mut self,action: A);
