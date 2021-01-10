@@ -3,7 +3,7 @@ extern crate rand;
 
 use rand_core::{RngCore, Error, impls, SeedableRng};
 
-#[derive(Debug)]
+#[derive(Debug,Clone, PartialEq, Eq)]
 pub struct RandXorShift {
     u: u64,
     v: u64,
@@ -44,7 +44,7 @@ impl RngCore for RandXorShift {
 
 impl SeedableRng for RandXorShift {
     type Seed = [u8; 16];
-    fn from_seed(seed: [u8; 16]) -> RandXorShift {
+    fn from_seed(seed: Self::Seed) -> Self {
         let mut u = 0u64;
         let mut v = 0u64;
         for (i,b) in seed.iter().enumerate() {
@@ -64,14 +64,17 @@ impl SeedableRng for RandXorShift {
         }
     }
 
-    // #[inline]
-    // fn from_rng<S: RngCore>(rng: S) -> Result<Self, Error> {
-    //     Ok(RandXorShift {
-    //         u: rng.next_u64(),
-    //         v: rng.next_u64(),
-    //         s: 0,
-    //     })
-    // }
+    fn from_rng<R: RngCore>(mut rng: R) -> Result<Self, Error> {
+        let mut b = [0u8; 16];
+        loop {
+            rng.try_fill_bytes(&mut b[..])?;
+            if !b.iter().all(|&x| x == 0) {
+                break;
+            }
+        }
+
+        Ok(Self::from_seed(b))
+    }
 }
 
 //  ============================================================
@@ -86,16 +89,18 @@ mod tests {
     
     #[test]
     fn test_seeded(){
-        // let mut g1 = RandXorShift::from_entropy();
-        // let mut g2 = RandXorShift::from_entropy();
-        // let mut g3 = RandXorShift::from_entropy();
-        // let r1 = g1.next_u64();
-        // let r2 = g2.next_u64();
-        // let r3 = g3.next_u64();
-        // assert_ne!(r1,r2);
-        // assert_eq!(r2,r3);
-        // println!("r1: {}",r1);
-        // println!("r2: {}",r2);
+        let mut g1 = RandXorShift::from_entropy();
+        let mut g2 = RandXorShift::from_entropy();
+        let mut g3 = RandXorShift::from_entropy();
+        let r1 = g1.next_u64();
+        let r2 = g2.next_u64();
+        let r3 = g3.next_u64();
+        assert_ne!(r1,r2);
+        assert_ne!(r1,r3);
+        assert_ne!(r2,r3);
+        println!("r1: {}",r1);
+        println!("r2: {}",r2);
+        println!("r3: {}",r3);
     }
     
     fn test_avg(){
