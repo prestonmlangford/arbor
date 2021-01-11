@@ -11,4 +11,6 @@ pub trait GameState<A: Action>: Debug {
     fn make(&mut self,action: A);
     fn unmake(&mut self);
     fn hash(&self) -> u64;
+    fn terminal(&self) -> bool; 
 }
+

@@ -2,7 +2,9 @@ extern crate mcts;
 use std::fmt::Display;
 use std::fmt;
 use mcts::randxorshift::RandXorShift;
+use mcts::mcts::MCTS as MCTS;
 use rand::{Rng,FromEntropy};
+use std::time::Duration;
 
 #[derive(Copy,Clone,PartialEq,Debug)]
 enum Mark {N,X,O}
@@ -59,7 +61,14 @@ impl Display for TicTacToe {
 }
 
 impl TicTacToe {
-
+    fn new() -> TicTacToe {
+        TicTacToe {
+            space: [Mark::N;9],
+            turn: 0,
+            side: Mark::X,
+            hash: 0,
+        }
+    }
     fn check(&self, a: usize, b: usize, c: usize) -> bool {
          (self.space[a] == self.space[b]) && (self.space[b] == self.space[c])
     }
@@ -80,12 +89,12 @@ impl TicTacToe {
         Mark::N
     }
 
-    fn make(&self, m: Move) -> Option<Self> {
-        if self.winner() != Mark::N {
-            return None;
-        }
+    fn gameover(&self) -> bool {
+        (self.turn == 9) || (self.winner() != Mark::N)
+    }
 
-        if self.turn == 9 {
+    fn make(&self, m: Move) -> Option<Self> {
+        if self.gameover() {
             return None;
         }
 
@@ -103,6 +112,9 @@ impl TicTacToe {
 
     fn legal_moves(&self) -> Vec<Move> {
         let mut result = Vec::new();
+        if self.gameover() {
+            return result;
+        }
         for i in 0..9 {
             if self.space[i] == Mark::N {
                 result.push(ALLMOVES[i])
@@ -110,23 +122,37 @@ impl TicTacToe {
         }
         result
     }
-}
 
-
-fn rmove(state: &TicTacToe, rand: &mut RandXorShift) -> Option<Move> {
-    let mut moves: Vec<&Move> = ALLMOVES.iter().collect();
-
-    while moves.len() > 0 {
-        let r = rand.gen_range(0,moves.len());
-        let m = *moves[r];
-        if state.space[m as usize] == Mark::N {
-            return Some(m);
-        } else {
-            moves.swap_remove(r);
+    fn rollout(&self) -> Mark {
+        fn rmove(state: &TicTacToe, rand: &mut RandXorShift) -> Option<Move> {
+            let mut moves: Vec<&Move> = ALLMOVES.iter().collect();
+        
+            while moves.len() > 0 {
+                let r = rand.gen_range(0,moves.len());
+                let m = *moves[r];
+                if state.space[m as usize] == Mark::N {
+                    return Some(m);
+                } else {
+                    moves.swap_remove(r);
+                }
+            }
+        
+            None
         }
-    }
 
-    None
+        let mut state = self.clone();
+        let mut rand = RandXorShift::from_entropy();
+
+        while !state.gameover() {
+            if let Some(m) = rmove(&state,&mut rand) {
+                if let Some(next) = state.make(m) {
+                    state = next;
+                }
+            }
+        }
+
+        state.winner()
+    }
 }
 
 #[derive(Debug)]
@@ -135,6 +161,12 @@ struct StateManager {
 }
 
 impl StateManager {
+    fn new(state: &TicTacToe) -> StateManager {
+        StateManager {
+            stack: vec![state.clone()]
+        }
+    }
+
     fn cur(&self) -> &TicTacToe {
         self.stack.last().unwrap()
     }
@@ -146,7 +178,13 @@ impl mcts::Action for Move {}
 
 impl mcts::GameState<Move> for StateManager {
     fn value(&self) -> f32 {
-        0.0 //PMLFIXME do random rollout
+        let c = self.cur();
+        let sign = if c.side == Mark::X {1.0} else {-1.0};
+        match c.rollout() {
+            Mark::N =>   0.0,
+            Mark::X =>  sign,
+            Mark::O => -sign,
+        }
     }
     
     fn actions(&self) -> Vec<Move> {
@@ -157,6 +195,8 @@ impl mcts::GameState<Move> for StateManager {
         if let Some(next) = self.cur().make(action) {
             self.stack.push(next);
         } else {
+            println!("{}",self.cur());
+            println!("{:?}",action);
             panic!("Make called with bad move")
         }
     }
@@ -170,8 +210,15 @@ impl mcts::GameState<Move> for StateManager {
     fn hash(&self) -> u64 {
         self.cur().hash
     }
+
+    fn terminal(&self) -> bool {
+        self.cur().gameover()
+    }
 }
 
 fn main(){
-
+    let start = TicTacToe::new();
+    let gamestate = StateManager::new(&start);
+    let mut search = MCTS::new(Box::new(gamestate));
+    search.search(Duration::new(1, 0));
 }

@@ -20,6 +20,10 @@ impl<A: Action> Tree<A> {
         self.table.entry(key).or_insert(Node::Unexplored)
     }
 
+    pub fn get_ref(&self,key: u64) -> &Node<A> {
+        self.table.get(&key).unwrap_or(&Node::Unexplored)
+    }
+    
     pub fn new() -> Tree<A> {
         Tree{table: HashMap::new()}
     }
