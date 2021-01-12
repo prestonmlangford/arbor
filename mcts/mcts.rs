@@ -7,98 +7,136 @@ use rand::FromEntropy;
 
 
 pub struct MCTS<A: Action ,S: GameState<A>> {
-    state: Box<S>,
+    state: S,
     tree: Tree<A>,
     rand: RandXorShift,
 }
 
 impl<A: Action,S: GameState<A>> MCTS<A,S> {
-    pub fn new(state: Box<S>) -> Self {
-        MCTS {
-            state,
-            tree: Tree::new(),
-            rand: RandXorShift::from_entropy(),
-        }
+    pub fn new(start: S) -> Self {
+        let mut state = start;
+        let mut tree = Tree::new(); 
+        let children = MCTS::expand(&mut tree, &mut state);
+        let root = Node::Root(0.0,0,children);
+        let hash = state.hash();
+        
+        tree.set(hash, root);
+        
+        MCTS {state,tree,rand: RandXorShift::from_entropy()}
     }
     
-    fn go(&mut self) -> f32 {
-        let hash = self.state.hash();
+    fn expand(tree: &mut Tree<A>, state: &mut S) -> Vec<u64> {
+        let mut v = Vec::new();
+        for action in state.actions() {
+            state.make(action);
+            let hash = state.hash();
+            v.push(hash);
+            if state.terminal() {
+                //PMLFIXME need side specific score
+                tree.set(hash,Node::Terminal(action,1.0))
+            } else {
+                tree.set(hash,Node::Leaf(action,0.0,0));
+            }
+            state.unmake();
+        }
+        v
+    }
+    
+    fn go(&mut self, hash: u64,side: f32) -> f32 {
         let node = self.tree.get(hash);
         match node {
-            Node::Branch(q,n,e) => {
+            Node::Root(q,n,c) => {
+                //PMLFIXME change out with UCT policy
+                //Random Policy
+                let child = *c.choose(&mut self.rand).unwrap();
+                
+                let score = self.go(child,-side);
+                let update = Node::Root(q + score,n + 1,c);
+                self.tree.set(hash, update);
+                score
+            },
+            Node::Branch(a,q,n,c) => {
+                self.state.make(a);
+                if self.state.hash() != hash {
+                    panic!("hash mismatch");
+                }
                 
                 //PMLFIXME change out with UCT policy
                 //Random Policy
-                let next = *e.choose(&mut self.rand).unwrap();
+                if c.len() == 0 {
+                    panic!("why?");
+                }
+                let child = *c.choose(&mut self.rand).unwrap();
                 
-                self.state.make(next);
-                let score = self.go();
-                let update = Node::Branch(q + score,n + 1,e);
+                let score = self.go(child,-side);
+                let update = Node::Branch(a,q + score,n + 1,c);
                 self.tree.set(hash, update);
                 self.state.unmake();
                 score
             },
-            Node::Leaf(q,n) => {
+            Node::Leaf(a,q,n) => {
                 //PMLFIXME make this threshold an adjustable parameter
                 if n > 10 {
-                    let edges = self.state.actions();
-                    let update = Node::Branch(q,n,edges);
+                    self.state.make(a);
+                    if self.state.hash() != hash {
+                        panic!("hash mismatch");
+                    }
+                    let children = MCTS::expand(&mut self.tree, &mut self.state);
+                    self.state.unmake();
+                    let update = Node::Branch(a,q,n,children);
                     self.tree.set(hash, update);
-                    self.go()
+                    self.go(hash,side)
                 } else {
+                    self.state.make(a);
+                    if self.state.hash() != hash {
+                        panic!("hash mismatch");
+                    }
                     let score = self.state.value();
-                    let update = Node::Leaf(q + score,n + 1);
+                    let update = Node::Leaf(a,q + score,n + 1);
                     self.tree.set(hash, update);
+                    self.state.unmake();
                     score
                 }
             },
-            Node::Unexplored => {
-                if self.state.terminal() {
-                    let update = Node::Terminal;
-                    self.tree.set(hash, update);
-                    self.go()
-                } else {
-                    let score = self.state.value();
-                    let update = Node::Leaf(score,1);
-                    self.tree.set(hash, update);
-                    score
-                }
-            }
-            Node::Terminal => {
-                //PMLFIXME value needs to change depending on who won
-                1.0
-            }, 
+            Node::Terminal(_,q) => q,
+            Node::Null => panic!("Found Null node during search"),
         }
     }
     
-    fn best(&mut self, depth: u32) -> f32
-    {
-        let hash = self.state.hash();
+    fn best(&mut self, hash: u64) -> (f32, A) {
         let node = self.tree.get(hash);
         match node {
-            Node::Branch(q,n,e) => {
-                if depth == 1 {
-                    for a in e.iter() {
-                        self.state.make(*a);
-                        let score = self.best(0);
-                        println!("{:?} -> {}",*a,score);
-                        self.state.unmake();
+            Node::Root(q,n,e) => {
+                let mut best_action = None;
+                let mut best_score = -1.0;
+                for child in e.iter() {
+                    let (score, action) = self.best(*child);
+                    println!("{:?} -> {}",action,score);
+                    if score > best_score {
+                        best_score = score;
+                        best_action = Some(action);
                     }
                 }
-                q/(n as f32)
+                
+                if let Some(action) = best_action {
+                    (q / (n as f32), action)
+                } else {
+                    panic!("Root node had no children");
+                }
             },
-            Node::Leaf(q,n) => q/(n as f32),
-            Node::Unexplored => 0.0,
-            Node::Terminal => 1.0,
+            Node::Branch(a,q,n,_) => (q / (n as f32), a),
+            Node::Leaf(a,q,n) => (q / (n as f32), a),
+            Node::Terminal(a,q) => (q,a),//PMLFIXME need side specific score
+            Node::Null => panic!("Found Null node in root"),
         }
     }
     
     pub fn search(&mut self, time: Duration) {
-        
+        let root = self.state.hash();
         for _ in 0..10000 {
-            self.go();
+            self.go(root,1.0);
         }
         
-        self.best(1);
+        self.best(root);
     }
 }

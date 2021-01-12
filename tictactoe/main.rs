@@ -102,7 +102,7 @@ impl TicTacToe {
             space: self.space,
             turn: self.turn + 1,
             side: if self.side == Mark::X {Mark::O} else {Mark::X},
-            hash: self.hash | ((self.side as u64) << 2*(m as u64)),
+            hash: self.hash | ((self.side as u64) << (2*(m as u64))),
         };
 
         next.space[m as usize] = next.side;
@@ -161,9 +161,9 @@ struct StateManager {
 }
 
 impl StateManager {
-    fn new(state: &TicTacToe) -> StateManager {
+    fn new(state: TicTacToe) -> StateManager {
         StateManager {
-            stack: vec![state.clone()]
+            stack: vec![state]
         }
     }
 
@@ -204,6 +204,8 @@ impl mcts::GameState<Move> for StateManager {
     fn unmake(&mut self) {
         if self.stack.len() > 1 {
             self.stack.pop();
+        } else {
+            panic!("called unmake on root position");
         }
     }
 
@@ -218,7 +220,7 @@ impl mcts::GameState<Move> for StateManager {
 
 fn main(){
     let start = TicTacToe::new();
-    let gamestate = StateManager::new(&start);
-    let mut search = MCTS::new(Box::new(gamestate));
+    let gamestate = StateManager::new(start);
+    let mut search = MCTS::new(gamestate);
     search.search(Duration::new(1, 0));
 }
