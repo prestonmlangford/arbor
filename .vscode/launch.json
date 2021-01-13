@@ -7,6 +7,14 @@
         {
             "type": "lldb",
             "request": "launch",
+            "name": "target/debug/tictactoe",
+            "program": "${workspaceFolder}/target/debug/tictactoe",
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
             "name": "Debug unit tests in library 'mcts'",
             "cargo": {
                 "args": [

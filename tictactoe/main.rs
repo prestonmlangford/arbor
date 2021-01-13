@@ -2,7 +2,7 @@ extern crate mcts;
 use std::fmt::Display;
 use std::fmt;
 use mcts::randxorshift::RandXorShift;
-use mcts::mcts::MCTS as MCTS;
+use mcts::search::Search as Search;
 use rand::{Rng,FromEntropy};
 use std::time::Duration;
 
@@ -21,9 +21,9 @@ impl Display for Mark {
 
 #[derive(Copy,Clone,Debug)]
 enum Move {
-    TL,TM,TR,
-    ML,MM,MR,
-    BL,BM,BR
+    TL = 0,TM = 1,TR = 2,
+    ML = 3,MM = 4,MR = 5,
+    BL = 6,BM = 7,BR = 8
 }
 
 use Move::*;
@@ -97,12 +97,16 @@ impl TicTacToe {
         if self.gameover() {
             return None;
         }
+        
+        if self.space[m as usize] != Mark::N {
+            return None;
+        }
 
         let mut next = TicTacToe {
             space: self.space,
             turn: self.turn + 1,
             side: if self.side == Mark::X {Mark::O} else {Mark::X},
-            hash: self.hash | ((self.side as u64) << (2*(m as u64))),
+            hash: self.hash | ((if self.side == Mark::X {1} else {512}) << (m as u64)),
         };
 
         next.space[m as usize] = next.side;
@@ -179,6 +183,18 @@ impl mcts::Action for Move {}
 impl mcts::GameState<Move> for StateManager {
     fn value(&self) -> f32 {
         let c = self.cur();
+        
+
+        if self.cur().gameover() {
+            return match self.cur().winner() {
+                //No more moves can be played, but nobody won. A draw gives a neutral score. 
+                Mark::N => 0.0,
+
+                //Side to play lost.  
+                _ => -1.0,
+            }
+        }
+
         let sign = if c.side == Mark::X {1.0} else {-1.0};
         match c.rollout() {
             Mark::N =>   0.0,
@@ -221,6 +237,6 @@ impl mcts::GameState<Move> for StateManager {
 fn main(){
     let start = TicTacToe::new();
     let gamestate = StateManager::new(start);
-    let mut search = MCTS::new(gamestate);
+    let mut search = Search::new(gamestate);
     search.search(Duration::new(1, 0));
 }
