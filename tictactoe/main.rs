@@ -235,8 +235,15 @@ impl mcts::GameState<Move> for StateManager {
 }
 
 fn main(){
+    use mcts::GameState;
+    
     let start = TicTacToe::new();
-    let gamestate = StateManager::new(start);
+    let mut gamestate = StateManager::new(start);
+    
+    gamestate.make(MM);
+    gamestate.make(TM);
+    gamestate.make(TL);
+    
     let mut search = Search::new(gamestate);
     search.search(Duration::new(1, 0));
 }
