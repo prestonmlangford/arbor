@@ -20,7 +20,7 @@ impl Display for Mark {
     }
 }
 
-#[derive(Copy,Clone,Debug)]
+#[derive(Copy,Clone,Debug, PartialEq)]
 enum Move {
     TL = 0,TM = 1,TR = 2,
     ML = 3,MM = 4,MR = 5,
@@ -176,6 +176,7 @@ impl StateManager {
         self.stack.last().unwrap()
     }
     
+    #[allow(dead_code)]
     fn load(moves: &[Move]) -> StateManager {
         use mcts::GameState;
         let b = TicTacToe::new();
@@ -246,43 +247,38 @@ impl mcts::GameState<Move> for StateManager {
 }
 
 fn main(){
-    use mcts::GameState;
-    
-    let start = TicTacToe::new();
-    let mut gamestate = StateManager::new(start);
-    
-    gamestate.make(MM);
-    gamestate.make(TM);
-    gamestate.make(MR);
-    gamestate.make(ML);
-    gamestate.make(BR);
-    gamestate.make(TL);
-    gamestate.make(BL);
+    let game = [MM,ML,MR,TL,];
+    let gamestate = StateManager::load(&game);
     
     println!("{}",gamestate.cur());
 
-    let mut search = Search::new(gamestate);
-    let result = search.search(Duration::new(1, 0));
+    let result = Search::new(gamestate).search(Duration::new(1, 0));
 
     println!("{:?}",result);
 }
 
 #[cfg(test)]
 mod tests {
-    use super::StateManager;
+    use super::*;
     use mcts::search::Search as Search;
     use std::time::Duration;
     
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
-    
-    #[test]
-    fn new_game() {
-        let game = StateManager::load(&[]);
+    fn best(moves: &[Move]) -> Move {
+        let game = StateManager::load(&moves);
+        println!("{}",game.cur());
         let mut search = Search::new(game);
         let result = search.search(Duration::new(1, 0));
         println!("{:?}",result);
+        result
+    }
+    
+    #[test]
+    fn test_best_move() {
+        assert!(best(&[MM,TM,MR,ML,BR,TR]) == TL);
+        assert!(best(&[MM,TM,MR,ML]) == BR);
+        assert!(best(&[TL,MM,ML]) == BL);
+        assert!(best(&[MM,ML,MR,TL]) == BL);
+        
+        
     }
 }

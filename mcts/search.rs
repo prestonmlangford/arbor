@@ -112,18 +112,20 @@ impl<A: Action,S: GameState<A>> Search<A,S> {
         let ev = 1.0 - node.expected_value();
         println!("root -> expected value {:0.4}",ev);
         match node {
-            Node::Branch(_,n,e) => {
-                
+            Node::Branch(_,_,e) => {
+                let mut best_action = None;
+                let mut best_score = -1.0;
                 for (action,child) in e.iter() {
-                    
                     let ev = 1.0 - self.tree.get(*child).expected_value();
-                    let uct = self.tree.get(*child).bounded_uct_score(n);
-                    println!("{:?} -> expected value {:0.4}, uct ranking {:0.8}",action,ev,uct);
+                    println!("{:?} -> {:0.4}",action,ev);
                     
+                    if ev > best_score {
+                        best_action = Some(*action);
+                        best_score = ev;
+                    }
                 }
                 
-                let (a,_) = self.uct_policy(n,&e);
-                a
+                best_action.unwrap()
             },
             _ => panic!("Called best on non branch node"),
         }
