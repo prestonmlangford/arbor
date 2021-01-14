@@ -37,31 +37,16 @@ impl<A: Action,S: GameState<A>> Search<A,S> {
         v
     }
     
-    fn uct_policy(&self, np: u32, edges: &Vec<(A,u64)>) -> (A,u64) {
+
+    fn uct_policy(&self, n: u32, edges: &Vec<(A,u64)>) -> (A,u64) {
         
-        debug_assert!(np != 0,"UCT policy called with 0 parent value");
-        
-        let k = 2.0*(np as f32).ln();
-        
-        fn bounded_uct_score(qi: f32, ni: f32, k: f32) -> f32 {
-            debug_assert!(qi >= -ni, "Improper q value {}/{} ",qi,ni);
-            debug_assert!(qi <=  ni, "Improper q value {}/{} ",qi,ni);
-            
-            let w = (qi/ni + 1.0)/2.0;
-            let z = w + (k/ni).sqrt();
-            z/(1.0 + z)
-        }
+        debug_assert!(n != 0,"UCT policy called with 0 parent value");
         
         let mut best_edge = (None,0);
-        let mut best_score = -3.0;
+        let mut best_score = -1.0;
         
         for (a,u) in edges.iter() {
-            let score = match self.tree.get(*u) {
-                Node::Branch(q,n,_) |
-                Node::Leaf(q,n) => bounded_uct_score(q, n as f32, k),
-                Node::Terminal(q) => -2.0*q.signum(),
-                Node::Unexplored => 1.0,
-            };
+            let score = self.tree.get(*u).bounded_uct_score(n);
             
             if score > best_score {
                 best_score = score;
@@ -73,19 +58,20 @@ impl<A: Action,S: GameState<A>> Search<A,S> {
         (action.expect("No best action in UCT policy"),hash)
     }
     
-    fn random_policy(&mut self, np: u32, edges: &Vec<(A,u64)>) -> (A,u64) {
+    #[allow(dead_code)]
+    fn random_policy(&mut self, edges: &Vec<(A,u64)>) -> (A,u64) {
         *edges.choose(&mut self.rand).unwrap()
     }
     
-    fn go(&mut self, hash: u64,side: f32) -> f32 {
+    fn go(&mut self, hash: u64) -> f32 {
         let node = self.tree.get(hash);
         match node {
             Node::Branch(q,n,e) => {
-                //let (action,child) = self.uct_policy(n,&e);
-                let (action,child) = self.random_policy(n,&e);
+                let (action,child) = self.uct_policy(n,&e);
+                //let (action,child) = self.random_policy(n,&e);
 
                 self.state.make(action);
-                let score = self.go(child,-side);
+                let score = 1.0 - self.go(child);
                 self.state.unmake();
 
                 let update = Node::Branch(q + score,n + 1,e);
@@ -98,7 +84,7 @@ impl<A: Action,S: GameState<A>> Search<A,S> {
                     let edges = self.expand();
                     let update = Node::Branch(q,n,edges);
                     self.tree.set(hash, update);
-                    self.go(hash,side)
+                    1.0 - self.go(hash)
                 } else {
                     let score = self.state.value();
                     let update = Node::Leaf(q + score,n + 1);
@@ -121,39 +107,35 @@ impl<A: Action,S: GameState<A>> Search<A,S> {
     }
     
 
-
-    fn best(&mut self, hash: u64) -> (f32, A) {
+    fn best(&mut self, hash: u64) -> A {
         let node = self.tree.get(hash);
+        let ev = 1.0 - node.expected_value();
+        println!("root -> expected value {:0.4}",ev);
         match node {
-            Node::Branch(q,n,e) => {
-                let mut best_action = None;
-                let mut best_score = -1.0;
+            Node::Branch(_,n,e) => {
+                
                 for (action,child) in e.iter() {
-                    let (q,n) = self.tree.get_score(*child);
-                    let score = -(if n == 0 {q} else {q / (n as f32)});
-                    println!("{:?} -> {}",action,score);
-                    if score > best_score {
-                        best_score = score;
-                        best_action = Some(action);
-                    }
+                    
+                    let ev = 1.0 - self.tree.get(*child).expected_value();
+                    let uct = self.tree.get(*child).bounded_uct_score(n);
+                    println!("{:?} -> expected value {:0.4}, uct ranking {:0.8}",action,ev,uct);
+                    
                 }
                 
-                if let Some(action) = best_action {
-                    (q / (n as f32), *action)
-                } else {
-                    panic!("Root node had no children");
-                }
+                let (a,_) = self.uct_policy(n,&e);
+                a
             },
             _ => panic!("Called best on non branch node"),
         }
     }
     
-    pub fn search(&mut self, time: Duration) {
+    //PMLFIXME add time based search termination policy
+    pub fn search(&mut self, _time: Duration) -> A {
         let root = self.state.hash();
-        for _ in 0..100000 {
-            self.go(root,1.0);
+        for _ in 0..10000 {
+            self.go(root);
         }
         
-        self.best(root);
+        self.best(root)
     }
 }

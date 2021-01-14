@@ -15,4 +15,3 @@ pub trait GameState<A: Action>: Debug {
     fn terminal(&self) -> bool;
     
 }
-

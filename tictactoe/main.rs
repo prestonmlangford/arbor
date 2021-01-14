@@ -3,8 +3,9 @@ use std::fmt::Display;
 use std::fmt;
 use mcts::randxorshift::RandXorShift;
 use mcts::search::Search as Search;
-use rand::{Rng,FromEntropy};
 use std::time::Duration;
+use rand::{Rng,FromEntropy};
+
 
 #[derive(Copy,Clone,PartialEq,Debug)]
 enum Mark {N,X,O}
@@ -174,6 +175,16 @@ impl StateManager {
     fn cur(&self) -> &TicTacToe {
         self.stack.last().unwrap()
     }
+    
+    fn load(moves: &[Move]) -> StateManager {
+        use mcts::GameState;
+        let b = TicTacToe::new();
+        let mut g = Self::new(b);
+        for m in moves {
+            g.make(*m);
+        }
+        g
+    }
 }
 
 
@@ -188,18 +199,18 @@ impl mcts::GameState<Move> for StateManager {
         if self.cur().gameover() {
             return match self.cur().winner() {
                 //No more moves can be played, but nobody won. A draw gives a neutral score. 
-                Mark::N => 0.0,
+                Mark::N => 0.5,
 
                 //Side to play lost.  
-                _ => -1.0,
+                _ => 0.0,
             }
         }
 
-        let sign = if c.side == Mark::X {1.0} else {-1.0};
+        let p = if c.side == Mark::X {1.0} else {0.0};
         match c.rollout() {
-            Mark::N =>   0.0,
-            Mark::X =>  sign,
-            Mark::O => -sign,
+            Mark::N => 0.5,
+            Mark::X => p,
+            Mark::O => 1.0 - p,
         }
     }
     
@@ -242,8 +253,36 @@ fn main(){
     
     gamestate.make(MM);
     gamestate.make(TM);
+    gamestate.make(MR);
+    gamestate.make(ML);
+    gamestate.make(BR);
     gamestate.make(TL);
+    gamestate.make(BL);
     
+    println!("{}",gamestate.cur());
+
     let mut search = Search::new(gamestate);
-    search.search(Duration::new(1, 0));
+    let result = search.search(Duration::new(1, 0));
+
+    println!("{:?}",result);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::StateManager;
+    use mcts::search::Search as Search;
+    use std::time::Duration;
+    
+    #[test]
+    fn it_works() {
+        assert_eq!(2 + 2, 4);
+    }
+    
+    #[test]
+    fn new_game() {
+        let game = StateManager::load(&[]);
+        let mut search = Search::new(game);
+        let result = search.search(Duration::new(1, 0));
+        println!("{:?}",result);
+    }
 }
