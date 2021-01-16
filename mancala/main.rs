@@ -119,7 +119,7 @@ impl Mancala {
         }
         Mancala {pit, side: Player::R}
     }
-   
+    
     fn hash(&self) -> u64 {
         let s = (0..NP).
         map(|p| zsingle(p,self.pit[p] as usize)).
@@ -151,7 +151,11 @@ impl Mancala {
         
         let mut n = self.pit[p];
         
-        debug_assert!(n > 0,"cannot choose pit without stones");
+        if n == 0 {
+            println!("{}",self);
+            debug_assert!(n > 0,"cannot choose pit without stones");
+        }
+        
         
         next.pit[p] = 0;
         
@@ -187,29 +191,21 @@ impl Mancala {
                 next.pit[p] = 0;
             }
         }
-        
-        p = add(ebank,1);
-        let fsum = next.
-            pit[p..fbank].
-            iter().
-            fold(0,|sum,x| sum + x);
+        let f1 = add(ebank,1);
+        let e1 = add(fbank,1);
+        let fsum = next.pit[f1..fbank].iter().fold(0,|sum,x| sum + x);
+        let esum = next.pit[e1..ebank].iter().fold(0,|sum,x| sum + x);
         
         if fsum == 0 {
-            for p in add(fbank,1)..ebank {
-                next.pit[ebank] += next.pit[p];
+            next.pit[ebank] += esum;
+            for p in e1..ebank {
                 next.pit[p] = 0;
             }
         }
         
-        p = add(fbank,1);
-        let esum = next.
-            pit[p..ebank].
-            iter().
-            fold(0,|sum,x| sum + x);
-        
         if esum == 0 {
-            for p in add(ebank,1)..fbank {
-                next.pit[fbank] += next.pit[p];
+            next.pit[fbank] += fsum;
+            for p in f1..fbank {
                 next.pit[p] = 0;
             }
         }

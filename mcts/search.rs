@@ -71,6 +71,11 @@ impl<A: Action,S: GameState<A>> Search<A,S> {
                 //let (action,child) = self.random_policy(n,&e);
 
                 self.state.make(action);
+                let next_hash = self.state.hash();
+                if next_hash != child {
+                    debug_assert!(next_hash == child,"hashes don't match!");
+                }
+                
                 let score = 1.0 - self.go(child);
                 self.state.unmake();
 

@@ -15,6 +15,14 @@
         {
             "type": "lldb",
             "request": "launch",
+            "name": "target/debug/mancala",
+            "program": "${workspaceFolder}/target/debug/mancala",
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
             "name": "Debug unit tests in library 'mcts'",
             "cargo": {
                 "args": [
