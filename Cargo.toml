@@ -10,12 +10,16 @@ edition = "2018"
 time = "0.1"
 rand_core = "0.4" # keep this at 0.4 due to compile issue with rand_core
 rand = "0.6"
+lazy_static = "1.2.0"
 
 [lib]
 name = "mcts"
 path = "mcts/lib.rs"
 
-
 [[bin]]
 name = "tictactoe"
 path = "tictactoe/main.rs"
+
+[[bin]]
+name = "mancala"
+path = "mancala/main.rs"

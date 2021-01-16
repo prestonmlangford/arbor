@@ -1,9 +1,11 @@
 extern crate mcts;
 use std::fmt::Display;
 use std::fmt;
-use mcts::randxorshift::RandXorShift;
+
 use mcts::search::Search as Search;
 use std::time::Duration;
+
+use mcts::randxorshift::RandXorShift;
 use rand::{Rng,FromEntropy};
 
 
@@ -53,7 +55,15 @@ impl Display for TicTacToe {
     
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, 
-            " {} | {} | {} \n-----------\n {} | {} | {} \n-----------\n {} | {} | {} \n",
+"
+{}
+ {} | {} | {}
+-----------
+ {} | {} | {}
+-----------
+ {} | {} | {}
+",
+            if self.side == Mark::X {"Player X"} else {"Player O"},
             self.space[0],self.space[1],self.space[2],
             self.space[3],self.space[4],self.space[5],
             self.space[6],self.space[7],self.space[8]
@@ -110,7 +120,7 @@ impl TicTacToe {
             hash: self.hash | ((if self.side == Mark::X {1} else {512}) << (m as u64)),
         };
 
-        next.space[m as usize] = next.side;
+        next.space[m as usize] = self.side;
 
         Some(next)
     }
@@ -182,8 +192,10 @@ impl StateManager {
         let b = TicTacToe::new();
         let mut g = Self::new(b);
         for m in moves {
+            println!("{}",g.cur());
             g.make(*m);
         }
+        println!("{}",g.cur());
         g
     }
 }
@@ -258,27 +270,4 @@ fn main(){
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use mcts::search::Search as Search;
-    use std::time::Duration;
-    
-    fn best(moves: &[Move]) -> Move {
-        let game = StateManager::load(&moves);
-        println!("{}",game.cur());
-        let mut search = Search::new(game);
-        let result = search.search(Duration::new(1, 0));
-        println!("{:?}",result);
-        result
-    }
-    
-    #[test]
-    fn test_best_move() {
-        assert!(best(&[MM,TM,MR,ML,BR,TR]) == TL);
-        assert!(best(&[MM,TM,MR,ML]) == BR);
-        assert!(best(&[TL,MM,ML]) == BL);
-        assert!(best(&[MM,ML,MR,TL]) == BL);
-        
-        
-    }
-}
+mod test;
