@@ -24,7 +24,7 @@ impl<A: Action,S: GameState<A>> Search<A,S> {
     fn expand(&mut self) -> Vec<(A,u64)> {
         let mut v = Vec::new();
         if self.state.hash() == 4614556514129443476 {
-            println!("found it");
+            //println!("found it");
         }
         for action in self.state.actions() {
             self.state.make(action);
@@ -71,6 +71,7 @@ impl<A: Action,S: GameState<A>> Search<A,S> {
                     if next_hash == child {
                         true
                     } else {
+                        println!("{}",self.state);
                         false
                     }
                 },"hashes don't match!");

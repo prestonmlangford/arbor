@@ -171,6 +171,19 @@ struct StateManager {
     stack: Vec<TicTacToe>,
 }
 
+
+impl Display for StateManager {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut s = "".to_owned();
+        
+        for state in self.stack.iter() {
+            s.push_str(&format!("{}\n",state));
+        }
+        
+        write!(f,"{}",s)
+    }
+}
+
 impl StateManager {
     fn new(state: TicTacToe) -> StateManager {
         StateManager {

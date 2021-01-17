@@ -309,6 +309,18 @@ struct StateManager {
     rand: Rand,
 }
 
+impl Display for StateManager {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut s = format!("{}",Mancala::new());
+        
+        for (action,state) in self.stack.iter() {
+            s.push_str(&format!("{:?}\n{}\n\n",action,state));
+        }
+        
+        write!(f,"{}",s)
+    }
+}
+
 impl StateManager {
     fn new(state: Mancala) -> StateManager {
         StateManager {
