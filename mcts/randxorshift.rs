@@ -57,11 +57,13 @@ impl SeedableRng for RandXorShift {
     
     #[inline]
     fn seed_from_u64(seed: u64) -> Self {
-        RandXorShift {
-            u: seed,
-            v: seed,
-            s: 1,
+        let mut u = seed;
+        let mut bytes = [0u8;16];
+        for byte in bytes.iter_mut() {
+            u = u.rotate_right(41);
+            *byte = (u & 0xFF) as u8;
         }
+        RandXorShift::from_seed(bytes)
     }
 
     fn from_rng<R: RngCore>(mut rng: R) -> Result<Self, Error> {

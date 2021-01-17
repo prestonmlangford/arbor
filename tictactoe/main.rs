@@ -4,9 +4,7 @@ use std::fmt;
 
 use mcts::search::Search as Search;
 use std::time::Duration;
-
-use mcts::randxorshift::RandXorShift;
-use rand::{Rng,FromEntropy};
+use rand::Rng;
 
 
 #[derive(Copy,Clone,PartialEq,Debug)]
@@ -138,8 +136,8 @@ impl TicTacToe {
         result
     }
 
-    fn rollout(&self) -> Mark {
-        fn rmove(state: &TicTacToe, rand: &mut RandXorShift) -> Option<Move> {
+    fn rollout(&self, rand: &mut impl Rng) -> Mark {
+        fn rmove(state: &TicTacToe, rand: &mut impl Rng) -> Option<Move> {
             let mut moves: Vec<&Move> = ALLMOVES.iter().collect();
         
             while moves.len() > 0 {
@@ -156,10 +154,8 @@ impl TicTacToe {
         }
 
         let mut state = self.clone();
-        let mut rand = RandXorShift::from_entropy();
-
         while !state.gameover() {
-            if let Some(m) = rmove(&state,&mut rand) {
+            if let Some(m) = rmove(&state,rand) {
                 if let Some(next) = state.make(m) {
                     state = next;
                 }
@@ -203,9 +199,8 @@ impl StateManager {
 
 impl mcts::Action for Move {}
 
-
 impl mcts::GameState<Move> for StateManager {
-    fn value(&self) -> f32 {
+    fn value(&self, rand: &mut impl Rng) -> f32 {
         let c = self.cur();
         
 
@@ -220,7 +215,7 @@ impl mcts::GameState<Move> for StateManager {
         }
 
         let p = if c.side == Mark::X {1.0} else {0.0};
-        match c.rollout() {
+        match c.rollout(rand) {
             Mark::N => 0.5,
             Mark::X => p,
             Mark::O => 1.0 - p,

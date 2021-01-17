@@ -1,10 +1,8 @@
 use std::time::Duration;
 use super::*;
 use super::tree::*;
-use rand::seq::SliceRandom;
-use super::randxorshift::RandXorShift;
-use rand::FromEntropy;
-
+use randxorshift::RandXorShift;
+use rand::SeedableRng;
 
 pub struct Search<A: Action ,S: GameState<A>> {
     state: S,
@@ -14,18 +12,20 @@ pub struct Search<A: Action ,S: GameState<A>> {
 
 impl<A: Action,S: GameState<A>> Search<A,S> {
     pub fn new(state: S) -> Self {
-        
         let mut tree = Tree::new(); 
         let root = Node::Leaf(0.0,0);
         let hash = state.hash();
         
         tree.set(hash, root);
-        
-        Search {state,tree,rand: RandXorShift::from_entropy()}
+        let rand = RandXorShift::seed_from_u64(0x123456789ABCDEF0);
+        Search {state,tree,rand}
     }
     
     fn expand(&mut self) -> Vec<(A,u64)> {
         let mut v = Vec::new();
+        if self.state.hash() == 4614556514129443476 {
+            println!("found it");
+        }
         for action in self.state.actions() {
             self.state.make(action);
             let hash = self.state.hash();
@@ -58,25 +58,25 @@ impl<A: Action,S: GameState<A>> Search<A,S> {
         (action.expect("No best action in UCT policy"),hash)
     }
     
-    #[allow(dead_code)]
-    fn random_policy(&mut self, edges: &Vec<(A,u64)>) -> (A,u64) {
-        *edges.choose(&mut self.rand).unwrap()
-    }
-    
     fn go(&mut self, hash: u64) -> f32 {
         let node = self.tree.get(hash);
         match node {
             Node::Branch(q,n,e) => {
                 let (action,child) = self.uct_policy(n,&e);
-                //let (action,child) = self.random_policy(n,&e);
-
-                self.state.make(action);
-                let next_hash = self.state.hash();
-                if next_hash != child {
-                    debug_assert!(next_hash == child,"hashes don't match!");
-                }
                 
-                let score = 1.0 - self.go(child);
+                self.state.make(action);
+                
+                debug_assert!({
+                    let next_hash = self.state.hash();
+                    if next_hash == child {
+                        true
+                    } else {
+                        false
+                    }
+                },"hashes don't match!");
+                
+                
+                let score = 1.0 - self.go(child);//PMLFIXME doesn't work for mancala due to double turns
                 self.state.unmake();
 
                 let update = Node::Branch(q + score,n + 1,e);
@@ -91,7 +91,7 @@ impl<A: Action,S: GameState<A>> Search<A,S> {
                     self.tree.set(hash, update);
                     1.0 - self.go(hash)
                 } else {
-                    let score = self.state.value();
+                    let score = self.state.value(&mut self.rand);
                     let update = Node::Leaf(q + score,n + 1);
                     self.tree.set(hash, update);
                     score
@@ -99,7 +99,7 @@ impl<A: Action,S: GameState<A>> Search<A,S> {
             },
             Node::Terminal(q) => q,
             Node::Unexplored => {
-                let score = self.state.value();
+                let score = self.state.value(&mut self.rand);
                 let update = if self.state.terminal() {
                     Node::Terminal(score)
                 } else {

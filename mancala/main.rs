@@ -8,9 +8,9 @@ use std::time::Duration;
 
 use mcts::search::Search;
 use mcts::randxorshift::RandXorShift as Rand;
-use rand::{RngCore,SeedableRng,FromEntropy};
+use rand::{RngCore,SeedableRng};
 use rand::seq::SliceRandom;
-//use rand::Rng;
+use rand::Rng;
 
 #[derive(Copy,Clone,PartialEq,Debug)]
 enum Player {L,R}
@@ -44,7 +44,10 @@ const PIT: [Pit; NP] = [
 lazy_static!{
     static ref ZTABLE: [u64;NP*NS + 1] = {
         let mut table = [0;NP*NS + 1];
-        let mut rand = Rand::from_seed([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]);
+        let mut rand = Rand::from_seed(
+            //[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+            [10,20,30,40,50,60,70,80,90,100,101,102,103,104,105,106]
+        );
         for entry in table.iter_mut() {
             *entry = rand.next_u64();
         }
@@ -68,6 +71,9 @@ fn zturn() -> u64 {
 struct Mancala {
     pit: [u8; NP],
     side: Player,
+}
+lazy_static!{
+    static ref NEWGAME: Mancala = Mancala::new();
 }
 
 impl Display for Mancala {
@@ -151,10 +157,15 @@ impl Mancala {
         
         let mut n = self.pit[p];
         
-        if n == 0 {
-            println!("{}",self);
-            debug_assert!(n > 0,"cannot choose pit without stones");
-        }
+        
+        debug_assert!({
+            if n == 0 {
+                println!("{}",self);
+                false
+            } else {
+                true
+            }
+        },"cannot choose pit without stones");
         
         
         next.pit[p] = 0;
@@ -198,16 +209,12 @@ impl Mancala {
         
         if fsum == 0 {
             next.pit[ebank] += esum;
-            for p in e1..ebank {
-                next.pit[p] = 0;
-            }
+            next.pit[e1..ebank].iter_mut().for_each(|p| *p = 0);
         }
         
         if esum == 0 {
             next.pit[fbank] += fsum;
-            for p in f1..fbank {
-                next.pit[p] = 0;
-            }
+            next.pit[f1..fbank].iter_mut().for_each(|p| *p = 0);
         }
         
         next
@@ -268,9 +275,8 @@ impl Mancala {
         }
     }
     
-    fn rollout(&self) -> Option<Player> {
+    fn rollout(&self, rand: &mut impl Rng) -> Option<Player> {
         let mut sim = *self;
-        let mut rand = Rand::from_entropy();
         loop {
             if sim.gameover() {
                 break;
@@ -287,7 +293,7 @@ impl Mancala {
             
             let p = *sim.
                 legal_moves().
-                choose(&mut rand).
+                choose(rand).
                 expect("Expected to find a legal move");
 
             sim = sim.make(p);
@@ -299,19 +305,24 @@ impl Mancala {
 
 #[derive(Debug)]
 struct StateManager {
-    stack: Vec<Mancala>,
+    stack: Vec<(Pit,Mancala)>,
+    rand: Rand,
 }
 
 impl StateManager {
     fn new(state: Mancala) -> StateManager {
         StateManager {
-            stack: vec![state]
+            stack: Vec::new(),
+            rand: Rand::from_seed([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16])
         }
     }
     
     fn cur(&self) -> &Mancala {
-        debug_assert!(self.stack.len() > 0,"nothing in StateManager stack");
-        self.stack.last().unwrap()
+        if let Some((_,state)) = self.stack.last() {
+            state
+        } else {
+            &NEWGAME
+        }
     }
     
     #[allow(dead_code)]
@@ -331,11 +342,12 @@ impl StateManager {
 impl mcts::Action for Pit {}
 
 impl mcts::GameState<Pit> for StateManager {
-    fn value(&self) -> f32 {
+    fn value(&self, rand: &mut impl Rng) -> f32 {
         let side = if self.cur().side == Player::L {1.0} else {0.0};
+        
         if let Some(winner) = 
             if self.cur().gameover() {self.cur().winner()} 
-            else {self.cur().rollout()} 
+            else {self.cur().rollout(rand)}
         {
             match winner {
                 Player::L => side,
@@ -354,15 +366,11 @@ impl mcts::GameState<Pit> for StateManager {
     
     fn make(&mut self,action: Pit) {
         let next = self.cur().make(action);
-        self.stack.push(next);
+        self.stack.push((action,next));
     }
     
     fn unmake(&mut self) {
-        if self.stack.len() > 1 {
-            self.stack.pop();
-        } else {
-            panic!("called unmake on root position");
-        }
+        self.stack.pop();
     }
     
     fn hash(&self) -> u64 {
