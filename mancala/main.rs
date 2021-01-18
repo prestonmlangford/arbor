@@ -8,9 +8,8 @@ use std::time::Duration;
 
 use mcts::search::Search;
 use mcts::randxorshift::RandXorShift as Rand;
-use rand::{RngCore,SeedableRng};
 use rand::seq::SliceRandom;
-use rand::Rng;
+use rand::{Rng,RngCore,SeedableRng};
 
 #[derive(Copy,Clone,PartialEq,Debug)]
 enum Player {L,R}
@@ -44,18 +43,14 @@ const PIT: [Pit; NP] = [
 lazy_static!{
     static ref ZTABLE: [u64;NP*NS] = {
         let mut table = [0;NP*NS];
-        let mut rand = Rand::from_seed(
-            //[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
-            //[10,20,30,40,50,60,70,80,90,100,101,102,103,104,105,106]
-            [123,234,111,222,112,211,122,221,121,145,137,189,198,175,143,162]
-        );
+        let mut rand = Rand::from_seed([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]);
         for entry in table.iter_mut() {
             *entry = rand.next_u64();
         }
         table
     };
 }
-const ZTURN: u64 = 0x1D6BAB5230A7715A;
+const ZTURN: u64 = 0x123456789ABCDEF0;
 
 #[derive(Copy,Clone,Debug)]
 struct Mancala {

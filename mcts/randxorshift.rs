@@ -22,9 +22,9 @@ impl RngCore for RandXorShift {
         self.u ^= self.v.rotate_right(self.s);
         self.v ^= self.u.rotate_right(self.s);
         
-        //this would cause u and v to swap value when s is zero
+        //this causes u and v to swap value when s is zero
         //see XOR swap algorithm
-        //self.u ^= self.v;
+        self.u ^= self.v;
         
         //this will eventually roll over.  That's ok.
         self.s = self.s.wrapping_add(1);
