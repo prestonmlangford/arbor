@@ -42,30 +42,20 @@ const PIT: [Pit; NP] = [
 ];
 
 lazy_static!{
-    static ref ZTABLE: [u64;NP*NS + 1] = {
-        let mut table = [0;NP*NS + 1];
+    static ref ZTABLE: [u64;NP*NS] = {
+        let mut table = [0;NP*NS];
         let mut rand = Rand::from_seed(
             //[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
-            [10,20,30,40,50,60,70,80,90,100,101,102,103,104,105,106]
+            //[10,20,30,40,50,60,70,80,90,100,101,102,103,104,105,106]
+            [123,234,111,222,112,211,122,221,121,145,137,189,198,175,143,162]
         );
         for entry in table.iter_mut() {
             *entry = rand.next_u64();
         }
         table
     };
-
 }
-
-#[inline]
-fn zsingle(p: usize,n: usize) -> u64 {
-    ZTABLE[p*NS + n]
-}
-
-#[inline]
-fn zturn() -> u64 {
-    ZTABLE[NP*NS]
-}
-
+const ZTURN: u64 = 0x1D6BAB5230A7715A;
 
 #[derive(Copy,Clone,Debug)]
 struct Mancala {
@@ -127,13 +117,15 @@ impl Mancala {
     }
     
     fn hash(&self) -> u64 {
-        let s = (0..NP).
-        map(|p| zsingle(p,self.pit[p] as usize)).
-        fold(0,|h,z| h ^ z);
-
+        let mut s = 0;
+        for p in 0..NP {
+            let n = self.pit[p] as usize;
+            s ^= ZTABLE[p*NS + n];
+        }
+        
         let t = match self.side {
             Player::L => 0,
-            Player::R => zturn(),
+            Player::R => ZTURN,
         };
 
         t ^ s
@@ -306,26 +298,24 @@ impl Mancala {
 #[derive(Debug)]
 struct StateManager {
     stack: Vec<(Pit,Mancala)>,
-    rand: Rand,
 }
 
 impl Display for StateManager {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut s = format!("{}",Mancala::new());
+        let mut s = format!("--- StateManager Stack ---{}--------------------------\n",Mancala::new());
         
         for (action,state) in self.stack.iter() {
-            s.push_str(&format!("{:?}\n{}\n\n",action,state));
+            s.push_str(&format!("{:?}{}{}\n--------------------------\n",action,state,state.hash()));
         }
         
-        write!(f,"{}",s)
+        write!(f,"{}\n",s)
     }
 }
 
 impl StateManager {
     fn new(state: Mancala) -> StateManager {
         StateManager {
-            stack: Vec::new(),
-            rand: Rand::from_seed([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16])
+            stack: Vec::new()
         }
     }
     
@@ -397,7 +387,7 @@ impl mcts::GameState<Pit> for StateManager {
 fn main() {
     println!("Mancala!");
 
-    let mut game = [];
+    let game = [];
 
     let gamestate = StateManager::load(&game);
 

@@ -23,12 +23,14 @@ impl<A: Action,S: GameState<A>> Search<A,S> {
     
     fn expand(&mut self) -> Vec<(A,u64)> {
         let mut v = Vec::new();
-        if self.state.hash() == 4614556514129443476 {
-            //println!("found it");
-        }
+        
         for action in self.state.actions() {
             self.state.make(action);
             let hash = self.state.hash();
+            if hash == 18368813280695608329 {
+                println!("{}",self.state);
+                println!("why");
+            }
             v.push((action,hash));
             self.tree.set(hash,Node::Unexplored);
             self.state.unmake();
