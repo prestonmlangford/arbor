@@ -1,13 +1,10 @@
 use std::time::Duration;
 use super::*;
 use super::tree::*;
-use randxorshift::RandXorShift;
-use rand::SeedableRng;
 
 pub struct Search<A: Action ,S: GameState<A>> {
     state: S,
     tree: Tree<A>,
-    rand: RandXorShift,
 }
 
 impl<A: Action,S: GameState<A>> Search<A,S> {
@@ -17,8 +14,7 @@ impl<A: Action,S: GameState<A>> Search<A,S> {
         let hash = state.hash();
         
         tree.set(hash, root);
-        let rand = RandXorShift::seed_from_u64(0x123456789ABCDEF0);
-        Search {state,tree,rand}
+        Search {state,tree}
     }
     
     fn expand(&mut self) -> Vec<(A,u64)> {
@@ -64,6 +60,7 @@ impl<A: Action,S: GameState<A>> Search<A,S> {
         let node = self.tree.get(hash);
         match node {
             Node::Branch(q,n,e) => {
+                let player = self.state.player();
                 let (action,child) = self.uct_policy(n,&e);
                 
                 self.state.make(action);
@@ -79,7 +76,12 @@ impl<A: Action,S: GameState<A>> Search<A,S> {
                 },"hashes don't match!");
                 
                 
-                let score = 1.0 - self.go(child);//PMLFIXME doesn't work for mancala due to double turns
+                let score = if self.state.player() == player {
+                    self.go(child)
+                } else {
+                    1.0 - self.go(child)
+                };
+
                 self.state.unmake();
 
                 let update = Node::Branch(q + score,n + 1,e);
@@ -92,9 +94,9 @@ impl<A: Action,S: GameState<A>> Search<A,S> {
                     let edges = self.expand();
                     let update = Node::Branch(q,n,edges);
                     self.tree.set(hash, update);
-                    1.0 - self.go(hash)
+                    self.go(hash)
                 } else {
-                    let score = self.state.value(&mut self.rand);
+                    let score = self.state.value();
                     let update = Node::Leaf(q + score,n + 1);
                     self.tree.set(hash, update);
                     score
@@ -102,7 +104,7 @@ impl<A: Action,S: GameState<A>> Search<A,S> {
             },
             Node::Terminal(q) => q,
             Node::Unexplored => {
-                let score = self.state.value(&mut self.rand);
+                let score = self.state.value();
                 let update = if self.state.terminal() {
                     Node::Terminal(score)
                 } else {
@@ -114,7 +116,6 @@ impl<A: Action,S: GameState<A>> Search<A,S> {
         }
     }
     
-
     fn best(&mut self, hash: u64) -> A {
         let node = self.tree.get(hash);
         let ev = 1.0 - node.expected_value();

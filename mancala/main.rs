@@ -9,7 +9,7 @@ use std::time::Duration;
 use mcts::search::Search;
 use mcts::randxorshift::RandXorShift as Rand;
 use rand::seq::SliceRandom;
-use rand::{Rng,RngCore,SeedableRng};
+use rand::{Rng,RngCore,SeedableRng,FromEntropy};
 
 #[derive(Copy,Clone,PartialEq,Debug)]
 enum Player {L,R}
@@ -44,6 +44,7 @@ lazy_static!{
     static ref ZTABLE: [u64;NP*NS] = {
         let mut table = [0;NP*NS];
         let mut rand = Rand::from_seed([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]);
+        //let mut rand = rand::thread_rng();
         for entry in table.iter_mut() {
             *entry = rand.next_u64();
         }
@@ -262,8 +263,9 @@ impl Mancala {
         }
     }
     
-    fn rollout(&self, rand: &mut impl Rng) -> Option<Player> {
+    fn rollout(&self) -> Option<Player> {
         let mut sim = *self;
+        let mut rand = Rand::from_entropy();
         loop {
             if sim.gameover() {
                 break;
@@ -280,7 +282,7 @@ impl Mancala {
             
             let p = *sim.
                 legal_moves().
-                choose(rand).
+                choose(&mut rand).
                 expect("Expected to find a legal move");
 
             sim = sim.make(p);
@@ -339,12 +341,11 @@ impl StateManager {
 impl mcts::Action for Pit {}
 
 impl mcts::GameState<Pit> for StateManager {
-    fn value(&self, rand: &mut impl Rng) -> f32 {
+    fn value(&self) -> f32 {
         let side = if self.cur().side == Player::L {1.0} else {0.0};
-        
         if let Some(winner) = 
             if self.cur().gameover() {self.cur().winner()} 
-            else {self.cur().rollout(rand)}
+            else {self.cur().rollout()}
         {
             match winner {
                 Player::L => side,
@@ -376,6 +377,10 @@ impl mcts::GameState<Pit> for StateManager {
     
     fn terminal(&self) -> bool {
         self.cur().gameover()
+    }
+
+    fn player(&self) -> u32 {
+        self.cur().side as u32
     }
 }
 

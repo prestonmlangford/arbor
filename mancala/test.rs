@@ -1,5 +1,13 @@
 use super::*;
 
+fn best(moves: &[Pit]) -> Pit {
+    let game = StateManager::load(&moves);
+    let mut search = Search::new(game);
+    let result = search.search(Duration::new(1, 0));
+    println!("{:?}",result);
+    result
+}
+
 #[test]
 fn mancala_free_move_1() {
     let mut game = Mancala::new();
@@ -99,37 +107,14 @@ fn mancala_left_capture() {
     assert!(game.pit[Pit::L3 as usize] == 0);
 }
 
+#[test]
+fn mancala_best_move_capture() {
+    let m = best(&[R6,L6]);
+    assert!(m == R1);
+}
 
 #[test]
-fn mancala_hash() {
-    let mut game = Mancala::new();
-    println!("{}",game);
-
-    game = game.make(Pit::R6);
-    println!("{}",game);
-    
-    game = game.make(Pit::L2);
-    println!("{}",game);
-    
-    game = game.make(Pit::L6);
-    println!("{}",game);
-    
-    game = game.make(Pit::R5);
-    println!("{}",game);
-    
-    game = game.make(Pit::L5);
-    println!("{}",game);
-    
-    game = game.make(Pit::R2);
-    println!("{}",game);
-    
-    game = game.make(Pit::L3);
-    println!("{}",game);
-    
-    game = game.make(Pit::R1);
-    println!("{}",game);
-    
-    game = game.make(Pit::L2);
-    println!("{}",game);
-    
+fn mancala_best_move_capture_2() {
+    let m = best(&[R6,L6,R2]);
+    //assert!(m == R1);
 }

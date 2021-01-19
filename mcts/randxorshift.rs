@@ -18,18 +18,29 @@ impl RngCore for RandXorShift {
     
     #[inline]
     fn next_u64(&mut self) -> u64 {
-        //rotates are modulo the number of bits
-        self.u ^= self.v.rotate_right(self.s);
-        self.v ^= self.u.rotate_right(self.s);
-        
-        //this causes u and v to swap value when s is zero
-        //see XOR swap algorithm
-        self.u ^= self.v;
-        
-        //this will eventually roll over.  That's ok.
-        self.s = self.s.wrapping_add(1);
-        
+        // let u = self.u;
+        // let s = (self.s & 0x1F) + 1;
+        // self.u = (u << s) ^ u ^ (u >> s);
+        // self.s = s;
+        // self.u
+
+        self.s &= 0x1F;
+        self.s += 1;
+        self.u ^= (self.u << self.s) ^ (self.u >> self.s);
         self.u
+
+        //rotates are modulo the number of bits
+        // self.u ^= self.v.rotate_right(self.s);
+        // self.v ^= self.u.rotate_right(self.s);
+        
+        // //this causes u and v to swap value when s is zero
+        // //see XOR swap algorithm
+        // self.u ^= self.v;
+        
+        // //this will eventually roll over.  That's ok.
+        // self.s = self.s.wrapping_add(1);
+        
+        // self.u
     }
     
     #[inline]
