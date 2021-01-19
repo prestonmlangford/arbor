@@ -108,13 +108,13 @@ fn mancala_left_capture() {
 }
 
 #[test]
-fn mancala_best_move_capture() {
+fn mancala_best_move_split() {
     let m = best(&[R6,L6]);
-    assert!(m == R1);
+    assert!((m == R1) || (m == R2));
 }
 
 #[test]
-fn mancala_best_move_capture_2() {
+fn mancala_best_move_free_turn() {
     let m = best(&[R6,L6,R2]);
-    //assert!(m == R1);
+    assert!(m == R6);
 }

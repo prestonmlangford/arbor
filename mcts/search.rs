@@ -8,6 +8,8 @@ pub struct Search<A: Action ,S: GameState<A>> {
 }
 
 impl<A: Action,S: GameState<A>> Search<A,S> {
+    //PMLFIXME make this a constructable type 
+    //so search parameters can be modified 
     pub fn new(state: S) -> Self {
         let mut tree = Tree::new(); 
         let root = Node::Leaf(0.0,0);
@@ -75,18 +77,15 @@ impl<A: Action,S: GameState<A>> Search<A,S> {
                     }
                 },"hashes don't match!");
                 
-                
-                let score = if self.state.player() == player {
-                    self.go(child)
-                } else {
-                    1.0 - self.go(child)
-                };
+                let score = self.go(child);
+                let value = if self.state.player() == player 
+                    {score} else {1.0 - score};
 
                 self.state.unmake();
 
-                let update = Node::Branch(q + score,n + 1,e);
+                let update = Node::Branch(q + value,n + 1,e);
                 self.tree.set(hash, update);
-                score
+                value
             },
             Node::Leaf(q,n) => {
                 //PMLFIXME make this threshold an adjustable parameter
@@ -118,14 +117,19 @@ impl<A: Action,S: GameState<A>> Search<A,S> {
     
     fn best(&mut self, hash: u64) -> A {
         let node = self.tree.get(hash);
-        let ev = 1.0 - node.expected_value();
+        let ev = node.expected_value();
         println!("root -> expected value {:0.4}",ev);
         match node {
             Node::Branch(_,_,e) => {
                 let mut best_action = None;
                 let mut best_score = -1.0;
+                let player = self.state.player();
                 for (action,child) in e.iter() {
-                    let ev = 1.0 - self.tree.get(*child).expected_value();
+                    self.state.make(*action);
+                    let q = self.tree.get(*child).expected_value();
+                    let ev = if self.state.player() == player {q} else {1.0 - q};
+                    self.state.unmake();
+                    
                     println!("{:?} -> {:0.4}",action,ev);
                     
                     if ev > best_score {

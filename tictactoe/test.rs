@@ -11,9 +11,17 @@ fn best(moves: &[Move]) -> Move {
 }
 
 #[test]
-fn tictactoe_best() {
+fn tictactoe_best_obvious() {
     assert!(best(&[MM,TM,MR,ML,BR,TR]) == TL);
+}
+
+#[test]
+fn tictactoe_best_even() {
     assert!(best(&[TL,MM,ML]) == BL);
+}
+
+#[test]
+fn tictactoe_best_even2() {
     assert!(best(&[MM,ML,MR,TL]) == BL);
 }
 
