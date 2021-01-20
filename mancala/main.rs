@@ -2,6 +2,8 @@
 extern crate lazy_static;
 extern crate mcts;
 
+use std::io;
+use std::io::prelude::*;
 use std::fmt::Display;
 use std::fmt;
 use std::time::Duration;
@@ -292,7 +294,7 @@ impl Mancala {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 struct StateManager {
     stack: Vec<(Pit,Mancala)>,
 }
@@ -383,17 +385,47 @@ impl mcts::GameState<Pit> for StateManager {
         self.cur().side as u32
     }
 }
+use mcts::GameState;
 
 fn main() {
     println!("Mancala!");
 
     let game = [];
 
-    let gamestate = StateManager::load(&game);
+    let mut gamestate = StateManager::load(&game);
     
-    println!("start search");
-    let result = Search::new(gamestate).search(Duration::new(3, 0));
-    println!("{:?}",result);
+    loop {
+        print!("=> ");
+        //flushes standard out so the print statements are actually displayed
+        io::stdout().flush().unwrap();
+        
+        let mut input = String::new();
+        if let Err(_) = io::stdin().read_line(&mut input) {
+            println!("Failed to read user input");
+            continue;
+        }
+        
+        if let Ok(p) = input.split_whitespace().next().unwrap().parse::<usize>() {
+            if (1 <= p) && (p <= 6) {
+                let pit = PIT[p-1];
+                println!("{:?}",pit);
+                gamestate.make(pit);
+                println!("{}",gamestate.cur());
+                
+                while gamestate.cur().side == Player::L {
+                    let result = Search::new(gamestate.clone()).search(Duration::new(3, 0));
+                    println!("{:?}",result);
+                    gamestate.make(result);
+                    println!("{}",gamestate.cur());    
+                }
+                
+            } else {
+                println!("validation failed");
+            }
+        } else {
+            println!("parse failed");
+        }
+    }
 }
 
 #[cfg(test)]
