@@ -390,8 +390,9 @@ fn main() {
     let game = [];
 
     let gamestate = StateManager::load(&game);
-
-    let result = Search::new(gamestate).search(Duration::new(1, 0));
+    
+    println!("start search");
+    let result = Search::new(gamestate).search(Duration::new(3, 0));
     println!("{:?}",result);
 }
 

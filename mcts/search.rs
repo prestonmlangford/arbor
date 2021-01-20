@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::time::{Duration,Instant};
 use super::*;
 use super::tree::*;
 
@@ -144,10 +144,10 @@ impl<A: Action,S: GameState<A>> Search<A,S> {
         }
     }
     
-    //PMLFIXME add time based search termination policy
-    pub fn search(&mut self, _time: Duration) -> A {
+    pub fn search(&mut self, time: Duration) -> A {
+        let start = Instant::now();
         let root = self.state.hash();
-        for _ in 0..10000 {
+        while (Instant::now() - start) < time {
             self.go(root);
         }
         
