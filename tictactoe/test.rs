@@ -1,11 +1,11 @@
 use super::*;
-use mcts::search::Search as Search;
+use mcts::Search as Search;
 use std::time::Duration;
 
 fn best(moves: &[Move]) -> Move {
     let game = StateManager::load(&moves);
-    let mut search = Search::new(game);
-    let result = search.search(Duration::new(1, 0));
+    let mut search = Search::new(game).with_time(Duration::new(1, 0));
+    let result = search.execute();
     println!("{:?}",result);
     result
 }

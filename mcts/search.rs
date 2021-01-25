@@ -2,22 +2,9 @@ use std::time::{Duration,Instant};
 use super::*;
 use super::tree::*;
 
-pub struct Search<A: Action ,S: GameState<A>> {
-    state: S,
-    tree: Tree<A>,
-}
+
 
 impl<A: Action,S: GameState<A>> Search<A,S> {
-    //PMLFIXME make this a constructable type 
-    //so search parameters can be modified 
-    pub fn new(state: S) -> Self {
-        let mut tree = Tree::new(); 
-        let root = Node::Leaf(0.0,0);
-        let hash = state.hash();
-        
-        tree.set(hash, root);
-        Search {state,tree}
-    }
     
     fn expand(&mut self) -> Vec<(A,u64)> {
         let mut v = Vec::new();
@@ -25,19 +12,19 @@ impl<A: Action,S: GameState<A>> Search<A,S> {
         for action in self.state.actions() {
             self.state.make(action);
             let hash = self.state.hash();
-            if hash == 18368813280695608329 {
-                println!("{}",self.state);
-                println!("why");
-            }
             v.push((action,hash));
             self.tree.set(hash,Node::Unexplored);
             self.state.unmake();
         }
-        debug_assert!(v.len() != 0, "expand did not find any actions for state.");
+        debug_assert!(
+            if v.len() != 0 {
+                true
+            } else {
+                false
+            }, "expand did not find any actions for state.");
         v
     }
     
-
     fn uct_policy(&self, n: u32, edges: &Vec<(A,u64)>) -> (A,u64) {
         
         debug_assert!(n != 0,"UCT policy called with 0 parent value");
@@ -144,10 +131,10 @@ impl<A: Action,S: GameState<A>> Search<A,S> {
         }
     }
     
-    pub fn search(&mut self, time: Duration) -> A {
+    pub fn driver(&mut self) -> A {
         let start = Instant::now();
         let root = self.state.hash();
-        while (Instant::now() - start) < time {
+        while (Instant::now() - start) < self.time {
             self.go(root);
         }
         

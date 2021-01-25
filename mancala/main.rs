@@ -8,10 +8,10 @@ use std::fmt::Display;
 use std::fmt;
 use std::time::Duration;
 
-use mcts::search::Search;
+use mcts::Search;
 use mcts::randxorshift::RandXorShift as Rand;
 use rand::seq::SliceRandom;
-use rand::{Rng,RngCore,SeedableRng,FromEntropy};
+use rand::{RngCore,SeedableRng,FromEntropy};
 
 #[derive(Copy,Clone,PartialEq,Debug)]
 enum Player {L,R}
@@ -118,7 +118,15 @@ impl Mancala {
         let mut s = 0;
         for p in 0..NP {
             let n = self.pit[p] as usize;
-            s ^= ZTABLE[p*NS + n];
+            let z = p*NS + n;
+            debug_assert!(
+                if z < (NS*NP) {
+                    true
+                } else {
+                    false
+                }
+            );
+            s ^= ZTABLE[z];
         }
         
         let t = match self.side {
@@ -328,7 +336,6 @@ impl StateManager {
     
     #[allow(dead_code)]
     fn load(moves: &[Pit]) -> StateManager {
-        use mcts::GameState;
         let b = Mancala::new();
         let mut g = Self::new(b);
         for m in moves {
@@ -395,35 +402,46 @@ fn main() {
     let mut gamestate = StateManager::load(&game);
     
     loop {
-        print!("=> ");
-        //flushes standard out so the print statements are actually displayed
-        io::stdout().flush().unwrap();
-        
-        let mut input = String::new();
-        if let Err(_) = io::stdin().read_line(&mut input) {
-            println!("Failed to read user input");
-            continue;
-        }
-        
-        if let Ok(p) = input.split_whitespace().next().unwrap().parse::<usize>() {
-            if (1 <= p) && (p <= 6) {
-                let pit = PIT[p-1];
-                println!("{:?}",pit);
-                gamestate.make(pit);
-                println!("{}",gamestate.cur());
-                
-                while gamestate.cur().side == Player::L {
-                    let result = Search::new(gamestate.clone()).search(Duration::new(3, 0));
-                    println!("{:?}",result);
-                    gamestate.make(result);
-                    println!("{}",gamestate.cur());    
+        if gamestate.cur().side == Player::R {
+            print!("=> ");
+            //flushes standard out so the print statements are actually displayed
+            io::stdout().flush().unwrap();
+            
+            let mut input = String::new();
+            if let Err(_) = io::stdin().read_line(&mut input) {
+                println!("Failed to read user input");
+                continue;
+            }
+            
+            if let Ok(p) = input.split_whitespace().next().unwrap().parse::<usize>() {
+                if (1 <= p) && (p <= 6) {
+                    let pit = PIT[p-1];
+                    println!("{:?}",pit);
+                    gamestate.make(pit);
+                } else {
+                    println!("validation failed");
                 }
-                
             } else {
-                println!("validation failed");
+                println!("parse failed");
             }
         } else {
-            println!("parse failed");
+            let state = gamestate.clone();//PMLFIXME this should only clone the top of the stack for efficiency
+            let result = 
+                Search::new(state).
+                with_time(Duration::new(10, 0)).
+                execute();
+            
+            println!("{:?}",result);
+            gamestate.make(result);
+        }
+        
+        
+        println!("{}",gamestate.cur());
+        
+        
+        if gamestate.cur().gameover() {
+            println!("gameover!");
+            break;
         }
     }
 }
