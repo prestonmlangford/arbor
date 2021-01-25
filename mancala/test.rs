@@ -2,8 +2,8 @@ use super::*;
 
 fn best(moves: &[Pit]) -> Pit {
     let game = StateManager::load(&moves);
-    let mut search = Search::new(game).with_time(Duration::new(1, 0));
-    let result = search.execute();
+    let t = Duration::new(1,0);
+    let result = MCTS::new().with_time(t).search(game);
     println!("{:?}",result);
     result
 }

@@ -1,11 +1,25 @@
-use std::time::{Duration,Instant};
+use std::time::Instant;
 use super::*;
 use super::tree::*;
 
+pub struct Search<A: Action ,S: GameState<A>> {
+    state: S,
+    tree: Tree<A>,
+    params: MCTS
+}
 
 
 impl<A: Action,S: GameState<A>> Search<A,S> {
     
+    pub fn new(state: S, params: &MCTS) -> Self {
+        let mut tree = Tree::new(); 
+        let root = Node::Leaf(0.0,0);//PMLFIXME why not unexplored?
+        let hash = state.hash();
+        
+        tree.set(hash, root);
+        Search {state,tree,params:*params}
+    }
+
     fn expand(&mut self) -> Vec<(A,u64)> {
         let mut v = Vec::new();
         
@@ -134,7 +148,7 @@ impl<A: Action,S: GameState<A>> Search<A,S> {
     pub fn driver(&mut self) -> A {
         let start = Instant::now();
         let root = self.state.hash();
-        while (Instant::now() - start) < self.time {
+        while (Instant::now() - start) < self.params.time {
             self.go(root);
         }
         

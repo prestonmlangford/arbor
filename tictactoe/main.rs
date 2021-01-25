@@ -2,7 +2,7 @@ extern crate mcts;
 use std::fmt::Display;
 use std::fmt;
 
-use mcts::Search as Search;
+use mcts::MCTS;
 use mcts::randxorshift::RandXorShift as Rand;
 use std::time::Duration;
 use rand::{Rng,FromEntropy};
@@ -279,9 +279,9 @@ fn main(){
     println!("{}",gamestate.cur());
 
     let result = 
-        Search::new(gamestate).
+        MCTS::new().
         with_time(Duration::new(1, 0)).
-        execute();
+        search(gamestate);
 
     println!("{:?}",result);
 }

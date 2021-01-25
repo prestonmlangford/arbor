@@ -8,7 +8,7 @@ use std::fmt::Display;
 use std::fmt;
 use std::time::Duration;
 
-use mcts::Search;
+use mcts::MCTS;
 use mcts::randxorshift::RandXorShift as Rand;
 use rand::seq::SliceRandom;
 use rand::{RngCore,SeedableRng,FromEntropy};
@@ -427,9 +427,9 @@ fn main() {
         } else {
             let state = gamestate.clone();//PMLFIXME this should only clone the top of the stack for efficiency
             let result = 
-                Search::new(state).
+                MCTS::new().
                 with_time(Duration::new(10, 0)).
-                execute();
+                search(state);
             
             println!("{:?}",result);
             gamestate.make(result);
