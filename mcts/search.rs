@@ -2,6 +2,13 @@ use std::time::Instant;
 use super::*;
 use super::tree::*;
 
+impl MCTS {
+    pub fn search<A: Action, S: GameState<A>>(self,state: S) -> A {
+        search::Search::new(state, &self).driver()
+    }
+}
+
+
 pub struct Search<A: Action ,S: GameState<A>> {
     state: S,
     tree: Tree<A>,

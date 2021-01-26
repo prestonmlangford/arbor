@@ -238,6 +238,7 @@ impl Mancala {
         (self.pit[LB] + self.pit[RB]) == NS as u8
     }
 
+    #[allow(dead_code)]
     fn heuristic(&self) -> f32 {
         let (fb,eb) = match self.side {
             Player::L => (LB,RB),
@@ -320,7 +321,7 @@ impl Display for StateManager {
 }
 
 impl StateManager {
-    fn new(state: Mancala) -> StateManager {
+    fn new() -> StateManager {
         StateManager {
             stack: Vec::new()
         }
@@ -336,8 +337,7 @@ impl StateManager {
     
     #[allow(dead_code)]
     fn load(moves: &[Pit]) -> StateManager {
-        let b = Mancala::new();
-        let mut g = Self::new(b);
+        let mut g = Self::new();
         for m in moves {
             println!("{}",g.cur());
             g.make(*m);
