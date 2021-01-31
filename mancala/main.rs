@@ -425,7 +425,7 @@ fn main() {
                 println!("parse failed");
             }
         } else {
-            let state = gamestate.clone();//PMLFIXME this should only clone the top of the stack for efficiency
+            let state = gamestate.clone();
             let result = 
                 MCTS::new().
                 with_time(Duration::new(10, 0)).
