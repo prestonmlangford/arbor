@@ -4,7 +4,7 @@ impl MCTS {
     pub fn new() -> Self {
         Self {
             time: Duration::new(1, 0),
-            exploration: 2.0,//PMLFIXME make this so it isn't the squared quantity
+            exploration: (2.0 as f32).sqrt(),
             expansion_minimum: 10
         }
     }

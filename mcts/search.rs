@@ -79,10 +79,11 @@ fn uct_policy<A: Action>(
             Node::Leaf(p,q,n) |
             Node::Branch(p,q,n,_) => {
                 let nf32 = n as f32;
-                let k = params.exploration*(np as f32).ln();
+                let c = params.exploration;
+                let k = (np as f32).ln();
                 let s = q/nf32;
                 let v = if p == player {s} else {1.0 - s};
-                let uct = v + (k/nf32).sqrt();
+                let uct = v + c*(k/nf32).sqrt();
                 if uct > best_uct {
                     best_edge = (*a,*u);
                     best_uct = uct;
