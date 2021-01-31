@@ -9,14 +9,14 @@ pub enum Node<A: Action> {
     Branch(f32,u32,Vec<(A,u64)>),
 }
 
-fn uct(qi: f32, ni: u32, np: u32) -> f32 {
+fn uct(qi: f32, ni: u32, np: u32, c: f32) -> f32 {
     
     let nif32 = ni as f32;
     
     debug_assert!(qi >=   0.0, "Improper q value {}/{} ",qi,ni);
     debug_assert!(qi <= nif32, "Improper q value {}/{} ",qi,ni);
     
-    let k = 1.0*(np as f32).ln();
+    let k = c*(np as f32).ln();
     
     1.0 - qi/nif32 + (k/nif32).sqrt()
 }
@@ -31,11 +31,11 @@ impl<A: Action> Node<A> {
         }
     }
     
-    pub fn bounded_uct_score(&self, np: u32) -> f32 {
+    pub fn bounded_uct_score(&self, np: u32, c: f32) -> f32 {
         match self {
             Node::Branch(q,n,_) |
             Node::Leaf(q,n) => {
-                let z = uct(*q,*n,np);
+                let z = uct(*q,*n,np,c);
                 z/(1.0 + z)
                 //z
             },

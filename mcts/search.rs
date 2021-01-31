@@ -4,161 +4,164 @@ use super::tree::*;
 
 impl MCTS {
     pub fn search<A: Action, S: GameState<A>>(self,state: S) -> A {
-        search::Search::new(state, &self).driver()
+        driver(state,&self)
     }
 }
 
-
-pub struct Search<A: Action ,S: GameState<A>> {
-    state: S,
-    tree: Tree<A>,
-    params: MCTS
+fn driver<A: Action, S: GameState<A>>(
+    mut state: S,
+    params: &MCTS
+) -> A {
+    let mut tree = Tree::new();
+    let root = state.hash();
+    tree.set(root, Node::Unexplored);
+    
+    let start = Instant::now();
+    while (Instant::now() - start) < params.time {
+        go(&mut state,&mut tree,params,root);
+    }
+    
+    best(&mut state,&mut tree,root)
 }
 
-
-impl<A: Action,S: GameState<A>> Search<A,S> {
+fn expand<A: Action, S: GameState<A>>(
+    state: &mut S,
+    tree: &mut Tree<A>
+) -> Vec<(A,u64)> {
+    let mut v = Vec::new();
     
-    pub fn new(state: S, params: &MCTS) -> Self {
-        let mut tree = Tree::new(); 
-        let root = Node::Leaf(0.0,0);//PMLFIXME why not unexplored?
+    for action in state.actions() {
+        state.make(action);
         let hash = state.hash();
-        
-        tree.set(hash, root);
-        Search {state,tree,params:*params}
-    }
-
-    fn expand(&mut self) -> Vec<(A,u64)> {
-        let mut v = Vec::new();
-        
-        for action in self.state.actions() {
-            self.state.make(action);
-            let hash = self.state.hash();
-            v.push((action,hash));
-            self.tree.set(hash,Node::Unexplored);
-            self.state.unmake();
-        }
-        debug_assert!(
-            if v.len() != 0 {
-                true
-            } else {
-                false
-            }, "expand did not find any actions for state.");
-        v
+        v.push((action,hash));
+        tree.set(hash,Node::Unexplored);
+        state.unmake();
     }
     
-    fn uct_policy(&self, n: u32, edges: &Vec<(A,u64)>) -> (A,u64) {
+    debug_assert!(
+        if v.len() != 0 {
+            true
+        } else {
+            false
+        }, "expand did not find any actions for state.");
         
-        debug_assert!(n != 0,"UCT policy called with 0 parent value");
+    v
+}    
+
+fn uct_policy<A: Action>(
+    tree: &Tree<A>,
+    params: &MCTS,
+    n: u32,
+    edges: &Vec<(A,u64)>
+) -> (A,u64) {
+    
+    debug_assert!(n != 0,"UCT policy called with 0 parent value");
+    
+    let mut best_edge = (None,0);
+    let mut best_score = -1.0;
+    
+    for (a,u) in edges.iter() {
+        let score = tree.get(*u).bounded_uct_score(n,params.exploration);
         
-        let mut best_edge = (None,0);
-        let mut best_score = -1.0;
-        
-        for (a,u) in edges.iter() {
-            let score = self.tree.get(*u).bounded_uct_score(n);
+        if score > best_score {
+            best_score = score;
+            best_edge = (Some(*a),*u);
+        }
+    }
+    
+    let (action,hash) = best_edge;
+    (action.expect("No best action in UCT policy"),hash)
+}
+
+fn go<A: Action, S: GameState<A>>(
+    state: &mut S,
+    tree: &mut Tree<A>,
+    params: &MCTS,
+    hash: u64
+) -> f32 {
+    match tree.get(hash) {
+        Node::Branch(q,n,e) => {
+            let player = state.player();
+            let (action,child) = uct_policy(tree,params,n,&e);
             
-            if score > best_score {
-                best_score = score;
-                best_edge = (Some(*a),*u);
+            state.make(action);
+            
+            debug_assert!({
+                let next_hash = state.hash();
+                if next_hash == child {
+                    true
+                } else {
+                    println!("{}",state);
+                    false
+                }
+            },"hashes don't match!");
+            
+            let v_next = go(state,tree,params,child);
+            let v = if state.player() == player 
+                {v_next} else {1.0 - v_next};
+
+            state.unmake();
+
+            let update = Node::Branch(q + v,n + 1,e);
+            tree.set(hash, update);
+            v
+        },
+        Node::Leaf(q,n) => {
+            if n > params.expansion_minimum {
+                let e = expand(state,tree);
+                let update = Node::Branch(q,n,e);
+                tree.set(hash, update);
+                go(state,tree,params,hash)
+            } else {
+                let v = state.value();
+                let update = Node::Leaf(q + v,n + 1);
+                tree.set(hash, update);
+                v
             }
-        }
-        
-        let (action,hash) = best_edge;
-        (action.expect("No best action in UCT policy"),hash)
+        },
+        Node::Terminal(q) => q,
+        Node::Unexplored => {
+            let v = state.value();
+            let update = if state.terminal() {
+                Node::Terminal(v)
+            } else {
+                Node::Leaf(v,1)
+            };
+            tree.set(hash, update);
+            v
+        },
     }
-    
-    fn go(&mut self, hash: u64) -> f32 {
-        let node = self.tree.get(hash);
-        match node {
-            Node::Branch(q,n,e) => {
-                let player = self.state.player();
-                let (action,child) = self.uct_policy(n,&e);
-                
-                self.state.make(action);
-                
-                debug_assert!({
-                    let next_hash = self.state.hash();
-                    if next_hash == child {
-                        true
-                    } else {
-                        println!("{}",self.state);
-                        false
-                    }
-                },"hashes don't match!");
-                
-                let score = self.go(child);
-                let value = if self.state.player() == player 
-                    {score} else {1.0 - score};
+}
 
-                self.state.unmake();
-
-                let update = Node::Branch(q + value,n + 1,e);
-                self.tree.set(hash, update);
-                value
-            },
-            Node::Leaf(q,n) => {
-                //PMLFIXME make this threshold an adjustable parameter
-                if n > 10 {
-                    let edges = self.expand();
-                    let update = Node::Branch(q,n,edges);
-                    self.tree.set(hash, update);
-                    self.go(hash)
-                } else {
-                    let score = self.state.value();
-                    let update = Node::Leaf(q + score,n + 1);
-                    self.tree.set(hash, update);
-                    score
-                }
-            },
-            Node::Terminal(q) => q,
-            Node::Unexplored => {
-                let score = self.state.value();
-                let update = if self.state.terminal() {
-                    Node::Terminal(score)
-                } else {
-                    Node::Leaf(score,1)
-                };
-                self.tree.set(hash, update);
-                score
-            },
-        }
-    }
-    
-    fn best(&mut self, hash: u64) -> A {
-        let node = self.tree.get(hash);
-        let ev = node.expected_value();
-        println!("root -> expected value {:0.4}",ev);
-        match node {
-            Node::Branch(_,_,e) => {
-                let mut best_action = None;
-                let mut best_score = -1.0;
-                let player = self.state.player();
-                for (action,child) in e.iter() {
-                    self.state.make(*action);
-                    let q = self.tree.get(*child).expected_value();
-                    let ev = if self.state.player() == player {q} else {1.0 - q};
-                    self.state.unmake();
-                    
-                    println!("{:?} -> {:0.4}",action,ev);
-                    
-                    if ev > best_score {
-                        best_action = Some(*action);
-                        best_score = ev;
-                    }
-                }
+fn best<A: Action, S: GameState<A>>(
+    state: &mut S,
+    tree: &Tree<A>,
+    root: u64
+) -> A {
+    let node = tree.get(root);
+    let v_root = node.expected_value();
+    println!("root -> expected value {:0.4}",v_root);
+    match node {
+        Node::Branch(_,_,e) => {
+            let mut a_best = None;
+            let mut v_best = -1.0;
+            let player = state.player();
+            for (action,child) in e.iter() {
+                state.make(*action);
+                let v_next = tree.get(*child).expected_value();
+                let v = if state.player() == player {v_next} else {1.0 - v_next};
+                state.unmake();
                 
-                best_action.unwrap()
-            },
-            _ => panic!("Called best on non branch node"),
-        }
-    }
-    
-    pub fn driver(&mut self) -> A {
-        let start = Instant::now();
-        let root = self.state.hash();
-        while (Instant::now() - start) < self.params.time {
-            self.go(root);
-        }
-        
-        self.best(root)
+                println!("{:?} -> {:0.4}",action,v);
+                
+                if v > v_best {
+                    a_best = Some(*action);
+                    v_best = v;
+                }
+            }
+            
+            a_best.unwrap()
+        },
+        _ => panic!("Called best on non branch node"),
     }
 }
