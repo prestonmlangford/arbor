@@ -23,3 +23,7 @@ path = "tictactoe/main.rs"
 [[bin]]
 name = "mancala"
 path = "mancala/main.rs"
+
+[[bin]]
+name = "connect4"
+path = "connect4/main.rs"

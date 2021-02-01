@@ -160,7 +160,6 @@ fn best<A: Action>(
 ) -> A {
     match tree.get(root) {
         Node::Branch(player,qr,nr,e) => {
-            println!("root -> {} {}",qr,nr);
             println!("root -> expected value {:0.4}",qr/(nr as f32));
 
             let mut a_best = 
@@ -176,16 +175,12 @@ fn best<A: Action>(
                             return *a;
                         }
                     },
-                    Node::Unexplored => 
-                        debug_assert!(
-                            false,
-                            "Best found unexplored node at root"
-                        ),
+                    Node::Unexplored => (),
                     Node::Leaf(p,q,n) |
                     Node::Branch(p,q,n,_) => {
                         let s = q/(n as f32);
                         let v = if p == player {s} else {1.0 - s};
-                        println!("{} {} {:?} {} {}",p,player,a,q,n);
+                        
                         if v > v_best {
                             a_best = *a;
                             v_best = v;
