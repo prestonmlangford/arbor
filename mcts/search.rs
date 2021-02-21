@@ -180,7 +180,7 @@ fn best<A: Action>(
                     Node::Branch(p,q,n,_) => {
                         let s = q/(n as f32);
                         let v = if p == player {s} else {1.0 - s};
-                        
+                        //println!("{:?} {} {} {} {}",a,p,q,n,v);
                         if v > v_best {
                             a_best = *a;
                             v_best = v;

@@ -27,3 +27,7 @@ path = "mancala/main.rs"
 [[bin]]
 name = "connect4"
 path = "connect4/main.rs"
+
+[[bin]]
+name = "reversi"
+path = "reversi/main.rs"

@@ -162,7 +162,7 @@ impl Connect4 {
             if next.space[i] == Disc::N {
                 next.space[i] = color;
                 let z = ZTABLE[i];
-                next.hash ^= if !next.side {!z} else {z};
+                next.hash ^= if next.side {z} else {!z};
                 next.hash ^= ZTURN;
                 break;
             }
@@ -334,9 +334,9 @@ fn main() {
             
             if let Ok(c) = input.split_whitespace().next().unwrap().parse::<usize>() {
                 if (1 <= c) && (c <= 7) {
-                    let pit = COL[c-1];
-                    println!("{:?}",pit);
-                    gamestate.make(pit);
+                    let col = COL[c-1];
+                    println!("{:?}",col);
+                    gamestate.make(col);
                 } else {
                     println!("validation failed");
                 }
@@ -348,6 +348,7 @@ fn main() {
             let result = 
                 MCTS::new().
                 with_time(Duration::new(10, 0)).
+                with_exploration(2.0).
                 search(state);
             
             println!("{:?}",result);

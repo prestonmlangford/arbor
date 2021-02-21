@@ -18,7 +18,8 @@ impl MCTS {
         self.exploration = exploration;
         self
     }
-    
+
+    //PMLFIXME bounds check expansion minimum
     pub fn with_expansion_minimum(mut self, expansion: u32) -> Self {
         self.expansion_minimum = expansion;
         self
