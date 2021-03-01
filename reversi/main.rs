@@ -10,7 +10,7 @@ use std::time::Duration;
 use mcts::MCTS;
 use mcts::randxorshift::RandXorShift as Rand;
 use rand::seq::SliceRandom;
-use rand::{RngCore,SeedableRng,FromEntropy};
+use rand::FromEntropy;
 
 
 const S: usize = 8;
@@ -136,15 +136,12 @@ lazy_static!{
     static ref ADJ: [u64; N] = {
         let mut result = [0;N];
         for i in 0..N {
-            print!("{:o}: ",i);
             let space = 1u64 << i;
             for d in DIRECTIONS.iter() {
                 if let Some(next) = space.go(*d) {
-                    print!("{:o} ",next.trailing_zeros());
                     result[i] |= next;
                 }
             }
-            println!("");
         }
         result
     };
@@ -188,11 +185,14 @@ impl Display for Reversi {
         }
 
         moves &= !(self.f | self.e);
-
+        let fp = self.f.count_ones();
+        let ep = self.e.count_ones();
+        let (w,b) = if self.side == Disc::W {(fp,ep)} else {(ep,fp)};
+        
         let mut result = String::new();
-        result.push_str("            ");
         result.push_str(if self.side == Disc::W {"White"} else {"Black"});
         result.push_str(" Turn\n");
+        result.push_str(&format!("White: {}, Black: {}\n",w,b));
         result.push_str(rowsep);
         
         let (white,black) = if self.side == Disc::W {(self.f,self.e)} else {(self.e,self.f)};
@@ -209,7 +209,7 @@ impl Display for Reversi {
                     } else if moves.has(space){
                         "x"
                     } else {
-                        "-"
+                        " "
                     };
                 result.push_str(&format!("| {} ",piece));
             }
@@ -322,7 +322,6 @@ impl Reversi {
 
     fn get_move(&self, row: u64, col: u64) -> Option<Move>
     {
-        println!("get_move {} {}",row,col);
         let space = 1u64 << ((row << 3) + col);
         for m in &self.actions {
             if let Move::Capture(c) = m {
@@ -478,11 +477,10 @@ fn main() {
             let state = gamestate.clone();
             let result = 
                 MCTS::new().
-                with_time(Duration::new(3, 0)).
+                with_time(Duration::new(10, 0)).
                 with_exploration(2.0).
                 search(state);
             
-            println!("{:?}",result);
             gamestate.make(result);
         }
         
