@@ -23,6 +23,14 @@
         {
             "type": "lldb",
             "request": "launch",
+            "name": "target/debug/reversi",
+            "program": "${workspaceFolder}/target/debug/reversi",
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
             "name": "Debug unit tests in library 'mcts'",
             "cargo": {
                 "args": [

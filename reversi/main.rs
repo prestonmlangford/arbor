@@ -17,22 +17,18 @@ const S: usize = 8;
 const N: usize = S*S;
 
 
-lazy_static!{
-    static ref ZTABLE: [u64;N] = {
-        let mut table = [0;N];
-        let mut rand = Rand::from_seed([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]);
-        for entry in table.iter_mut() {
-            *entry = rand.next_u64();
-        }
-        table
-    };
-}
-const ZTURN: u64 = 0x123456789ABCDEF0;
-
-type BB = u64;
-
 #[derive(Debug,Copy,Clone,PartialEq)]
 enum Disc {N,W,B}
+
+impl Disc {
+    fn other(&self) -> Self {
+        match *self {
+            Disc::W => Disc::B,
+            Disc::B => Disc::W,
+            Disc::N => Disc::N,
+        }
+    }
+}
 
 impl Display for Disc {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -44,52 +40,77 @@ impl Display for Disc {
     }
 }
 
-enum Direction {North,South,East,West,NorthWest,NorthEast,SouthWest,SouthEast}
-
 #[derive(Debug,Copy,Clone)]
+enum Move {Pass,Capture(u64)}
+#[derive(Copy,Clone)]
+enum Direction {North,South,East,West,NorthWest,NorthEast,SouthWest,SouthEast}
+use Direction::*;
+const DIRECTIONS: [Direction;8] = [North,South,East,West,NorthWest,NorthEast,SouthWest,SouthEast];
+
+#[derive(Debug,Clone)]
 struct Reversi {
-    white: BB,
-    black: BB,
+    f: u64,
+    e: u64,
+    pass: bool,
     gameover: bool,
-    side: bool,
+    side: Disc,
     winner: Disc,
     hash: u64,
+    actions: Vec<Move>,
 }
 
-pub trait BitBoard {
-    fn set(&mut self,space: BB);
-    fn clr(&mut self,space: BB);
-    fn has(&self,space: BB) -> bool;
-    fn go(&self, direction: Direction) -> Option<BB>;
+trait BitBoard {
+    fn set(&self,space: u64) -> u64;
+    fn clr(&self,space: u64) -> u64;
+    fn has(&self,space: u64) -> bool;
+    fn go(&self, direction: Direction) -> Option<u64>;
     fn coordinate(&self) -> (usize,usize);
-    fn space(row: usize, col: usize) -> BB;
+    fn space(row: usize, col: usize) -> u64;
+    fn iter(&self) -> IterBB;
 }
-const NORTHBOUND: BB = 0xFF00000000000000u64;
-const SOUTHBOUND: BB = 0x00000000000000FFu64;
-const EASTBOUND: BB  = 0x1010101010101010u64;
-const WESTBOUND: BB  = 0x0101010101010101u64;
+const NORTHBOUND: u64 = 0xFF00000000000000u64;
+const SOUTHBOUND: u64 = 0x00000000000000FFu64;
+const EASTBOUND: u64  = 0x8080808080808080u64;
+const WESTBOUND: u64  = 0x0101010101010101u64;
 
+pub struct IterBB {
+    bits: u64,
+}
 
-impl BitBoard for BB {
+impl <'a> Iterator for IterBB {
+    type Item = u64;
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.bits != 0 {
+            let lowest = self.bits & (!self.bits + 1);
+            let tz = lowest.trailing_zeros();
+            self.bits ^= lowest;
+            Some(tz as u64)
+        } else {
+            None
+        }
+    }
+}
+
+impl BitBoard for u64 {
     #[inline]
-    fn set(&mut self, space: BB){*self |= space;}
+    fn set(&self, space: u64) -> u64 {*self | space}
     
     #[inline]
-    fn clr(&mut self, space: BB){*self &= !space;}
+    fn clr(&self, space: u64) -> u64 {*self & !space}
 
     #[inline]
-    fn has(&self, space: BB) -> bool {(*self & space) != 0}
+    fn has(&self, space: u64) -> bool {(*self & space) != 0}
 
     fn go(&self, direction: Direction) -> Option<Self> {
         match direction {
-            Direction::North => if NORTHBOUND.has(*self){None} else {Some(*self >> 8)},
-            Direction::East => if EASTBOUND.has(*self){None} else {Some(*self >> 1)},
-            Direction::NorthWest => if (NORTHBOUND | WESTBOUND).has(*self){None} else {Some(*self >> 7)},
-            Direction::NorthEast => if (NORTHBOUND | EASTBOUND).has(*self){None} else {Some(*self >> 9)},
-            Direction::South => if SOUTHBOUND.has(*self){None} else {Some(*self << 8)},
-            Direction::West => if WESTBOUND.has(*self){None} else {Some(*self << 1)},
-            Direction::SouthEast => if (SOUTHBOUND | WESTBOUND).has(*self){None} else {Some(*self << 9)},
-            Direction::SouthWest => if (SOUTHBOUND | EASTBOUND).has(*self){None} else {Some(*self << 7)},
+            North => if NORTHBOUND.has(*self){None} else {Some(*self << 8)},
+            East => if EASTBOUND.has(*self){None} else {Some(*self << 1)},
+            NorthWest => if (NORTHBOUND | WESTBOUND).has(*self){None} else {Some(*self << 7)},
+            NorthEast => if (NORTHBOUND | EASTBOUND).has(*self){None} else {Some(*self << 9)},
+            South => if SOUTHBOUND.has(*self){None} else {Some(*self >> 8)},
+            West => if WESTBOUND.has(*self){None} else {Some(*self >> 1)},
+            SouthEast => if (SOUTHBOUND | EASTBOUND).has(*self){None} else {Some(*self >> 7)},
+            SouthWest => if (SOUTHBOUND | WESTBOUND).has(*self){None} else {Some(*self >> 9)},
         }
     }
 
@@ -100,20 +121,35 @@ impl BitBoard for BB {
         (row,col)
     }
 
-    fn space(row: usize, col: usize) -> BB {
+    fn space(row: usize, col: usize) -> u64 {
         1u64 << ((row << 3) | col)
+    }
+
+    fn iter(&self) -> IterBB {
+        IterBB {
+            bits: *self,
+        }
     }
 }
 
-const NEWGAME: Reversi = 
-    Reversi {
-        white: 0o43 | 0o34,
-        black: 0o33 | 0o44,
-        gameover: false,
-        side: true,
-        winner: Disc::N,
-        hash: 0,
+lazy_static!{
+    static ref ADJ: [u64; N] = {
+        let mut result = [0;N];
+        for i in 0..N {
+            print!("{:o}: ",i);
+            let space = 1u64 << i;
+            for d in DIRECTIONS.iter() {
+                if let Some(next) = space.go(*d) {
+                    print!("{:o} ",next.trailing_zeros());
+                    result[i] |= next;
+                }
+            }
+            println!("");
+        }
+        result
     };
+}
+
 
 impl Display for Reversi {
 
@@ -144,23 +180,36 @@ impl Display for Reversi {
         let colnum = "    0   1   2   3   4   5   6   7\n";
         let rowsep = "  ---------------------------------\n";
 
+        let mut moves = 0;
+        for m in &self.actions {
+            if let Move::Capture(c) = m {
+                moves |= c;
+            }
+        }
+
+        moves &= !(self.f | self.e);
+
         let mut result = String::new();
         result.push_str("            ");
-        result.push_str(if self.side {"White"} else {"Black"});
+        result.push_str(if self.side == Disc::W {"White"} else {"Black"});
         result.push_str(" Turn\n");
         result.push_str(rowsep);
         
+        let (white,black) = if self.side == Disc::W {(self.f,self.e)} else {(self.e,self.f)};
+
         for h in 0..S {
-            result.push_str(&format!("{} ",h));
+            result.push_str(&format!("{} ",7-h));
             for w in 0..S {
-                let space = BB::space(7 - h, w);
+                let space = u64::space(7 - h, w);
                 let piece = 
-                    if self.white.has(space) {
-                        Disc::W
-                    } else if self.black.has(space) {
-                        Disc::B
+                    if white.has(space) {
+                        "W"
+                    } else if black.has(space) {
+                        "B"
+                    } else if moves.has(space){
+                        "x"
                     } else {
-                        Disc::N
+                        "-"
                     };
                 result.push_str(&format!("| {} ",piece));
             }
@@ -175,64 +224,118 @@ impl Display for Reversi {
     }
 }
 
+fn sandwich(f: u64, e: u64, space: u64, direction: Direction) -> u64 {
+    if let Some(next) = space.go(direction){
+        if f.has(next) && e.has(space) {
+            return space
+        }
+        else if e.has(next) {
+            let capture = sandwich(f,e,next,direction);
+            if capture != 0 {
+                return capture | space
+            }
+        }
+    }
+    0
+}
+
+fn reversi_hash(mut f: u64, mut e: u64) -> u64 {
+    let mut result = 0;
+    for _ in 0..10 {
+        f = f.rotate_right(23);
+        e = e.rotate_right(37);
+        result ^= f ^ e;
+    }
+    result
+}
+
 impl Reversi {
     fn new() -> Self {
-        NEWGAME
+        Reversi {
+            f: (1 << 0o43) | (1 << 0o34),
+            e: (1 << 0o33) | (1 << 0o44),
+            pass: false,
+            gameover: false,
+            side: Disc::W,
+            winner: Disc::N,
+            hash: 0,
+            actions: vec!(
+                Move::Capture((1 << 0o54)|(1 << 0o44)),
+                Move::Capture((1 << 0o45)|(1 << 0o44)),
+                Move::Capture((1 << 0o32)|(1 << 0o33)),
+                Move::Capture((1 << 0o23)|(1 << 0o33))
+            ),
+        }
     }
     
-    fn sandwich(&self,f: u64, e: u64, space: BB, direction: Direction) -> BB {
-        if let Some(next) = space.go(direction){
-            if f.has(next) && e.has(space) {
-                return space
+    
+
+    fn make(&self,m: Move) -> Self {
+        let capture = match m {
+            Move::Pass => 0,
+            Move::Capture(u) => u
+        };
+        let e = self.f.set(capture);
+        let f = self.e.clr(capture);
+        let d = f.count_ones() as i32 - e.count_ones() as i32;
+        let side = self.side.other();
+        let winner = if d > 0 {side} else if d < 0 {side.other()} else {Disc::N};
+        let hash = reversi_hash(f, e);
+        let mut actions = Vec::new();
+        let mut adj = 0;
+        for idx in e.iter() {
+            let a = ADJ[idx as usize];
+            adj |= a;
+        }
+        adj &= !(f | e);
+        for idx in adj.iter() {
+            let mut c = 0;
+            for direction in DIRECTIONS.iter() {
+                c |= sandwich(f, e, 1 << idx, *direction);
             }
-            else if e.has(next) {
-                let capture = self.sandwich(f,e,next,direction);
-                if capture != 0 {
-                    return capture | space
+            if c != 0 {
+                actions.push(Move::Capture(c))
+            }
+        }
+
+        let pass = actions.len() == 0;
+
+        let gameover = pass && self.pass;
+
+        let next = Reversi {
+            e,
+            f,
+            pass,
+            gameover,
+            side,
+            winner,
+            hash,
+            actions
+        };
+
+        if pass && !gameover {
+            next.make(Move::Pass)
+        } else {
+            next
+        }
+    }
+
+    fn get_move(&self, row: u64, col: u64) -> Option<Move>
+    {
+        println!("get_move {} {}",row,col);
+        let space = 1u64 << ((row << 3) + col);
+        for m in &self.actions {
+            if let Move::Capture(c) = m {
+                if c.has(space) && !self.f.has(space) && !self.e.has(space) {
+                    return Some(*m);
                 }
             }
         }
-        0
+        None
     }
-
-    fn make(&self,space: BB) -> Self {
-        assert!(!self.white.has(space),"make called with invalid space {:?}\n{}", space.coordinate(),*self);
-        assert!(!self.black.has(space),"make called with invalid space {:?}\n{}", space.coordinate(),*self);
-        
-        let mut next = *self;
-        let (f,e) = if next.side {(self.white,self.black)} else {(self.black,self.white)};
-        
-        let capture = 
-            self.sandwich(f,e,space,Direction::North)|
-            self.sandwich(f,e,space,Direction::East)|
-            self.sandwich(f,e,space,Direction::NorthWest)|
-            self.sandwich(f,e,space,Direction::NorthEast)|
-            self.sandwich(f,e,space,Direction::South)|
-            self.sandwich(f,e,space,Direction::West)|
-            self.sandwich(f,e,space,Direction::SouthEast)|
-            self.sandwich(f,e,space,Direction::SouthWest);
-        
-        assert!(capture != 0,"make called with invalid space {:?}\n{}",space.coordinate(),*self);
-
-        next.side = !self.side;
-        next
-    }
-    
-    fn actions(&self) -> Vec<Space> {
-        let mut result = Vec::new();
-        
-        for space in 0..N {
-            if !self.white.has(space) && !self.black.has(space) {
-                result.push(space);
-            }
-        }
-        
-        result
-    }
-    
     
     fn rollout(&self) -> Disc {
-        let mut sim = *self;
+        let mut sim = self.clone();
         let mut rand = Rand::from_entropy();
         
         loop {
@@ -240,8 +343,8 @@ impl Reversi {
                 break;
             }
             
-            if let Some(&c) = sim.actions().choose(&mut rand) {
-                sim = sim.make(c);
+            if let Some(&capture) = sim.actions.choose(&mut rand) {
+                sim = sim.make(capture);
             } else {
                 println!("{}",sim);
                 panic!("Expected to find a legal move");
@@ -255,12 +358,13 @@ impl Reversi {
 
 #[derive(Debug,Clone)]
 struct StateManager {
-    stack: Vec<(Column,Connect4)>,
+    base: Reversi,
+    stack: Vec<(Move,Reversi)>,
 }
 
 impl Display for StateManager {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut s = format!("--- StateManager Stack ---{}--------------------------\n",Connect4::new());
+        let mut s = format!("--- StateManager Stack ---{}--------------------------\n",Reversi::new());
         
         for (action,state) in self.stack.iter() {
             s.push_str(&format!("{:?}{}{}\n--------------------------\n",action,state,state.hash));
@@ -273,20 +377,21 @@ impl Display for StateManager {
 impl StateManager {
     fn new() -> StateManager {
         StateManager {
+            base: Reversi::new(),
             stack: Vec::new()
         }
     }
     
-    fn cur(&self) -> &Connect4 {
+    fn cur(&self) -> &Reversi {
         if let Some((_,state)) = self.stack.last() {
             state
         } else {
-            &NEWGAME
+            &self.base
         }
     }
     
     #[allow(dead_code)]
-    fn load(moves: &[Column]) -> StateManager {
+    fn load(moves: &[Move]) -> StateManager {
         let mut g = Self::new();
         for m in moves {
             println!("{}",g.cur());
@@ -298,24 +403,24 @@ impl StateManager {
 }
 
 
-impl mcts::Action for Column {}
+impl mcts::Action for Move {}
 
-impl mcts::GameState<Column> for StateManager {
+impl mcts::GameState<Move> for StateManager {
     fn value(&self) -> f32 {
-        let side = if self.cur().side {1.0} else {0.0};
+        let side = if self.cur().side == Disc::W {1.0} else {0.0};
         let result = self.cur().rollout();
         match result {
-            Disc::R => side,
-            Disc::Y => 1.0 - side,
+            Disc::W => side,
+            Disc::B => 1.0 - side,
             Disc::N => 0.5,
         }
     }
     
-    fn actions(&self) -> Vec<Column> {
-        self.cur().actions()
+    fn actions(&self) -> Vec<Move> {
+        self.cur().actions.clone()
     }
     
-    fn make(&mut self,action: Column) {
+    fn make(&mut self,action: Move) {
         let next = self.cur().make(action);
         self.stack.push((action,next));
     }
@@ -333,7 +438,7 @@ impl mcts::GameState<Column> for StateManager {
     }
 
     fn player(&self) -> u32 {
-        if self.cur().side {1} else {2}
+        if self.cur().side == Disc::W {1} else {2}
     }
 }
 
@@ -347,7 +452,7 @@ fn main() {
     let mut gamestate = StateManager::load(&game);
     
     loop {
-        if !gamestate.cur().side {
+        if gamestate.cur().side == Disc::W {
             print!("=> ");
             //flushes standard out so the print statements are actually displayed
             io::stdout().flush().unwrap();
@@ -358,11 +463,11 @@ fn main() {
                 continue;
             }
             
-            if let Ok(c) = input.split_whitespace().next().unwrap().parse::<usize>() {
-                if (1 <= c) && (c <= 7) {
-                    let col = COL[c-1];
-                    println!("{:?}",col);
-                    gamestate.make(col);
+            if let Ok(oct) = input.split_whitespace().next().unwrap().parse::<u64>() {
+                let row = oct / 10;
+                let col = oct % 10;
+                if let Some(m) = gamestate.cur().get_move(row, col) {
+                    gamestate.make(m);
                 } else {
                     println!("validation failed");
                 }
@@ -373,7 +478,7 @@ fn main() {
             let state = gamestate.clone();
             let result = 
                 MCTS::new().
-                with_time(Duration::new(10, 0)).
+                with_time(Duration::new(3, 0)).
                 with_exploration(2.0).
                 search(state);
             
