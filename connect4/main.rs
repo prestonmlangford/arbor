@@ -89,6 +89,12 @@ impl Display for Connect4 {
         }
         result.push_str("-\n");
         
+        for c in 0..W {
+            result.push_str(&format!("  {} ",c + 1))
+        }
+        result.push_str(" \n");
+        
+        
         
         write!(f,"{}",result)
     }
@@ -178,16 +184,8 @@ impl Connect4 {
         
         let full = next.actions().len() == 0;
         
-        if win {
-            next.gameover = true;
-            next.winner = color;
-        } else if full {
-            next.gameover = true;
-            next.winner = Disc::N;
-        } else {
-            next.gameover = false;
-            next.winner = Disc::N;
-        }
+        next.gameover = win || full;
+        next.winner = if win {color} else {Disc::N};
         
         next
     }
@@ -347,7 +345,7 @@ fn main() {
             let state = gamestate.clone();
             let result = 
                 MCTS::new().
-                with_time(Duration::new(10, 0)).
+                with_time(Duration::new(3, 0)).
                 with_exploration(2.0).
                 search(state);
             
@@ -361,6 +359,12 @@ fn main() {
         
         if gamestate.cur().gameover {
             println!("gameover!");
+            let winner = gamestate.cur().winner;
+            match winner {
+                Disc::R => println!("Red wins"),
+                Disc::Y => println!("Yellow wins"),
+                Disc::N => println!("Stalemate"),
+            }
             break;
         }
     }

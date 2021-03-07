@@ -444,7 +444,7 @@ impl mcts::GameState<Move> for StateManager {
 use mcts::GameState;
 
 fn main() {
-    println!("Connect 4!");
+    println!("Reversi!");
 
     let game = [];
 
