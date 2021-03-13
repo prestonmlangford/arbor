@@ -18,8 +18,8 @@ const H: usize = 6;
 
 
 lazy_static!{
-    static ref ZTABLE: [u64;W*H] = {
-        let mut table = [0;W*H];
+    static ref ZTABLE: [u64;2*W*H] = {
+        let mut table = [0;2*W*H];
         let mut rand = Rand::from_seed([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]);
         for entry in table.iter_mut() {
             *entry = rand.next_u64();
@@ -167,8 +167,7 @@ impl Connect4 {
             let i = row*W + column;
             if next.space[i] == Disc::N {
                 next.space[i] = color;
-                let z = ZTABLE[i];
-                next.hash ^= if next.side {z} else {!z};
+                next.hash ^= if next.side {ZTABLE[i]} else {ZTABLE[2*i]};
                 next.hash ^= ZTURN;
                 break;
             }
@@ -346,7 +345,6 @@ fn main() {
             let result = 
                 MCTS::new().
                 with_time(Duration::new(3, 0)).
-                with_exploration(2.0).
                 search(state);
             
             println!("{:?}",result);

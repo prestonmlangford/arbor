@@ -103,7 +103,7 @@ fn go<A: Action, S: GameState<A>>(
 ) -> f32 {
     match tree.get(hash) {
         Node::Branch(p,q,n,e) => {
-            
+
             let (action,child) = uct_policy(tree,params,n,&e,p);
             
             state.make(action);
@@ -180,7 +180,7 @@ fn best<A: Action>(
                     Node::Branch(p,q,n,_) => {
                         let s = q/(n as f32);
                         let v = if p == player {s} else {1.0 - s};
-                        //println!("{:?} {} {} {} {}",a,p,q,n,v);
+                        //println!("{:?} {} {:>8.1} {:>6} {:<6.5}",a,p,q,n,v);
                         if v > v_best {
                             a_best = *a;
                             v_best = v;

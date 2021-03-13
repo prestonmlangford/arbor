@@ -74,6 +74,7 @@ impl Display for Mancala {
 |{:2}|--|--|--|--|--|--|{:2}|
 |  |{:2}|{:2}|{:2}|{:2}|{:2}|{:2}|  |
 -------------------------
+     1  2  3  4  5  6
 ",
             if self.side == Player::L {"Left Player"} else {"Right Player"},
             self.pit[L6 as usize],self.pit[L5 as usize],self.pit[L4 as usize],self.pit[L3 as usize],self.pit[L2 as usize],self.pit[L1 as usize],
@@ -428,7 +429,7 @@ fn main() {
             let state = gamestate.clone();
             let result = 
                 MCTS::new().
-                with_time(Duration::new(10, 0)).
+                with_time(Duration::new(3, 0)).
                 search(state);
             
             println!("{:?}",result);
