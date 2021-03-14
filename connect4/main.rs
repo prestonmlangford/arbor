@@ -167,7 +167,7 @@ impl Connect4 {
             let i = row*W + column;
             if next.space[i] == Disc::N {
                 next.space[i] = color;
-                next.hash ^= if next.side {ZTABLE[i]} else {ZTABLE[2*i]};
+                next.hash ^= if next.side {ZTABLE[i]} else {ZTABLE[i + W*H]};
                 next.hash ^= ZTURN;
                 break;
             }
