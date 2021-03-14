@@ -1,5 +1,5 @@
 
-pub mod randxorshift;
+
 mod tree;
 mod search;
 mod builder;

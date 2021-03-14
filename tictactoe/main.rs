@@ -1,12 +1,14 @@
 extern crate mcts;
+extern crate rand_xorshift;
+
+
 use std::fmt::Display;
 use std::fmt;
 
 use mcts::MCTS;
-use mcts::randxorshift::RandXorShift as Rand;
 use std::time::Duration;
-use rand::{Rng,FromEntropy};
-
+use rand_xorshift::XorShiftRng as Rand;
+use rand::{Rng,SeedableRng};
 
 #[derive(Copy,Clone,PartialEq,Debug)]
 enum Mark {N,X,O}
@@ -142,7 +144,7 @@ impl TicTacToe {
             let mut moves: Vec<&Move> = ALLMOVES.iter().collect();
         
             while moves.len() > 0 {
-                let r = rand.gen_range(0,moves.len());
+                let r = rand.gen_range(0..moves.len());
                 let m = *moves[r];
                 if state.space[m as usize] == Mark::N {
                     return Some(m);

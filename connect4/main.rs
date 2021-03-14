@@ -1,6 +1,9 @@
 #[macro_use]
 extern crate lazy_static;
 extern crate mcts;
+extern crate rand;
+extern crate rand_xorshift;
+
 
 use std::io;
 use std::io::prelude::*;
@@ -8,10 +11,9 @@ use std::fmt::Display;
 use std::fmt;
 use std::time::Duration;
 use mcts::MCTS;
-use mcts::randxorshift::RandXorShift as Rand;
+use rand_xorshift::XorShiftRng as Rand;
 use rand::seq::SliceRandom;
-use rand::{RngCore,SeedableRng,FromEntropy};
-
+use rand::{RngCore,SeedableRng};
 
 const W: usize = 7;
 const H: usize = 6;
@@ -20,7 +22,8 @@ const H: usize = 6;
 lazy_static!{
     static ref ZTABLE: [u64;2*W*H] = {
         let mut table = [0;2*W*H];
-        let mut rand = Rand::from_seed([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]);
+        let seed = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16];
+        let mut rand = Rand::from_seed(seed);
         for entry in table.iter_mut() {
             *entry = rand.next_u64();
         }

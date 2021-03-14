@@ -1,6 +1,8 @@
 #[macro_use]
 extern crate lazy_static;
 extern crate mcts;
+extern crate rand_xorshift;
+
 
 use std::io;
 use std::io::prelude::*;
@@ -9,9 +11,9 @@ use std::fmt;
 use std::time::Duration;
 
 use mcts::MCTS;
-use mcts::randxorshift::RandXorShift as Rand;
+use rand_xorshift::XorShiftRng as Rand;
 use rand::seq::SliceRandom;
-use rand::{RngCore,SeedableRng,FromEntropy};
+use rand::{RngCore,SeedableRng};
 
 #[derive(Copy,Clone,PartialEq,Debug)]
 enum Player {L,R}
