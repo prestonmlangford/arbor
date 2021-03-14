@@ -2,7 +2,7 @@
 name = "arbor"
 version = "0.1.0"
 authors = ["prestonmlangford <prestonmlangford@gmail.com>"]
-edition = "2021"
+edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -13,8 +13,8 @@ lazy_static = "1.4.0"
 rand_xorshift = "0.3.0"
 
 [lib]
-name = "mcts"
-path = "mcts/lib.rs"
+name = "arbor"
+path = "arbor/lib.rs"
 
 [[bin]]
 name = "tictactoe"

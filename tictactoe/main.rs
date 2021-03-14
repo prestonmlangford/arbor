@@ -1,11 +1,11 @@
-extern crate mcts;
+extern crate arbor;
 extern crate rand_xorshift;
 
 
 use std::fmt::Display;
 use std::fmt;
 
-use mcts::MCTS;
+use arbor::MCTS;
 use std::time::Duration;
 use rand_xorshift::XorShiftRng as Rand;
 use rand::{Rng,SeedableRng};
@@ -201,7 +201,7 @@ impl StateManager {
     
     #[allow(dead_code)]
     fn load(moves: &[Move]) -> StateManager {
-        use mcts::GameState;
+        use arbor::GameState;
         let b = TicTacToe::new();
         let mut g = Self::new(b);
         for m in moves {
@@ -214,9 +214,9 @@ impl StateManager {
 }
 
 
-impl mcts::Action for Move {}
+impl arbor::Action for Move {}
 
-impl mcts::GameState<Move> for StateManager {
+impl arbor::GameState<Move> for StateManager {
     fn value(&self) -> f32 {
         let c = self.cur();
         

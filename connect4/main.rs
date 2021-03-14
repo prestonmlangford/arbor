@@ -1,6 +1,6 @@
 #[macro_use]
 extern crate lazy_static;
-extern crate mcts;
+extern crate arbor;
 extern crate rand;
 extern crate rand_xorshift;
 
@@ -10,7 +10,7 @@ use std::io::prelude::*;
 use std::fmt::Display;
 use std::fmt;
 use std::time::Duration;
-use mcts::MCTS;
+use arbor::MCTS;
 use rand_xorshift::XorShiftRng as Rand;
 use rand::seq::SliceRandom;
 use rand::{RngCore,SeedableRng};
@@ -272,9 +272,9 @@ impl StateManager {
 }
 
 
-impl mcts::Action for Column {}
+impl arbor::Action for Column {}
 
-impl mcts::GameState<Column> for StateManager {
+impl arbor::GameState<Column> for StateManager {
     fn value(&self) -> f32 {
         let side = if self.cur().side {1.0} else {0.0};
         let result = self.cur().rollout();
@@ -311,7 +311,7 @@ impl mcts::GameState<Column> for StateManager {
     }
 }
 
-use mcts::GameState;
+use arbor::GameState;
 
 fn main() {
     println!("Connect 4!");

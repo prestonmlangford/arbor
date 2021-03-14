@@ -1,6 +1,6 @@
 #[macro_use]
 extern crate lazy_static;
-extern crate mcts;
+extern crate arbor;
 extern crate rand_xorshift;
 
 
@@ -10,7 +10,7 @@ use std::fmt::Display;
 use std::fmt;
 use std::time::Duration;
 
-use mcts::MCTS;
+use arbor::MCTS;
 use rand_xorshift::XorShiftRng as Rand;
 use rand::seq::SliceRandom;
 use rand::{RngCore,SeedableRng};
@@ -350,9 +350,9 @@ impl StateManager {
     }
 }
 
-impl mcts::Action for Pit {}
+impl arbor::Action for Pit {}
 
-impl mcts::GameState<Pit> for StateManager {
+impl arbor::GameState<Pit> for StateManager {
     fn value(&self) -> f32 {
         let side = if self.cur().side == Player::L {1.0} else {0.0};
         if let Some(winner) = 
@@ -395,7 +395,7 @@ impl mcts::GameState<Pit> for StateManager {
         self.cur().side as u32
     }
 }
-use mcts::GameState;
+use arbor::GameState;
 
 fn main() {
     println!("Mancala!");

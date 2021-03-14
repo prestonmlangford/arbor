@@ -1,5 +1,5 @@
 use super::*;
-use mcts::MCTS;
+use arbor::MCTS;
 use std::time::Duration;
 
 fn best(moves: &[Move]) -> Move {

@@ -1,6 +1,6 @@
 #[macro_use]
 extern crate lazy_static;
-extern crate mcts;
+extern crate arbor;
 extern crate rand_xorshift;
 
 use std::io;
@@ -8,7 +8,7 @@ use std::io::prelude::*;
 use std::fmt::Display;
 use std::fmt;
 use std::time::Duration;
-use mcts::MCTS;
+use arbor::MCTS;
 use rand_xorshift::XorShiftRng as Rand;
 use rand::seq::SliceRandom;
 use rand::SeedableRng;
@@ -403,9 +403,9 @@ impl StateManager {
 }
 
 
-impl mcts::Action for Move {}
+impl arbor::Action for Move {}
 
-impl mcts::GameState<Move> for StateManager {
+impl arbor::GameState<Move> for StateManager {
     fn value(&self) -> f32 {
         let side = if self.cur().side == Disc::W {1.0} else {0.0};
         let result = self.cur().rollout();
@@ -442,7 +442,7 @@ impl mcts::GameState<Move> for StateManager {
     }
 }
 
-use mcts::GameState;
+use arbor::GameState;
 
 fn main() {
     println!("Reversi!");
