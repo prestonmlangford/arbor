@@ -1,4 +1,4 @@
-//! This library provides a generic interface to the Monte Carlo Tree Search (MCTS) algorithm. It can be used as a general game playing agent for two-player board games. A single threaded process is used, and the user may implement leaf or tree parallelization as desired.
+//! This library provides a generic interface to the Monte Carlo Tree Search (MCTS) algorithm. It can be used as a general game playing agent for two-player board games. A single threaded process is used, and the user may implement leaf or tree parallelization as required.
 
 mod tree;
 mod search;
@@ -7,7 +7,7 @@ use std::fmt::Debug;
 use std::fmt::Display;
 use std::time::Duration;
 
-///This trait describes an allowed move from a playing position. Limit the size of this type and prefer a contiguous memory layout for best performance (e.g. enum, integer). 
+///This trait describes an allowed move for a game state. This type is passed to the "make" function to advance the game state. The algorithm keeps track of all allowed actions for each game state that is visited. Limit the size of this type and prefer a contiguous memory layout for best performance (e.g. enum, integer). 
 pub trait Action: Copy + Clone + Debug {}
 
 ///This trait describes the current state of the game from which to begin searching for the best move.
@@ -37,7 +37,7 @@ pub trait GameState<A: Action>: Debug + Display {
     fn player(&self) -> u32;
 }
 
-///This struct provides a builder pattern to set the parameters for the search.
+///This struct provides methods to control the search performance.
 #[derive(Copy,Clone,Debug)]
 pub struct MCTS {
     pub time: Duration,

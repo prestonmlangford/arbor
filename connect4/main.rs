@@ -10,7 +10,7 @@ use std::io::prelude::*;
 use std::fmt::Display;
 use std::fmt;
 use std::time::Duration;
-use arbor::MCTS;
+use arbor::*;
 use rand_xorshift::XorShiftRng as Rand;
 use rand::seq::SliceRandom;
 use rand::{RngCore,SeedableRng};
@@ -272,9 +272,9 @@ impl StateManager {
 }
 
 
-impl arbor::Action for Column {}
+impl Action for Column {}
 
-impl arbor::GameState<Column> for StateManager {
+impl GameState<Column> for StateManager {
     fn value(&self) -> f32 {
         let side = if self.cur().side {1.0} else {0.0};
         let result = self.cur().rollout();
@@ -311,7 +311,7 @@ impl arbor::GameState<Column> for StateManager {
     }
 }
 
-use arbor::GameState;
+use GameState;
 
 fn main() {
     println!("Connect 4!");

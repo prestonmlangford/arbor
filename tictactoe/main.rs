@@ -5,7 +5,7 @@ extern crate rand_xorshift;
 use std::fmt::Display;
 use std::fmt;
 
-use arbor::MCTS;
+use arbor::*;
 use std::time::Duration;
 use rand_xorshift::XorShiftRng as Rand;
 use rand::{Rng,SeedableRng};
@@ -24,14 +24,14 @@ impl Display for Mark {
 }
 
 #[derive(Copy,Clone,Debug, PartialEq)]
-enum Move {
-    TL = 0,TM = 1,TR = 2,
-    ML = 3,MM = 4,MR = 5,
-    BL = 6,BM = 7,BR = 8
+enum Grid {
+    TL,TM,TR,
+    ML,MM,MR,
+    BL,BM,BR
 }
 
-use Move::*;
-static ALLMOVES: [Move;9] = [
+use Grid::*;
+static ALLMOVES: [Grid;9] = [
     TL,TM,TR,
     ML,MM,MR,
     BL,BM,BR
@@ -105,7 +105,7 @@ impl TicTacToe {
         (self.turn == 9) || (self.winner() != Mark::N)
     }
 
-    fn make(&self, m: Move) -> Option<Self> {
+    fn make(&self, m: Grid) -> Option<Self> {
         if self.gameover() {
             return None;
         }
@@ -126,7 +126,7 @@ impl TicTacToe {
         Some(next)
     }
 
-    fn legal_moves(&self) -> Vec<Move> {
+    fn legal_moves(&self) -> Vec<Grid> {
         let mut result = Vec::new();
         if self.gameover() {
             return result;
@@ -140,8 +140,8 @@ impl TicTacToe {
     }
 
     fn rollout(&self) -> Mark {
-        fn rmove(state: &TicTacToe, rand: &mut impl Rng) -> Option<Move> {
-            let mut moves: Vec<&Move> = ALLMOVES.iter().collect();
+        fn rmove(state: &TicTacToe, rand: &mut impl Rng) -> Option<Grid> {
+            let mut moves: Vec<&Grid> = ALLMOVES.iter().collect();
         
             while moves.len() > 0 {
                 let r = rand.gen_range(0..moves.len());
@@ -200,8 +200,8 @@ impl StateManager {
     }
     
     #[allow(dead_code)]
-    fn load(moves: &[Move]) -> StateManager {
-        use arbor::GameState;
+    fn load(moves: &[Grid]) -> StateManager {
+        use GameState;
         let b = TicTacToe::new();
         let mut g = Self::new(b);
         for m in moves {
@@ -214,9 +214,9 @@ impl StateManager {
 }
 
 
-impl arbor::Action for Move {}
+impl Action for Grid {}
 
-impl arbor::GameState<Move> for StateManager {
+impl GameState<Grid> for StateManager {
     fn value(&self) -> f32 {
         let c = self.cur();
         
@@ -239,11 +239,11 @@ impl arbor::GameState<Move> for StateManager {
         }
     }
     
-    fn actions(&self) -> Vec<Move> {
+    fn actions(&self) -> Vec<Grid> {
         self.cur().legal_moves()
     }
 
-    fn make(&mut self,action: Move) {
+    fn make(&mut self,action: Grid) {
         if let Some(next) = self.cur().make(action) {
             self.stack.push(next);
         } else {

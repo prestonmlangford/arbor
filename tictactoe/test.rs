@@ -2,7 +2,7 @@ use super::*;
 use arbor::MCTS;
 use std::time::Duration;
 
-fn best(moves: &[Move]) -> Move {
+fn best(moves: &[Grid]) -> Grid {
     let game = StateManager::load(&moves);
     let t = Duration::new(1,0);
     let result = MCTS::new().with_time(t).search(game);

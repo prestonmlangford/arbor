@@ -3,6 +3,7 @@ use super::*;
 use super::tree::*;
 
 impl MCTS {
+    ///Call this method to begin searching the given game state.
     pub fn search<A: Action, S: GameState<A>>(self,state: S) -> A {
         driver(state,&self)
     }
@@ -94,6 +95,15 @@ fn uct_policy<A: Action>(
     
     best_edge
 }
+
+// fn rollout<A: Action, S: GameState<A>>(
+//     state: &mut S,
+// ) -> f32 {
+//     let mut v = Vec::new();
+//     v.push(state);
+//     let owned_state = state.clone();
+//     0.0
+// }
 
 fn go<A: Action, S: GameState<A>>(
     state: &mut S,
