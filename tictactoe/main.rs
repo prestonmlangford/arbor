@@ -105,26 +105,6 @@ impl TicTacToe {
         (self.turn == 9) || (self.winner() != Mark::N)
     }
 
-    fn make(&self, m: Grid) -> Option<Self> {
-        if self.gameover() {
-            return None;
-        }
-        
-        if self.space[m as usize] != Mark::N {
-            return None;
-        }
-
-        let mut next = TicTacToe {
-            space: self.space,
-            turn: self.turn + 1,
-            side: if self.side == Mark::X {Mark::O} else {Mark::X},
-            hash: self.hash | ((if self.side == Mark::X {1} else {512}) << (m as u64)),
-        };
-
-        next.space[m as usize] = self.side;
-
-        Some(next)
-    }
 
     fn legal_moves(&self) -> Vec<Grid> {
         let mut result = Vec::new();
@@ -160,69 +140,31 @@ impl TicTacToe {
         let mut rand = Rand::from_entropy();
         while !state.gameover() {
             if let Some(m) = rmove(&state,&mut rand) {
-                if let Some(next) = state.make(m) {
-                    state = next;
-                }
+                state = state.make(m);
             }
         }
 
         state.winner()
     }
-}
 
-#[derive(Debug)]
-struct StateManager {
-    stack: Vec<TicTacToe>,
-}
-
-
-impl Display for StateManager {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut s = "".to_owned();
-        
-        for state in self.stack.iter() {
-            s.push_str(&format!("{}\n",state));
-        }
-        
-        write!(f,"{}",s)
-    }
-}
-
-impl StateManager {
-    fn new(state: TicTacToe) -> StateManager {
-        StateManager {
-            stack: vec![state]
-        }
-    }
-
-    fn cur(&self) -> &TicTacToe {
-        self.stack.last().unwrap()
-    }
-    
     #[allow(dead_code)]
-    fn load(moves: &[Grid]) -> StateManager {
-        use GameState;
-        let b = TicTacToe::new();
-        let mut g = Self::new(b);
+    fn load(moves: &[Grid]) -> TicTacToe {
+        let mut b = TicTacToe::new();
         for m in moves {
-            println!("{}",g.cur());
-            g.make(*m);
+            println!("{}",b);
+            b = b.make(*m);
         }
-        println!("{}",g.cur());
-        g
+        b
     }
 }
 
 
 impl Action for Grid {}
 
-impl GameState<Grid> for StateManager {
+impl GameState<Grid> for TicTacToe {
     fn value(&self) -> f32 {
-        let c = self.cur();
-        
-
-        if self.cur().gameover() {
-            return match self.cur().winner() {
+        if self.gameover() {
+            return match self.winner() {
                 //No more moves can be played, but nobody won. A draw gives a neutral score. 
                 Mark::N => 0.5,
 
@@ -231,8 +173,8 @@ impl GameState<Grid> for StateManager {
             }
         }
 
-        let p = if c.side == Mark::X {1.0} else {0.0};
-        match c.rollout() {
+        let p = if self.side == Mark::X {1.0} else {0.0};
+        match self.rollout() {
             Mark::N => 0.5,
             Mark::X => p,
             Mark::O => 1.0 - p,
@@ -240,45 +182,44 @@ impl GameState<Grid> for StateManager {
     }
     
     fn actions(&self) -> Vec<Grid> {
-        self.cur().legal_moves()
+        self.legal_moves()
     }
 
-    fn make(&mut self,action: Grid) {
-        if let Some(next) = self.cur().make(action) {
-            self.stack.push(next);
-        } else {
-            println!("{}",self.cur());
-            println!("{:?}",action);
-            panic!("Make called with bad move")
-        }
-    }
+    
+    fn make(&self, action: Grid) -> Self {
+        assert!(!self.gameover(),"Make called while gameover\n{}",self);
+        assert!(self.space[action as usize] == Mark::N,"Make called on invalid space {:?}\n{}",action,self);
 
-    fn unmake(&mut self) {
-        if self.stack.len() > 1 {
-            self.stack.pop();
-        } else {
-            panic!("called unmake on root position");
-        }
+        let mut next = TicTacToe {
+            space: self.space,
+            turn: self.turn + 1,
+            side: if self.side == Mark::X {Mark::O} else {Mark::X},
+            hash: self.hash | ((if self.side == Mark::X {1} else {512}) << (action as u64)),
+        };
+
+        next.space[action as usize] = self.side;
+
+        next
     }
 
     fn hash(&self) -> u64 {
-        self.cur().hash
+        self.hash
     }
 
     fn terminal(&self) -> bool {
-        self.cur().gameover()
+        self.gameover()
     }
 
     fn player(&self) -> u32 {
-        self.cur().side as u32
+        self.side as u32
     }
 }
 
 fn main(){
     let game = [MM,ML,MR,TL,];
-    let gamestate = StateManager::load(&game);
+    let gamestate = TicTacToe::load(&game);
     
-    println!("{}",gamestate.cur());
+    println!("{}",gamestate);
 
     let result = 
         MCTS::new().

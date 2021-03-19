@@ -158,39 +158,6 @@ impl Connect4 {
         ur + dl >= 3
     }
     
-    fn make(&self,c: Column) -> Self {
-        let column = c as usize;
-        assert!(column < W,"make called with invalid column {}", column);
-        let color = if self.side {Disc::R} else {Disc::Y};
-        let mut next = *self;
-        next.side = !self.side;
-        
-        let mut row = 0;
-        while row < H {
-            let i = row*W + column;
-            if next.space[i] == Disc::N {
-                next.space[i] = color;
-                next.hash ^= if next.side {ZTABLE[i]} else {ZTABLE[i + W*H]};
-                next.hash ^= ZTURN;
-                break;
-            }
-            row += 1;
-        }
-        assert!(row < H,"make called on invalid column {}",column);
-        
-        let win = 
-            self.check_n(row, column) ||
-            self.check_e(row, column) ||
-            self.check_nw(row, column) ||
-            self.check_ne(row, column);
-        
-        let full = next.actions().len() == 0;
-        
-        next.gameover = win || full;
-        next.winner = if win {color} else {Disc::N};
-        
-        next
-    }
     
     fn actions(&self) -> Vec<Column> {
         let mut result = Vec::new();
@@ -224,49 +191,16 @@ impl Connect4 {
         
         sim.winner
     }
-}
 
-
-#[derive(Debug,Clone)]
-struct StateManager {
-    stack: Vec<(Column,Connect4)>,
-}
-
-impl Display for StateManager {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut s = format!("--- StateManager Stack ---{}--------------------------\n",Connect4::new());
-        
-        for (action,state) in self.stack.iter() {
-            s.push_str(&format!("{:?}{}{}\n--------------------------\n",action,state,state.hash));
-        }
-        
-        write!(f,"{}\n",s)
-    }
-}
-
-impl StateManager {
-    fn new() -> StateManager {
-        StateManager {
-            stack: Vec::new()
-        }
-    }
-    
-    fn cur(&self) -> &Connect4 {
-        if let Some((_,state)) = self.stack.last() {
-            state
-        } else {
-            &NEWGAME
-        }
-    }
     
     #[allow(dead_code)]
-    fn load(moves: &[Column]) -> StateManager {
+    fn load(moves: &[Column]) -> Connect4 {
         let mut g = Self::new();
         for m in moves {
-            println!("{}",g.cur());
-            g.make(*m);
+            println!("{}",g);
+            g = g.make(*m);
         }
-        println!("{}",g.cur());
+        println!("{}",g);
         g
     }
 }
@@ -274,10 +208,10 @@ impl StateManager {
 
 impl Action for Column {}
 
-impl GameState<Column> for StateManager {
+impl GameState<Column> for Connect4 {
     fn value(&self) -> f32 {
-        let side = if self.cur().side {1.0} else {0.0};
-        let result = self.cur().rollout();
+        let side = if self.side {1.0} else {0.0};
+        let result = self.rollout();
         match result {
             Disc::R => side,
             Disc::Y => 1.0 - side,
@@ -286,28 +220,53 @@ impl GameState<Column> for StateManager {
     }
     
     fn actions(&self) -> Vec<Column> {
-        self.cur().actions()
+        self.actions()
     }
     
-    fn make(&mut self,action: Column) {
-        let next = self.cur().make(action);
-        self.stack.push((action,next));
+    fn make(&self,c: Column) -> Self {
+        let column = c as usize;
+        assert!(column < W,"make called with invalid column {}", column);
+        let color = if self.side {Disc::R} else {Disc::Y};
+        let mut next = *self;
+        next.side = !self.side;
+        
+        let mut row = 0;
+        while row < H {
+            let i = row*W + column;
+            if next.space[i] == Disc::N {
+                next.space[i] = color;
+                next.hash ^= if next.side {ZTABLE[i]} else {ZTABLE[i + W*H]};
+                next.hash ^= ZTURN;
+                break;
+            }
+            row += 1;
+        }
+        assert!(row < H,"make called on invalid column {}",column);
+        
+        let win = 
+            self.check_n(row, column) ||
+            self.check_e(row, column) ||
+            self.check_nw(row, column) ||
+            self.check_ne(row, column);
+        
+        let full = next.actions().len() == 0;
+        
+        next.gameover = win || full;
+        next.winner = if win {color} else {Disc::N};
+        
+        next
     }
-    
-    fn unmake(&mut self) {
-        self.stack.pop();
-    }
-    
+
     fn hash(&self) -> u64 {
-        self.cur().hash
+        self.hash
     }
     
     fn terminal(&self) -> bool {
-        self.cur().gameover
+        self.gameover
     }
 
     fn player(&self) -> u32 {
-        if self.cur().side {1} else {2}
+        if self.side {1} else {2}
     }
 }
 
@@ -318,10 +277,10 @@ fn main() {
 
     let game = [];
 
-    let mut gamestate = StateManager::load(&game);
+    let mut gamestate = Connect4::load(&game);
     
     loop {
-        if !gamestate.cur().side {
+        if !gamestate.side {
             print!("=> ");
             //flushes standard out so the print statements are actually displayed
             io::stdout().flush().unwrap();
@@ -336,7 +295,7 @@ fn main() {
                 if (1 <= c) && (c <= 7) {
                     let col = COL[c-1];
                     println!("{:?}",col);
-                    gamestate.make(col);
+                    gamestate = gamestate.make(col);
                 } else {
                     println!("validation failed");
                 }
@@ -351,16 +310,16 @@ fn main() {
                 search(state);
             
             println!("{:?}",result);
-            gamestate.make(result);
+            gamestate = gamestate.make(result);
         }
         
         
-        println!("{}",gamestate.cur());
+        println!("{}",gamestate);
         
         
-        if gamestate.cur().gameover {
+        if gamestate.gameover {
             println!("gameover!");
-            let winner = gamestate.cur().winner;
+            let winner = gamestate.winner;
             match winner {
                 Disc::R => println!("Red wins"),
                 Disc::Y => println!("Yellow wins"),

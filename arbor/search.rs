@@ -10,7 +10,7 @@ impl MCTS {
 }
 
 fn driver<A: Action, S: GameState<A>>(
-    mut state: S,
+    state: S,
     params: &MCTS
 ) -> A {
     let mut tree = Tree::new();
@@ -19,24 +19,23 @@ fn driver<A: Action, S: GameState<A>>(
     
     let start = Instant::now();
     while (Instant::now() - start) < params.time {
-        go(&mut state,&mut tree,params,root);
+        go(&state,&mut tree,params,root);
     }
     
     best(&tree,root)
 }
 
 fn expand<A: Action, S: GameState<A>>(
-    state: &mut S,
+    state: &S,
     tree: &mut Tree<A>
 ) -> Vec<(A,u64)> {
     let mut v = Vec::new();
     
     for action in state.actions() {
-        state.make(action);
-        let hash = state.hash();
+        let next = state.make(action);
+        let hash = next.hash();
         v.push((action,hash));
         tree.set(hash,Node::Unexplored);
-        state.unmake();
     }
     
     debug_assert!(
@@ -106,7 +105,7 @@ fn uct_policy<A: Action>(
 // }
 
 fn go<A: Action, S: GameState<A>>(
-    state: &mut S,
+    state: &S,
     tree: &mut Tree<A>,
     params: &MCTS,
     hash: u64
@@ -116,20 +115,19 @@ fn go<A: Action, S: GameState<A>>(
 
             let (action,child) = uct_policy(tree,params,n,&e,p);
             
-            state.make(action);
-            let player = state.player();
+            let next = state.make(action);
+            let player = next.player();
             debug_assert!({
-                let next_hash = state.hash();
+                let next_hash = next.hash();
                 if next_hash == child {
                     true
                 } else {
-                    println!("{}",state);
+                    println!("{}",next);
                     false
                 }
             },"hashes don't match!");
             
-            let s = go(state,tree,params,child);
-            state.unmake();
+            let s = go(&next,tree,params,child);
 
             let v = if p == player {s} else {1.0 - s};
             let update = Node::Branch(p,q + v,n + 1,e);
@@ -190,7 +188,7 @@ fn best<A: Action>(
                     Node::Branch(p,q,n,_) => {
                         let s = q/(n as f32);
                         let v = if p == player {s} else {1.0 - s};
-                        //println!("{:?} {} {:>8.1} {:>6} {:<6.5}",a,p,q,n,v);
+                        println!("{:?} {} {:>8.1} {:>6} {:<6.5}",a,p,q,n,v);
                         if v > v_best {
                             a_best = *a;
                             v_best = v;
