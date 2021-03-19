@@ -1,17 +1,13 @@
 #[macro_use]
 extern crate lazy_static;
 extern crate arbor;
-extern crate rand_xorshift;
 
 use std::io;
 use std::io::prelude::*;
 use std::fmt::Display;
 use std::fmt;
 use std::time::Duration;
-use arbor::MCTS;
-use rand_xorshift::XorShiftRng as Rand;
-use rand::seq::SliceRandom;
-use rand::SeedableRng;
+use arbor::*;
 
 
 const S: usize = 8;
@@ -56,7 +52,6 @@ struct Reversi {
     gameover: bool,
     side: Disc,
     winner: Disc,
-    hash: u64,
     actions: Vec<Move>,
 }
 
@@ -240,15 +235,7 @@ fn sandwich(f: u64, e: u64, space: u64, direction: Direction) -> u64 {
     0
 }
 
-fn reversi_hash(mut f: u64, mut e: u64) -> u64 {
-    let mut result = 0;
-    for _ in 0..10 {
-        f = f.rotate_right(23);
-        e = e.rotate_right(37);
-        result ^= f ^ e;
-    }
-    result
-}
+
 
 impl Reversi {
     fn new() -> Self {
@@ -259,7 +246,6 @@ impl Reversi {
             gameover: false,
             side: Disc::W,
             winner: Disc::N,
-            hash: 0,
             actions: vec!(
                 Move::Capture((1 << 0o54)|(1 << 0o44)),
                 Move::Capture((1 << 0o45)|(1 << 0o44)),
@@ -292,47 +278,27 @@ impl Reversi {
         }
         None
     }
-    
-    fn rollout(&self) -> Disc {
-        let mut sim = self.clone();
-        let mut rand = Rand::from_entropy();
-        
-        loop {
-            if sim.gameover {
-                break;
-            }
-            
-            if let Some(&capture) = sim.actions.choose(&mut rand) {
-                sim = sim.make(capture);
-            } else {
-                println!("{}",sim);
-                panic!("Expected to find a legal move");
-            }
-        }
-        
-        sim.winner
-    }
 }
 
 
-impl arbor::Action for Move {}
+impl Action for Move {}
 
-impl arbor::GameState<Move> for Reversi {
-    fn value(&self) -> f32 {
-        let side = if self.side == Disc::W {1.0} else {0.0};
-        let result = self.rollout();
-        match result {
-            Disc::W => side,
-            Disc::B => 1.0 - side,
-            Disc::N => 0.5,
-        }
-    }
+impl GameState<Move> for Reversi {
     
     fn actions(&self) -> Vec<Move> {
         self.actions.clone()
     }
     
-
+    fn gameover(&self) -> Option<GameResult> {
+        if self.gameover {
+            Some(match self.winner {
+                Disc::N => GameResult::Draw,
+                _ => if self.side == self.winner {GameResult::Win} else {GameResult::Lose}
+            })
+        } else {
+            None
+        }
+    }
 
     fn make(&self,m: Move) -> Self {
         let capture = match m {
@@ -344,7 +310,6 @@ impl arbor::GameState<Move> for Reversi {
         let d = f.count_ones() as i32 - e.count_ones() as i32;
         let side = self.side.other();
         let winner = if d > 0 {side} else if d < 0 {side.other()} else {Disc::N};
-        let hash = reversi_hash(f, e);
         let mut actions = Vec::new();
         let mut adj = 0;
         for idx in e.iter() {
@@ -373,7 +338,6 @@ impl arbor::GameState<Move> for Reversi {
             gameover,
             side,
             winner,
-            hash,
             actions
         };
 
@@ -385,19 +349,24 @@ impl arbor::GameState<Move> for Reversi {
     }
     
     fn hash(&self) -> u64 {
-        self.hash
+        let mut f = self.f;
+        let mut e = self.e;
+        let mut result = 0;
+        for _ in 0..10 {
+            f = f.rotate_right(23);
+            e = e.rotate_right(37);
+            result ^= f ^ e;
+        }
+        result
     }
     
-    fn terminal(&self) -> bool {
-        self.gameover
-    }
 
     fn player(&self) -> u32 {
         if self.side == Disc::W {1} else {2}
     }
 }
 
-use arbor::GameState;
+use GameState;
 
 fn main() {
     println!("Reversi!");

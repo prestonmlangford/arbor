@@ -12,7 +12,6 @@ use std::fmt;
 use std::time::Duration;
 use arbor::*;
 use rand_xorshift::XorShiftRng as Rand;
-use rand::seq::SliceRandom;
 use rand::{RngCore,SeedableRng};
 
 const W: usize = 7;
@@ -107,6 +106,17 @@ impl Connect4 {
     fn new() -> Self {
         NEWGAME
     }
+
+    #[allow(dead_code)]
+    fn load(moves: &[Column]) -> Connect4 {
+        let mut g = Self::new();
+        for m in moves {
+            println!("{}",g);
+            g = g.make(*m);
+        }
+        println!("{}",g);
+        g
+    }
     
     fn count(&self,dr: i32, dc: i32, mut r: i32, mut c: i32) -> u32 {
         let color = if self.side {Disc::R} else {Disc::Y};
@@ -158,6 +168,12 @@ impl Connect4 {
         ur + dl >= 3
     }
     
+}
+
+
+impl Action for Column {}
+
+impl GameState<Column> for Connect4 {
     
     fn actions(&self) -> Vec<Column> {
         let mut result = Vec::new();
@@ -169,58 +185,6 @@ impl Connect4 {
         }
         
         result
-    }
-    
-    
-    fn rollout(&self) -> Disc {
-        let mut sim = *self;
-        let mut rand = Rand::from_entropy();
-        
-        loop {
-            if sim.gameover {
-                break;
-            }
-            
-            if let Some(&c) = sim.actions().choose(&mut rand) {
-                sim = sim.make(c);
-            } else {
-                println!("{}",sim);
-                panic!("Expected to find a legal move");
-            }
-        }
-        
-        sim.winner
-    }
-
-    
-    #[allow(dead_code)]
-    fn load(moves: &[Column]) -> Connect4 {
-        let mut g = Self::new();
-        for m in moves {
-            println!("{}",g);
-            g = g.make(*m);
-        }
-        println!("{}",g);
-        g
-    }
-}
-
-
-impl Action for Column {}
-
-impl GameState<Column> for Connect4 {
-    fn value(&self) -> f32 {
-        let side = if self.side {1.0} else {0.0};
-        let result = self.rollout();
-        match result {
-            Disc::R => side,
-            Disc::Y => 1.0 - side,
-            Disc::N => 0.5,
-        }
-    }
-    
-    fn actions(&self) -> Vec<Column> {
-        self.actions()
     }
     
     fn make(&self,c: Column) -> Self {
@@ -261,16 +225,23 @@ impl GameState<Column> for Connect4 {
         self.hash
     }
     
-    fn terminal(&self) -> bool {
-        self.gameover
+    fn gameover(&self) -> Option<GameResult> {
+        if self.gameover {
+            if self.winner == Disc::N {
+                Some(GameResult::Draw)
+            } else {
+                // side to play last always wins
+                Some(GameResult::Lose)
+            }
+        } else {
+            None
+        }
     }
 
     fn player(&self) -> u32 {
         if self.side {1} else {2}
     }
 }
-
-use GameState;
 
 fn main() {
     println!("Connect 4!");

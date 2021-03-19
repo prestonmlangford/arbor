@@ -7,8 +7,6 @@ use std::fmt;
 
 use arbor::*;
 use std::time::Duration;
-use rand_xorshift::XorShiftRng as Rand;
-use rand::{Rng,SeedableRng};
 
 #[derive(Copy,Clone,PartialEq,Debug)]
 enum Mark {N,X,O}
@@ -81,6 +79,18 @@ impl TicTacToe {
             hash: 0,
         }
     }
+
+
+    #[allow(dead_code)]
+    fn load(moves: &[Grid]) -> TicTacToe {
+        let mut b = TicTacToe::new();
+        for m in moves {
+            println!("{}",b);
+            b = b.make(*m);
+        }
+        b
+    }
+
     fn check(&self, a: usize, b: usize, c: usize) -> bool {
          (self.space[a] == self.space[b]) && (self.space[b] == self.space[c])
     }
@@ -101,14 +111,21 @@ impl TicTacToe {
         Mark::N
     }
 
-    fn gameover(&self) -> bool {
+
+
+    fn terminal(&self) -> bool {
         (self.turn == 9) || (self.winner() != Mark::N)
     }
+}
 
 
-    fn legal_moves(&self) -> Vec<Grid> {
+impl Action for Grid {}
+
+impl GameState<Grid> for TicTacToe {
+
+    fn actions(&self) -> Vec<Grid> {
         let mut result = Vec::new();
-        if self.gameover() {
+        if self.terminal() {
             return result;
         }
         for i in 0..9 {
@@ -119,75 +136,9 @@ impl TicTacToe {
         result
     }
 
-    fn rollout(&self) -> Mark {
-        fn rmove(state: &TicTacToe, rand: &mut impl Rng) -> Option<Grid> {
-            let mut moves: Vec<&Grid> = ALLMOVES.iter().collect();
-        
-            while moves.len() > 0 {
-                let r = rand.gen_range(0..moves.len());
-                let m = *moves[r];
-                if state.space[m as usize] == Mark::N {
-                    return Some(m);
-                } else {
-                    moves.swap_remove(r);
-                }
-            }
-        
-            None
-        }
-
-        let mut state = self.clone();
-        let mut rand = Rand::from_entropy();
-        while !state.gameover() {
-            if let Some(m) = rmove(&state,&mut rand) {
-                state = state.make(m);
-            }
-        }
-
-        state.winner()
-    }
-
-    #[allow(dead_code)]
-    fn load(moves: &[Grid]) -> TicTacToe {
-        let mut b = TicTacToe::new();
-        for m in moves {
-            println!("{}",b);
-            b = b.make(*m);
-        }
-        b
-    }
-}
-
-
-impl Action for Grid {}
-
-impl GameState<Grid> for TicTacToe {
-    fn value(&self) -> f32 {
-        if self.gameover() {
-            return match self.winner() {
-                //No more moves can be played, but nobody won. A draw gives a neutral score. 
-                Mark::N => 0.5,
-
-                //Side to play lost.  
-                _ => 0.0,
-            }
-        }
-
-        let p = if self.side == Mark::X {1.0} else {0.0};
-        match self.rollout() {
-            Mark::N => 0.5,
-            Mark::X => p,
-            Mark::O => 1.0 - p,
-        }
-    }
-    
-    fn actions(&self) -> Vec<Grid> {
-        self.legal_moves()
-    }
-
     
     fn make(&self, action: Grid) -> Self {
-        assert!(!self.gameover(),"Make called while gameover\n{}",self);
+        assert!(!self.terminal(),"Make called while gameover\n{}",self);
         assert!(self.space[action as usize] == Mark::N,"Make called on invalid space {:?}\n{}",action,self);
 
         let mut next = TicTacToe {
@@ -206,8 +157,18 @@ impl GameState<Grid> for TicTacToe {
         self.hash
     }
 
-    fn terminal(&self) -> bool {
-        self.gameover()
+    
+    fn gameover(&self) -> Option<GameResult> {
+        if self.terminal() {
+            return match self.winner() {
+                Mark::N => Some(GameResult::Draw),
+
+                // Side to play last always wins
+                _ => Some(GameResult::Lose),
+            }
+        } else {
+            None
+        }
     }
 
     fn player(&self) -> u32 {

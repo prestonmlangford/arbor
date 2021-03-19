@@ -1,11 +1,23 @@
 use std::time::Instant;
 use super::*;
 use super::tree::*;
+use rand_xorshift::XorShiftRng as Rand;
+use rand::SeedableRng;
 
 impl MCTS {
     ///Call this method to begin searching the given game state.
     pub fn search<A: Action, S: GameState<A>>(self,state: S) -> A {
         driver(state,&self)
+    }
+}
+
+impl GameResult {
+    fn value(&self) -> f32 {
+        match *self {
+            GameResult::Win => 1.0,
+            GameResult::Lose => 0.0,
+            GameResult::Draw => 0.5,
+        }
     }
 }
 
@@ -95,14 +107,24 @@ fn uct_policy<A: Action>(
     best_edge
 }
 
-// fn rollout<A: Action, S: GameState<A>>(
-//     state: &mut S,
-// ) -> f32 {
-//     let mut v = Vec::new();
-//     v.push(state);
-//     let owned_state = state.clone();
-//     0.0
-// }
+fn rollout<A: Action, S: GameState<A>>(state: &S) -> f32 {
+    let mut rand = Rand::from_entropy();
+    let mut sim = state.make(state.random_action(&mut rand));
+    let p = state.player();
+
+    loop {
+        if let Some(result) = sim.gameover() {
+            let side = sim.player() == p;
+            return match result {
+                GameResult::Win  => if side {1.0} else {0.0},
+                GameResult::Lose => if side {0.0} else {1.0},
+                GameResult::Draw => 0.5,
+            }
+        }
+        
+        sim = sim.make(sim.random_action(&mut rand));
+    }
+}
 
 fn go<A: Action, S: GameState<A>>(
     state: &S,
@@ -141,7 +163,7 @@ fn go<A: Action, S: GameState<A>>(
                 tree.set(hash, update);
                 go(state,tree,params,hash)
             } else {
-                let v = state.value();
+                let v = rollout(state);
                 let update = Node::Leaf(p,q + v,n + 1);
                 tree.set(hash, update);
                 v
@@ -149,12 +171,13 @@ fn go<A: Action, S: GameState<A>>(
         },
         Node::Terminal(_,q) => q,
         Node::Unexplored => {
-            let v = state.value();
             let p = state.player();
-            let update = if state.terminal() {
-                Node::Terminal(p,v)
+            let (v,update) = if let Some(result) = state.gameover() {
+                let v = result.value();
+                (v,Node::Terminal(p,v))
             } else {
-                Node::Leaf(p,v,1)
+                let v = rollout(state);
+                (v,Node::Leaf(p,v,1))
             };
             tree.set(hash, update);
             v

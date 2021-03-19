@@ -10,9 +10,8 @@ use std::fmt::Display;
 use std::fmt;
 use std::time::Duration;
 
-use arbor::MCTS;
+use arbor::*;
 use rand_xorshift::XorShiftRng as Rand;
-use rand::seq::SliceRandom;
 use rand::{RngCore,SeedableRng};
 
 #[derive(Copy,Clone,PartialEq,Debug)]
@@ -154,28 +153,6 @@ impl Mancala {
         }
     }
     
-    fn rollout(&self) -> Option<Player> {
-        let mut sim = *self;
-        let mut rand = Rand::from_entropy();
-        loop {
-            if sim.terminal() {
-                break;
-            }
-            
-            debug_assert!({
-                NS == (0..NP).map(|p| sim.pit[p]).fold(0,|sum,x| sum + x) as usize
-            },"miscount");
-            
-            let p = *sim.
-                actions().
-                choose(&mut rand).
-                expect("Expected to find a legal move");
-
-            sim = sim.make(p);
-        }
-        
-        sim.winner()
-    }
 
     #[allow(dead_code)]
     fn load(moves: &[Pit]) -> Mancala {
@@ -187,27 +164,15 @@ impl Mancala {
         println!("{}",g);
         g
     }
+
+    fn terminal(&self) -> bool {
+        (self.pit[LB] + self.pit[RB]) == NS as u8
+    }
 }
 
-impl arbor::Action for Pit {}
+impl Action for Pit {}
 
-impl arbor::GameState<Pit> for Mancala {
-    fn value(&self) -> f32 {
-        let side = if self.side == Player::L {1.0} else {0.0};
-        if let Some(winner) = 
-            if self.terminal() {self.winner()} 
-            else {self.rollout()}
-        {
-            match winner {
-                Player::L => side,
-                Player::R => 1.0 - side,
-            }
-        }
-        else 
-        {
-            0.5
-        }
-    }
+impl GameState<Pit> for Mancala {
     
 
     fn make(&self, pit: Pit) -> Self {
@@ -332,15 +297,24 @@ impl arbor::GameState<Pit> for Mancala {
     }
     
 
-    fn terminal(&self) -> bool {
-        (self.pit[LB] + self.pit[RB]) == NS as u8
+    fn gameover(&self) -> Option<GameResult> {
+        if self.terminal() {
+            if let Some(winner) = self.winner() {
+                Some(if self.side == winner {GameResult::Win} else {GameResult::Lose})
+            } else {
+                Some(GameResult::Draw)
+            }
+        } else {
+            None
+        }
     }
+
 
     fn player(&self) -> u32 {
         self.side as u32
     }
 }
-use arbor::GameState;
+use GameState;
 
 fn main() {
     println!("Mancala!");
