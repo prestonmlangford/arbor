@@ -117,28 +117,98 @@ impl Mancala {
         Mancala {pit, side: Player::R}
     }
     
-    fn hash(&self) -> u64 {
-        let mut s = 0;
-        for p in 0..NP {
-            let n = self.pit[p] as usize;
-            let z = p*NS + n;
-            debug_assert!(
-                if z < (NS*NP) {
-                    true
-                } else {
-                    false
-                }
-            );
-            s ^= ZTABLE[z];
+
+    #[allow(dead_code)]
+    fn heuristic(&self) -> f32 {
+        let (fb,eb) = match self.side {
+            Player::L => (LB,RB),
+            Player::R => (RB,LB),
+        };
+        let fs = self.pit[fb];
+        let es = self.pit[eb];
+
+        if self.terminal() {
+            if fs > es {
+                1.0
+            } else if fs == es {
+                0.5
+            } else {
+                0.0
+            }
+        } else {
+            let d = (fs - es) as f32;
+            let n = NS as f32;
+            0.5*(1.0 + d/n)
+        }
+    }
+    
+    fn winner(&self) -> Option<Player> {
+        let l = self.pit[LB];
+        let r = self.pit[RB];
+        if l == r {
+            None
+        } else if l > r {
+            Some(Player::L)
+        } else {
+            Some(Player::R)
+        }
+    }
+    
+    fn rollout(&self) -> Option<Player> {
+        let mut sim = *self;
+        let mut rand = Rand::from_entropy();
+        loop {
+            if sim.terminal() {
+                break;
+            }
+            
+            debug_assert!({
+                NS == (0..NP).map(|p| sim.pit[p]).fold(0,|sum,x| sum + x) as usize
+            },"miscount");
+            
+            let p = *sim.
+                actions().
+                choose(&mut rand).
+                expect("Expected to find a legal move");
+
+            sim = sim.make(p);
         }
         
-        let t = match self.side {
-            Player::L => 0,
-            Player::R => ZTURN,
-        };
-
-        t ^ s
+        sim.winner()
     }
+
+    #[allow(dead_code)]
+    fn load(moves: &[Pit]) -> Mancala {
+        let mut g = Self::new();
+        for m in moves {
+            println!("{}",g);
+            g = g.make(*m);
+        }
+        println!("{}",g);
+        g
+    }
+}
+
+impl arbor::Action for Pit {}
+
+impl arbor::GameState<Pit> for Mancala {
+    fn value(&self) -> f32 {
+        let side = if self.side == Player::L {1.0} else {0.0};
+        if let Some(winner) = 
+            if self.terminal() {self.winner()} 
+            else {self.rollout()}
+        {
+            match winner {
+                Player::L => side,
+                Player::R => 1.0 - side,
+            }
+        }
+        else 
+        {
+            0.5
+        }
+    }
+    
 
     fn make(&self, pit: Pit) -> Self {
         debug_assert!(pit != RBank, "cannot choose right player bank");
@@ -220,8 +290,9 @@ impl Mancala {
         
         next
     }
+
     
-    fn legal_moves(&self) -> Vec<Pit> {
+    fn actions(&self) -> Vec<Pit> {
         let pits = match self.side {
             Player::L => (L1 as usize)..(LBank as usize),
             Player::R => (R1 as usize)..(RBank as usize),
@@ -237,162 +308,36 @@ impl Mancala {
         v
     }
     
-    fn gameover(&self) -> bool {
+    fn hash(&self) -> u64 {
+        let mut s = 0;
+        for p in 0..NP {
+            let n = self.pit[p] as usize;
+            let z = p*NS + n;
+            debug_assert!(
+                if z < (NS*NP) {
+                    true
+                } else {
+                    false
+                }
+            );
+            s ^= ZTABLE[z];
+        }
+        
+        let t = match self.side {
+            Player::L => 0,
+            Player::R => ZTURN,
+        };
+
+        t ^ s
+    }
+    
+
+    fn terminal(&self) -> bool {
         (self.pit[LB] + self.pit[RB]) == NS as u8
     }
 
-    #[allow(dead_code)]
-    fn heuristic(&self) -> f32 {
-        let (fb,eb) = match self.side {
-            Player::L => (LB,RB),
-            Player::R => (RB,LB),
-        };
-        let fs = self.pit[fb];
-        let es = self.pit[eb];
-
-        if self.gameover() {
-            if fs > es {
-                1.0
-            } else if fs == es {
-                0.5
-            } else {
-                0.0
-            }
-        } else {
-            let d = (fs - es) as f32;
-            let n = NS as f32;
-            0.5*(1.0 + d/n)
-        }
-    }
-    
-    fn winner(&self) -> Option<Player> {
-        let l = self.pit[LB];
-        let r = self.pit[RB];
-        if l == r {
-            None
-        } else if l > r {
-            Some(Player::L)
-        } else {
-            Some(Player::R)
-        }
-    }
-    
-    fn rollout(&self) -> Option<Player> {
-        let mut sim = *self;
-        let mut rand = Rand::from_entropy();
-        loop {
-            if sim.gameover() {
-                break;
-            }
-            
-            debug_assert!({
-                NS == (0..NP).map(|p| sim.pit[p]).fold(0,|sum,x| sum + x) as usize
-            },"miscount");
-            
-            // let m = sim.legal_moves();
-            // println!("{}",sim);
-            // println!("moves: {:?}",m);
-            // let p = *m.choose(&mut rand).expect("WTF");
-            
-            let p = *sim.
-                legal_moves().
-                choose(&mut rand).
-                expect("Expected to find a legal move");
-
-            sim = sim.make(p);
-        }
-        
-        sim.winner()
-    }
-}
-
-#[derive(Debug,Clone)]
-struct StateManager {
-    stack: Vec<(Pit,Mancala)>,
-}
-
-impl Display for StateManager {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut s = format!("--- StateManager Stack ---{}--------------------------\n",Mancala::new());
-        
-        for (action,state) in self.stack.iter() {
-            s.push_str(&format!("{:?}{}{}\n--------------------------\n",action,state,state.hash()));
-        }
-        
-        write!(f,"{}\n",s)
-    }
-}
-
-impl StateManager {
-    fn new() -> StateManager {
-        StateManager {
-            stack: Vec::new()
-        }
-    }
-    
-    fn cur(&self) -> &Mancala {
-        if let Some((_,state)) = self.stack.last() {
-            state
-        } else {
-            &NEWGAME
-        }
-    }
-    
-    #[allow(dead_code)]
-    fn load(moves: &[Pit]) -> StateManager {
-        let mut g = Self::new();
-        for m in moves {
-            println!("{}",g.cur());
-            g.make(*m);
-        }
-        println!("{}",g.cur());
-        g
-    }
-}
-
-impl arbor::Action for Pit {}
-
-impl arbor::GameState<Pit> for StateManager {
-    fn value(&self) -> f32 {
-        let side = if self.cur().side == Player::L {1.0} else {0.0};
-        if let Some(winner) = 
-            if self.cur().gameover() {self.cur().winner()} 
-            else {self.cur().rollout()}
-        {
-            match winner {
-                Player::L => side,
-                Player::R => 1.0 - side,
-            }
-        }
-        else 
-        {
-            0.5
-        }
-    }
-    
-    fn actions(&self) -> Vec<Pit> {
-        self.cur().legal_moves()
-    }
-    
-    fn make(&mut self,action: Pit) {
-        let next = self.cur().make(action);
-        self.stack.push((action,next));
-    }
-    
-    fn unmake(&mut self) {
-        self.stack.pop();
-    }
-    
-    fn hash(&self) -> u64 {
-        self.cur().hash()
-    }
-    
-    fn terminal(&self) -> bool {
-        self.cur().gameover()
-    }
-
     fn player(&self) -> u32 {
-        self.cur().side as u32
+        self.side as u32
     }
 }
 use arbor::GameState;
@@ -402,10 +347,10 @@ fn main() {
 
     let game = [];
 
-    let mut gamestate = StateManager::load(&game);
+    let mut gamestate = Mancala::load(&game);
     
     loop {
-        if gamestate.cur().side == Player::R {
+        if gamestate.side == Player::R {
             print!("=> ");
             //flushes standard out so the print statements are actually displayed
             io::stdout().flush().unwrap();
@@ -420,7 +365,7 @@ fn main() {
                 if (1 <= p) && (p <= 6) {
                     let pit = PIT[p-1];
                     println!("{:?}",pit);
-                    gamestate.make(pit);
+                    gamestate = gamestate.make(pit);
                 } else {
                     println!("validation failed");
                 }
@@ -435,14 +380,14 @@ fn main() {
                 search(state);
             
             println!("{:?}",result);
-            gamestate.make(result);
+            gamestate = gamestate.make(result);
         }
         
         
-        println!("{}",gamestate.cur());
+        println!("{}",gamestate);
         
         
-        if gamestate.cur().gameover() {
+        if gamestate.terminal() {
             println!("gameover!");
             break;
         }

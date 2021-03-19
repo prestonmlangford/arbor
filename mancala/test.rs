@@ -1,7 +1,7 @@
 use super::*;
 
 fn best(moves: &[Pit]) -> Pit {
-    let game = StateManager::load(&moves);
+    let game = Mancala::load(&moves);
     let t = Duration::new(1,0);
     let result = MCTS::new().with_time(t).search(game);
     println!("{:?}",result);
