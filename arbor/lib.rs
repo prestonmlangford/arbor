@@ -17,10 +17,10 @@ pub trait GameState<A: Action>: Debug + Display {
     fn actions(&self) -> Vec<A>;
 
     ///Advance the game state for the given action.
-    fn make(&mut self,action: A);
+    fn make(&mut self,action: A);//should return Self
 
     ///Undo the last action and return to the previous game state.
-    fn unmake(&mut self);
+    fn unmake(&mut self);//Delete this
 
     ///Provide a unique hash for the current game state. This hash must be sufficiently unique to avoid hash collisions with other game states. It is possible to have completely unique hashes for simple games like tic tac toe. An incremental hash may be a good approach in games with more complicated states like chess or checkers (see zobrist hashing).
     fn hash(&self) -> u64;
