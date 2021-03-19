@@ -269,7 +269,70 @@ impl Reversi {
         }
     }
     
+    #[allow(dead_code)]
+    fn load(moves: &[Move]) -> Reversi {
+        let mut g = Self::new();
+        for m in moves {
+            println!("{}",g);
+            g = g.make(*m);
+        }
+        println!("{}",g);
+        g
+    }
+
+    fn get_move(&self, row: u64, col: u64) -> Option<Move>
+    {
+        let space = 1u64 << ((row << 3) + col);
+        for m in &self.actions {
+            if let Move::Capture(c) = m {
+                if c.has(space) && !self.f.has(space) && !self.e.has(space) {
+                    return Some(*m);
+                }
+            }
+        }
+        None
+    }
     
+    fn rollout(&self) -> Disc {
+        let mut sim = self.clone();
+        let mut rand = Rand::from_entropy();
+        
+        loop {
+            if sim.gameover {
+                break;
+            }
+            
+            if let Some(&capture) = sim.actions.choose(&mut rand) {
+                sim = sim.make(capture);
+            } else {
+                println!("{}",sim);
+                panic!("Expected to find a legal move");
+            }
+        }
+        
+        sim.winner
+    }
+}
+
+
+impl arbor::Action for Move {}
+
+impl arbor::GameState<Move> for Reversi {
+    fn value(&self) -> f32 {
+        let side = if self.side == Disc::W {1.0} else {0.0};
+        let result = self.rollout();
+        match result {
+            Disc::W => side,
+            Disc::B => 1.0 - side,
+            Disc::N => 0.5,
+        }
+    }
+    
+    fn actions(&self) -> Vec<Move> {
+        self.actions.clone()
+    }
+    
+
 
     fn make(&self,m: Move) -> Self {
         let capture = match m {
@@ -320,125 +383,17 @@ impl Reversi {
             next
         }
     }
-
-    fn get_move(&self, row: u64, col: u64) -> Option<Move>
-    {
-        let space = 1u64 << ((row << 3) + col);
-        for m in &self.actions {
-            if let Move::Capture(c) = m {
-                if c.has(space) && !self.f.has(space) && !self.e.has(space) {
-                    return Some(*m);
-                }
-            }
-        }
-        None
-    }
-    
-    fn rollout(&self) -> Disc {
-        let mut sim = self.clone();
-        let mut rand = Rand::from_entropy();
-        
-        loop {
-            if sim.gameover {
-                break;
-            }
-            
-            if let Some(&capture) = sim.actions.choose(&mut rand) {
-                sim = sim.make(capture);
-            } else {
-                println!("{}",sim);
-                panic!("Expected to find a legal move");
-            }
-        }
-        
-        sim.winner
-    }
-}
-
-
-#[derive(Debug,Clone)]
-struct StateManager {
-    base: Reversi,
-    stack: Vec<(Move,Reversi)>,
-}
-
-impl Display for StateManager {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut s = format!("--- StateManager Stack ---{}--------------------------\n",Reversi::new());
-        
-        for (action,state) in self.stack.iter() {
-            s.push_str(&format!("{:?}{}{}\n--------------------------\n",action,state,state.hash));
-        }
-        
-        write!(f,"{}\n",s)
-    }
-}
-
-impl StateManager {
-    fn new() -> StateManager {
-        StateManager {
-            base: Reversi::new(),
-            stack: Vec::new()
-        }
-    }
-    
-    fn cur(&self) -> &Reversi {
-        if let Some((_,state)) = self.stack.last() {
-            state
-        } else {
-            &self.base
-        }
-    }
-    
-    #[allow(dead_code)]
-    fn load(moves: &[Move]) -> StateManager {
-        let mut g = Self::new();
-        for m in moves {
-            println!("{}",g.cur());
-            g.make(*m);
-        }
-        println!("{}",g.cur());
-        g
-    }
-}
-
-
-impl arbor::Action for Move {}
-
-impl arbor::GameState<Move> for StateManager {
-    fn value(&self) -> f32 {
-        let side = if self.cur().side == Disc::W {1.0} else {0.0};
-        let result = self.cur().rollout();
-        match result {
-            Disc::W => side,
-            Disc::B => 1.0 - side,
-            Disc::N => 0.5,
-        }
-    }
-    
-    fn actions(&self) -> Vec<Move> {
-        self.cur().actions.clone()
-    }
-    
-    fn make(&mut self,action: Move) {
-        let next = self.cur().make(action);
-        self.stack.push((action,next));
-    }
-    
-    fn unmake(&mut self) {
-        self.stack.pop();
-    }
     
     fn hash(&self) -> u64 {
-        self.cur().hash
+        self.hash
     }
     
     fn terminal(&self) -> bool {
-        self.cur().gameover
+        self.gameover
     }
 
     fn player(&self) -> u32 {
-        if self.cur().side == Disc::W {1} else {2}
+        if self.side == Disc::W {1} else {2}
     }
 }
 
@@ -449,10 +404,10 @@ fn main() {
 
     let game = [];
 
-    let mut gamestate = StateManager::load(&game);
+    let mut gamestate = Reversi::load(&game);
     
     loop {
-        if gamestate.cur().side == Disc::W {
+        if gamestate.side == Disc::W {
             print!("=> ");
             //flushes standard out so the print statements are actually displayed
             io::stdout().flush().unwrap();
@@ -466,8 +421,8 @@ fn main() {
             if let Ok(oct) = input.split_whitespace().next().unwrap().parse::<u64>() {
                 let row = oct / 10;
                 let col = oct % 10;
-                if let Some(m) = gamestate.cur().get_move(row, col) {
-                    gamestate.make(m);
+                if let Some(m) = gamestate.get_move(row, col) {
+                    gamestate = gamestate.make(m);
                 } else {
                     println!("validation failed");
                 }
@@ -482,14 +437,14 @@ fn main() {
                 with_exploration(2.0).
                 search(state);
             
-            gamestate.make(result);
+            gamestate = gamestate.make(result);
         }
         
         
-        println!("{}",gamestate.cur());
+        println!("{}",gamestate);
         
         
-        if gamestate.cur().gameover {
+        if gamestate.gameover {
             println!("gameover!");
             break;
         }
