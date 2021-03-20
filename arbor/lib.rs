@@ -8,7 +8,7 @@ use std::fmt::Display;
 use std::time::Duration;
 use rand::seq::SliceRandom;
 
-///This trait describes an allowed move for a game state. This type is passed to the "make" function to advance the game state. The algorithm keeps track of all allowed actions for each game state that is visited. Limit the size of this type and prefer a contiguous memory layout for best performance (e.g. enum, integer). 
+///This trait describes an allowed move for a game state. This type is passed to the "make" function to produce the next game state. The algorithm keeps track of all allowed actions for each game state that is visited. Limit the size of this type and prefer a contiguous memory layout for best performance (e.g. enum, integer). 
 pub trait Action: Copy + Clone + Debug {}
 
 ///This enum describes the result of a game.
@@ -40,11 +40,19 @@ pub trait GameState<A: Action>: Debug + Display {
     fn custom_evaluation(&self) -> f32 {0.5}
 }
 
-///This struct provides methods to control the search performance.
+///This struct provides methods to set search parameters and control execution. It uses a builder pattern allowing only the desired parameters to be changed from default.
 #[derive(Copy,Clone,Debug)]
 pub struct MCTS {
+    
+    ///The amount of time the search is allowed to run before stopping.
     pub time: Duration,
+    
+    ///Controls whether exploration vs. exploitation is preferred by the MCTS algorithm. This parameter is described in more detail by the UCT algorithm.
     pub exploration: f32,
-    pub expansion_minimum: u32,
+     
+    ///The minimum number of times a leaf node is visited before it expands to a branch node. A high number will result in a smaller game tree but more confidence about which node to expand next.
+    pub expansion: u32,
+    
+    ///Sets whether the custom evaluation method is used instead of a random playout.
     pub use_custom_evaluation: bool,
 }

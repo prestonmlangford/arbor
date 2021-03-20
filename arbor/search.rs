@@ -3,15 +3,19 @@ use super::*;
 use super::tree::*;
 use rand_xorshift::XorShiftRng as Rand;
 use rand::SeedableRng;
+use rand::Rng;
 
 impl MCTS {
     ///Call this method to begin searching the given game state.
     pub fn search<A: Action, S: GameState<A>>(self,state: S) -> A {
         driver(state,&self)
     }
+    
+    //PMLFIXME add a "step" function to allow the user to implement their own stopping condition. This should include a data structure that shows how the search is progressing
 }
 
 impl GameResult {
+    #[inline]
     fn value(&self) -> f32 {
         match *self {
             GameResult::Win => 1.0,
@@ -107,30 +111,33 @@ fn uct_policy<A: Action>(
     best_edge
 }
 
+#[inline]
+fn rmake<A: Action, S: GameState<A>>(state: &S,rand: &mut impl Rng) -> S {
+    let actions = state.actions();
+    
+    debug_assert!(
+        actions.len() > 0,
+        "Expected at least one action for state {}",state
+    );
+    
+    let action = *actions.choose(rand).unwrap();
+    
+    state.make(action)
+}
+
 fn rollout<A: Action, S: GameState<A>>(state: &S) -> f32 {
     let mut rand = Rand::from_entropy();
-    let mut sim = state.make(
-        *state.actions()
-        .choose(&mut rand)
-        .unwrap()
-    );
+    let mut sim = rmake(state, &mut rand);
     let p = state.player();
 
     loop {
         if let Some(result) = sim.gameover() {
             let side = sim.player() == p;
-            return match result {
-                GameResult::Win  => if side {1.0} else {0.0},
-                GameResult::Lose => if side {0.0} else {1.0},
-                GameResult::Draw => 0.5,
-            }
+            let v = result.value();
+            return if side {v} else {1.0 - v}
         }
         
-        sim = sim.make(
-            *sim.actions()
-            .choose(&mut rand)
-            .unwrap()
-        );
+        sim = rmake(&sim, &mut rand);
     }
 }
 
@@ -173,7 +180,7 @@ fn go<A: Action, S: GameState<A>>(
             v
         },
         Node::Leaf(p,q,n) => {
-            if n > params.expansion_minimum {
+            if n > params.expansion {
                 let e = expand(state,tree);
                 let update = Node::Branch(p,q,n,e);
                 tree.set(hash, update);

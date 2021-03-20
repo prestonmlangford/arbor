@@ -110,12 +110,6 @@ impl TicTacToe {
         
         Mark::N
     }
-
-
-
-    fn terminal(&self) -> bool {
-        (self.turn == 9) || (self.winner() != Mark::N)
-    }
 }
 
 
@@ -124,21 +118,19 @@ impl Action for Grid {}
 impl GameState<Grid> for TicTacToe {
 
     fn actions(&self) -> Vec<Grid> {
+        debug_assert!(self.gameover().is_none());
         let mut result = Vec::new();
-        if self.terminal() {
-            return result;
-        }
-        for i in 0..9 {
+        for mark in ALLMOVES.iter() {
+            let i = *mark as usize;
             if self.space[i] == Mark::N {
                 result.push(ALLMOVES[i])
             }
         }
         result
     }
-
     
     fn make(&self, action: Grid) -> Self {
-        debug_assert!(!self.terminal(),"Make called while gameover\n{}",self);
+        debug_assert!(self.gameover().is_none(),"Make called while gameover\n{}",self);
         debug_assert!(self.space[action as usize] == Mark::N,"Make called on invalid space {:?}\n{}",action,self);
 
         let mut next = TicTacToe {
@@ -159,7 +151,7 @@ impl GameState<Grid> for TicTacToe {
 
     
     fn gameover(&self) -> Option<GameResult> {
-        if self.terminal() {
+        if (self.turn == 9) || (self.winner() != Mark::N) {
             return match self.winner() {
                 Mark::N => Some(GameResult::Draw),
 
