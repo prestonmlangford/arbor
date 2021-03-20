@@ -135,10 +135,8 @@ fn rollout<A: Action, S: GameState<A>>(state: &S) -> f32 {
 }
 
 fn evaluate<A: Action, S: GameState<A>>(state: &S, params: &MCTS) -> f32 {
-    if params.use_custom_rollout {
-        state.custom_rollout()
-    } else if params.use_heuristic {
-        state.heuristic()
+    if params.use_custom_evaluation {
+        state.custom_evaluation()
     } else {
         rollout(state)
     }

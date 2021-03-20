@@ -7,8 +7,7 @@ impl MCTS {
             time: Duration::new(1, 0),
             exploration: (2.0 as f32).sqrt(),
             expansion_minimum: 10,
-            use_custom_rollout: false,
-            use_heuristic: false,
+            use_custom_evaluation: false,
         }
     }
     
@@ -32,17 +31,9 @@ impl MCTS {
         self
     }
 
-    ///Enables use of the custom rollout override method.
-    pub fn with_custom_rollout(mut self) -> Self {
-        assert!(self.use_heuristic == false,"Cannot use heuristic and custom rollout at the same time");
-        self.use_custom_rollout = true;
-        self
-    }
-
-    ///Enables use of the heuristic override method.
-    pub fn with_heuristic(mut self) -> Self {
-        assert!(self.use_custom_rollout == false,"Cannot use heuristic and custom rollout at the same time");
-        self.use_heuristic = true;
+    ///Enables use of the custom evaluation override method.
+    pub fn with_custom_evaluation(mut self) -> Self {
+        self.use_custom_evaluation = true;
         self
     }
 }
