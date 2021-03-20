@@ -6,7 +6,6 @@ mod builder;
 use std::fmt::Debug;
 use std::fmt::Display;
 use std::time::Duration;
-use rand::Rng;
 use rand::seq::SliceRandom;
 
 ///This trait describes an allowed move for a game state. This type is passed to the "make" function to advance the game state. The algorithm keeps track of all allowed actions for each game state that is visited. Limit the size of this type and prefer a contiguous memory layout for best performance (e.g. enum, integer). 
@@ -33,12 +32,8 @@ pub trait GameState<A: Action>: Debug + Display {
     ///Indicate the side to play for the current game state (e.g. white -> 1, black -> 2).
     fn player(&self) -> u32;
 
-    ///Provides a random action for the current game state. Optional: Override this method if you can more efficiently generate a random move.
-    fn random_action(&self,rand: &mut impl Rng) -> A {
-        *self.actions()
-        .choose(rand)
-        .expect(&format!("Expected to find a legal move for game state:\n{}",self))
-    }
+    ///Optional: Override this method to provide a more efficient rollout of the current game state. Use the "with_custom_rollout" method in the MCTS builder to enable this feature.
+    fn custom_rollout(&self) -> f32 {0.5}
     
     ///Optional: Override this method to provide an estimate of the win probability for the player of the current game state. The value returned should be a random variable between 0 and 1 that is correlated with the probablity the current player will win the game. This method will be used instead of a random rollout to calculate win probabilites if the "with_heuristic" method is called on the MCTS builder.
     fn heuristic(&self) -> f32 {0.5}
@@ -51,4 +46,6 @@ pub struct MCTS {
     pub time: Duration,
     pub exploration: f32,
     pub expansion_minimum: u32,
+    pub use_custom_rollout: bool,
+    pub use_heuristic: bool,
 }

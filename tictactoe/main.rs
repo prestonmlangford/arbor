@@ -138,8 +138,8 @@ impl GameState<Grid> for TicTacToe {
 
     
     fn make(&self, action: Grid) -> Self {
-        assert!(!self.terminal(),"Make called while gameover\n{}",self);
-        assert!(self.space[action as usize] == Mark::N,"Make called on invalid space {:?}\n{}",action,self);
+        debug_assert!(!self.terminal(),"Make called while gameover\n{}",self);
+        debug_assert!(self.space[action as usize] == Mark::N,"Make called on invalid space {:?}\n{}",action,self);
 
         let mut next = TicTacToe {
             space: self.space,

@@ -189,7 +189,7 @@ impl GameState<Column> for Connect4 {
     
     fn make(&self,c: Column) -> Self {
         let column = c as usize;
-        assert!(column < W,"make called with invalid column {}", column);
+        debug_assert!(column < W,"make called with invalid column {}", column);
         let color = if self.side {Disc::R} else {Disc::Y};
         let mut next = *self;
         next.side = !self.side;
@@ -205,7 +205,7 @@ impl GameState<Column> for Connect4 {
             }
             row += 1;
         }
-        assert!(row < H,"make called on invalid column {}",column);
+        debug_assert!(row < H,"make called on invalid column {}",column);
         
         let win = 
             self.check_n(row, column) ||

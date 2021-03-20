@@ -109,7 +109,11 @@ fn uct_policy<A: Action>(
 
 fn rollout<A: Action, S: GameState<A>>(state: &S) -> f32 {
     let mut rand = Rand::from_entropy();
-    let mut sim = state.make(state.random_action(&mut rand));
+    let mut sim = state.make(
+        *state.actions()
+        .choose(&mut rand)
+        .unwrap()
+    );
     let p = state.player();
 
     loop {
@@ -122,7 +126,21 @@ fn rollout<A: Action, S: GameState<A>>(state: &S) -> f32 {
             }
         }
         
-        sim = sim.make(sim.random_action(&mut rand));
+        sim = sim.make(
+            *sim.actions()
+            .choose(&mut rand)
+            .unwrap()
+        );
+    }
+}
+
+fn evaluate<A: Action, S: GameState<A>>(state: &S, params: &MCTS) -> f32 {
+    if params.use_custom_rollout {
+        state.custom_rollout()
+    } else if params.use_heuristic {
+        state.heuristic()
+    } else {
+        rollout(state)
     }
 }
 
@@ -163,7 +181,7 @@ fn go<A: Action, S: GameState<A>>(
                 tree.set(hash, update);
                 go(state,tree,params,hash)
             } else {
-                let v = rollout(state);
+                let v = evaluate(state,&params);
                 let update = Node::Leaf(p,q + v,n + 1);
                 tree.set(hash, update);
                 v
@@ -176,7 +194,7 @@ fn go<A: Action, S: GameState<A>>(
                 let v = result.value();
                 (v,Node::Terminal(p,v))
             } else {
-                let v = rollout(state);
+                let v = evaluate(state,&params);
                 (v,Node::Leaf(p,v,1))
             };
             tree.set(hash, update);
