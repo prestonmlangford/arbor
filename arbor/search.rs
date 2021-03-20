@@ -213,8 +213,8 @@ fn best<A: Action>(
     root: u64
 ) -> A {
     match tree.get(root) {
-        Node::Branch(player,qr,nr,e) => {
-            //println!("root -> expected value {:0.4}",qr/(nr as f32));
+        Node::Branch(player,_qr,_nr,e) => {
+            //println!("root -> expected value {:0.4}",_qr/(_nr as f32));
 
             let mut a_best = 
                 e.first().expect("Best found no actions for root").0;
