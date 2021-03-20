@@ -214,7 +214,7 @@ fn best<A: Action>(
 ) -> A {
     match tree.get(root) {
         Node::Branch(player,qr,nr,e) => {
-            println!("root -> expected value {:0.4}",qr/(nr as f32));
+            //println!("root -> expected value {:0.4}",qr/(nr as f32));
 
             let mut a_best = 
                 e.first().expect("Best found no actions for root").0;
@@ -234,7 +234,7 @@ fn best<A: Action>(
                     Node::Branch(p,q,n,_) => {
                         let s = q/(n as f32);
                         let v = if p == player {s} else {1.0 - s};
-                        println!("{:?} {} {:>8.1} {:>6} {:<6.5}",a,p,q,n,v);
+                        //println!("{:?} {} {:>8.1} {:>6} {:<6.5}",a,p,q,n,v);
                         if v > v_best {
                             a_best = *a;
                             v_best = v;
