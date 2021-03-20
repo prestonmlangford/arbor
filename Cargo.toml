@@ -7,7 +7,7 @@ description = "A generic interface to the Monte Carlo Tree Search algorithm."
 repository = "https://github.com/prestonmlangford/arbor.git"
 license = "MIT"
 readme = "README.md"
-keywords = ["mcts", "ai", "game", "search", "board"]
+keywords = ["mcts", "ai", "game", "search", "tree"]
 categories = ["algorithms", "game-development", "games"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
