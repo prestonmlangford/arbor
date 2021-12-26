@@ -5,13 +5,27 @@ use rand_xorshift::XorShiftRng as Rand;
 use rand::SeedableRng;
 use rand::Rng;
 
-impl MCTS {
+impl<A: Action, S: GameState<A>> MCTS<A,S> {
     ///Call this method to begin searching the given game state.
-    pub fn search<A: Action, S: GameState<A>>(self,state: S) -> A {
-        driver(state,&self)
+    pub fn timed_search(&mut self, time: Duration) -> A {
+        let root = self.state.hash();
+        let start = Instant::now();
+        while (Instant::now() - start) < time {
+            go(&self.state,&mut self.tree,&self.params,root);
+        }
+        
+        best(&self.tree,root)
     }
     
     //PMLFIXME add a "step" function to allow the user to implement their own stopping condition. This should include a data structure that shows how the search is progressing
+    pub fn step(&mut self) -> A {
+        let root = self.state.hash();
+        self.tree.set(root, Node::Unexplored);
+        
+        go(&self.state,&mut self.tree,&self.params,root);
+        
+        best(&self.tree,root)
+    }
 }
 
 impl GameResult {
@@ -25,21 +39,6 @@ impl GameResult {
     }
 }
 
-fn driver<A: Action, S: GameState<A>>(
-    state: S,
-    params: &MCTS
-) -> A {
-    let mut tree = Tree::new();
-    let root = state.hash();
-    tree.set(root, Node::Unexplored);
-    
-    let start = Instant::now();
-    while (Instant::now() - start) < params.time {
-        go(&state,&mut tree,params,root);
-    }
-    
-    best(&tree,root)
-}
 
 fn expand<A: Action, S: GameState<A>>(
     state: &S,
@@ -66,7 +65,7 @@ fn expand<A: Action, S: GameState<A>>(
 
 fn uct_policy<A: Action>(
     tree: &Tree<A>,
-    params: &MCTS,
+    params: &MctsParams,
     np: u32,
     edges: &Vec<(A,u64)>,
     player: u32
@@ -141,7 +140,7 @@ fn rollout<A: Action, S: GameState<A>>(state: &S) -> f32 {
     }
 }
 
-fn evaluate<A: Action, S: GameState<A>>(state: &S, params: &MCTS) -> f32 {
+fn evaluate<A: Action, S: GameState<A>>(state: &S, params: &MctsParams) -> f32 {
     if params.use_custom_evaluation {
         state.custom_evaluation()
     } else {
@@ -152,7 +151,7 @@ fn evaluate<A: Action, S: GameState<A>>(state: &S, params: &MCTS) -> f32 {
 fn go<A: Action, S: GameState<A>>(
     state: &S,
     tree: &mut Tree<A>,
-    params: &MCTS,
+    params: &MctsParams,
     hash: u64
 ) -> f32 {
     match tree.get(hash) {

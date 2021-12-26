@@ -5,7 +5,7 @@ use std::time::Duration;
 fn best(moves: &[Grid]) -> Grid {
     let game = TicTacToe::load(&moves);
     let t = Duration::new(1,0);
-    let result = MCTS::new().with_time(t).search(game);
+    let result = MCTS::new(game).timed_search(t);
     println!("{:?}",result);
     result
 }

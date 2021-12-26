@@ -174,10 +174,9 @@ fn main(){
     
     println!("{}",gamestate);
 
-    let result = 
-        MCTS::new().
-        with_time(Duration::new(1, 0)).
-        search(gamestate);
+    let result = MCTS::new(gamestate)
+        .with_exploration(2.0)
+        .timed_search(Duration::new(1, 0));
 
     println!("{:?}",result);
 }

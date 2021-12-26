@@ -3,7 +3,7 @@ use super::*;
 fn best(moves: &[Pit]) -> Pit {
     let game = Mancala::load(&moves);
     let t = Duration::new(1,0);
-    let result = MCTS::new().with_time(t).search(game);
+    let result = MCTS::new(game).timed_search(t);
     println!("{:?}",result);
     result
 }

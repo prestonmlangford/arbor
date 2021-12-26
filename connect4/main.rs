@@ -275,10 +275,8 @@ fn main() {
             }
         } else {
             let state = gamestate.clone();
-            let result = 
-                MCTS::new().
-                with_time(Duration::new(3, 0)).
-                search(state);
+            let result = MCTS::new(state)
+                .timed_search(Duration::new(3, 0));
             
             println!("{:?}",result);
             gamestate = gamestate.make(result);
