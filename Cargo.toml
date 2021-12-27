@@ -17,6 +17,7 @@ time = "0.2.25"
 rand = "0.8.0"
 lazy_static = "1.4.0"
 rand_xorshift = "0.3.0"
+instant = "0.1.12"
 
 [lib]
 name = "arbor"

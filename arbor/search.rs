@@ -1,4 +1,4 @@
-use std::time::Instant;
+use instant::Instant;
 use super::*;
 use super::tree::*;
 use rand_xorshift::XorShiftRng as Rand;
