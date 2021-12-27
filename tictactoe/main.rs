@@ -174,9 +174,9 @@ fn main(){
     
     println!("{}",gamestate);
 
-    let result = MCTS::new(gamestate)
+    let result = MCTS::new()
         .with_exploration(2.0)
-        .timed_search(Duration::new(1, 0));
+        .timed_search(gamestate,Duration::new(1, 0));
 
     println!("{:?}",result);
 }

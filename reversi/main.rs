@@ -400,9 +400,9 @@ fn main() {
             }
         } else {
             let state = gamestate.clone();
-            let result = MCTS::new(state)
+            let result = MCTS::new()
                 .with_exploration(2.0)
-                .timed_search(Duration::new(3, 0));
+                .timed_search(state,Duration::new(3, 0));
             gamestate = gamestate.make(result);
         }
         

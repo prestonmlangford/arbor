@@ -5,26 +5,40 @@ use rand_xorshift::XorShiftRng as Rand;
 use rand::SeedableRng;
 use rand::Rng;
 
-impl<A: Action, S: GameState<A>> MCTS<A,S> {
-    ///Call this method to begin searching the given game state.
-    pub fn timed_search(&mut self, time: Duration) -> A {
-        let root = self.state.hash();
+impl MCTS {
+    ///Call this method to search the given game state for a duration of time.
+    pub fn timed_search<A: Action, S: GameState<A>>(&self,state: S, time: Duration) -> A {
+        let mut tree = Tree::new(&state);
+        
         let start = Instant::now();
         while (Instant::now() - start) < time {
-            go(&self.state,&mut self.tree,&self.params,root);
+            go(&state,&mut tree,&self);
         }
         
-        best(&self.tree,root)
+        best(&tree)
     }
     
-    //PMLFIXME add a "step" function to allow the user to implement their own stopping condition. This should include a data structure that shows how the search is progressing
-    pub fn step(&mut self) -> A {
-        let root = self.state.hash();
-        self.tree.set(root, Node::Unexplored);
+    ///Call this method to incrementally search the given game state while allowing the caller to check progress.
+    pub fn incremental_search<F,A: Action, S: GameState<A>>(&self,state: S, f: &mut F) -> ()
+        where F: FnMut(&Vec<(A, f32, f32)>) -> u32 
+    {
+        let mut tree = Tree::new(&state);
         
-        go(&self.state,&mut self.tree,&self.params,root);
-        
-        best(&self.tree,root)
+        let mut result = vec!();
+        loop {
+            result.clear();
+            
+            tree.first_ply(&mut result);
+            
+            let n = f(&result);
+            if n == 0 {
+                break;
+            } else {
+                for _ in 0..n {
+                    go(&state,&mut tree,&self);
+                }
+            }
+        }
     }
 }
 
@@ -39,33 +53,9 @@ impl GameResult {
     }
 }
 
-
-fn expand<A: Action, S: GameState<A>>(
-    state: &S,
-    tree: &mut Tree<A>
-) -> Vec<(A,u64)> {
-    let mut v = Vec::new();
-    
-    for action in state.actions() {
-        let next = state.make(action);
-        let hash = next.hash();
-        v.push((action,hash));
-        tree.set(hash,Node::Unexplored);
-    }
-    
-    debug_assert!(
-        if v.len() != 0 {
-            true
-        } else {
-            false
-        }, "expand did not find any actions for state.");
-        
-    v
-}    
-
 fn uct_policy<A: Action>(
     tree: &Tree<A>,
-    params: &MctsParams,
+    params: &MCTS,
     np: u32,
     edges: &Vec<(A,u64)>,
     player: u32
@@ -140,7 +130,7 @@ fn rollout<A: Action, S: GameState<A>>(state: &S) -> f32 {
     }
 }
 
-fn evaluate<A: Action, S: GameState<A>>(state: &S, params: &MctsParams) -> f32 {
+fn evaluate<A: Action, S: GameState<A>>(state: &S, params: &MCTS) -> f32 {
     if params.use_custom_evaluation {
         state.custom_evaluation()
     } else {
@@ -151,9 +141,9 @@ fn evaluate<A: Action, S: GameState<A>>(state: &S, params: &MctsParams) -> f32 {
 fn go<A: Action, S: GameState<A>>(
     state: &S,
     tree: &mut Tree<A>,
-    params: &MctsParams,
-    hash: u64
+    params: &MCTS
 ) -> f32 {
+    let hash = state.hash();
     match tree.get(hash) {
         Node::Branch(p,q,n,e) => {
 
@@ -171,7 +161,7 @@ fn go<A: Action, S: GameState<A>>(
                 }
             },"hashes don't match!");
             
-            let s = go(&next,tree,params,child);
+            let s = go(&next,tree,params);
 
             let v = if p == player {s} else {1.0 - s};
             let update = Node::Branch(p,q + v,n + 1,e);
@@ -180,10 +170,8 @@ fn go<A: Action, S: GameState<A>>(
         },
         Node::Leaf(p,q,n) => {
             if n > params.expansion {
-                let e = expand(state,tree);
-                let update = Node::Branch(p,q,n,e);
-                tree.set(hash, update);
-                go(state,tree,params,hash)
+                tree.expand(state,q,n);
+                go(state,tree,params)
             } else {
                 let v = evaluate(state,&params);
                 let update = Node::Leaf(p,q + v,n + 1);
@@ -207,11 +195,8 @@ fn go<A: Action, S: GameState<A>>(
     }
 }
 
-fn best<A: Action>(
-    tree: &Tree<A>,
-    root: u64
-) -> A {
-    match tree.get(root) {
+fn best<A: Action>(tree: &Tree<A>) -> A {
+    match tree.root() {
         Node::Branch(player,_qr,_nr,e) => {
             //println!("root -> expected value {:0.4}",_qr/(_nr as f32));
 

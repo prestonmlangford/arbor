@@ -8,7 +8,6 @@ use std::io;
 use std::io::prelude::*;
 use std::fmt::Display;
 use std::fmt;
-use std::time::Duration;
 
 use arbor::*;
 use rand_xorshift::XorShiftRng as Rand;
@@ -348,8 +347,24 @@ fn main() {
             }
         } else {
             let state = gamestate.clone();
-            let result = MCTS::new(state)
-                .timed_search(Duration::new(3, 0));
+            let search = MCTS::new();
+            
+            let mut best = None;
+            search.incremental_search(state,&mut |ply|{
+                let mut value = 0.0;
+                let mut error = 1.0;
+                for (a,w,e) in ply.iter() {
+                    if *w >= value {
+                        error = *e;
+                        value = *w;
+                        best = Some(*a);
+                    }
+                }
+                
+                if error < 0.01 {0} else {100}
+            });
+            
+            let result = best.expect("should have found a best move");
             
             println!("{:?}",result);
             gamestate = gamestate.make(result);
