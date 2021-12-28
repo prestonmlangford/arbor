@@ -33,12 +33,12 @@ impl<A: Action> Tree<A> {
     pub fn expand<S: GameState<A>>(&mut self,state: &S, q: f32, n: u32) {
         let mut e = Vec::new();
         
-        for action in state.actions() {
-            let next = state.make(action);
+        state.actions(&mut |a|{
+            let next = state.make(a);
             let hash = next.hash();
-            e.push((action,hash));
+            e.push((a,hash));
             self.set(hash,Node::Unexplored);
-        }
+        });
         
         self.set(
             state.hash(),
@@ -49,7 +49,8 @@ impl<A: Action> Tree<A> {
     pub fn first_ply(&self,result: &mut Vec<(A,f32,f32)>)
     {
         match self.root() {
-            Node::Branch(player,_,_,e) => {
+            Node::Branch(player,_,_n,e) => {
+                println!("N = {}",_n);
                 for (a,u) in e.iter() {
                     match self.get(*u) {
                         Node::Terminal(p,q) => {

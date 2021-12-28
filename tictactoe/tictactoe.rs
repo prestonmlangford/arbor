@@ -117,16 +117,15 @@ impl Action for Grid {}
 
 impl GameState<Grid> for TicTacToe {
 
-    fn actions(&self) -> Vec<Grid> {
+    fn actions<F>(&self,f: &mut F) where F: FnMut(Grid){
         debug_assert!(self.gameover().is_none());
-        let mut result = Vec::new();
+        
         for mark in ALLMOVES.iter() {
             let i = *mark as usize;
             if self.space[i] == Mark::N {
-                result.push(ALLMOVES[i])
+                f(ALLMOVES[i])
             }
         }
-        result
     }
     
     fn make(&self, action: Grid) -> Self {

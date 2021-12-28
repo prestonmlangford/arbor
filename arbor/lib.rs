@@ -16,10 +16,10 @@ pub trait Action: Copy + Clone + Debug {}
 pub enum GameResult {Win,Lose,Draw}
 
 ///This trait describes the current state of the game from which to begin searching for the best move.
-pub trait GameState<A: Action>: Debug + Display {
+pub trait GameState<A: Action>: Debug + Display + Clone {
 
-    ///Provide a list of legal actions from the current game state.
-    fn actions(&self) -> Vec<A>;
+    ///Iterate a list of legal actions for the current game state. Call "f" for each action.
+    fn actions<F>(&self,f: &mut F) where F: FnMut(A);
 
     ///Provide the next game state for the given action.
     fn make(&self,action: A) -> Self;

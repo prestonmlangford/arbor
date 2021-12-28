@@ -175,16 +175,12 @@ impl Action for Column {}
 
 impl GameState<Column> for Connect4 {
     
-    fn actions(&self) -> Vec<Column> {
-        let mut result = Vec::new();
-        
+    fn actions<F>(&self,f: &mut F) where F: FnMut(Column){
         for c in 0..W {
             if self.space[(H - 1)*W + c] == Disc::N {
-                result.push(COL[c]);
+                f(COL[c]);
             }
         }
-        
-        result
     }
     
     fn make(&self,c: Column) -> Self {
@@ -213,7 +209,8 @@ impl GameState<Column> for Connect4 {
             self.check_nw(row, column) ||
             self.check_ne(row, column);
         
-        let full = next.actions().len() == 0;
+        let mut full = true;
+        next.actions(&mut |_|{full = false;});
         
         next.gameover = win || full;
         next.winner = if win {color} else {Disc::N};

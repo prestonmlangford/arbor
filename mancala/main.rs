@@ -256,20 +256,17 @@ impl GameState<Pit> for Mancala {
     }
 
     
-    fn actions(&self) -> Vec<Pit> {
+    fn actions<F>(&self,f: &mut F) where F: FnMut(Pit) {
         let pits = match self.side {
             Player::L => (L1 as usize)..(LBank as usize),
             Player::R => (R1 as usize)..(RBank as usize),
         };
 
-        let mut v = Vec::new();
-
         for p in pits {
             if self.pit[p] > 0 {
-                v.push(PIT[p]);
+                f(PIT[p]);
             }
         }
-        v
     }
     
     fn hash(&self) -> u64 {

@@ -285,8 +285,10 @@ impl Action for Move {}
 
 impl GameState<Move> for Reversi {
     
-    fn actions(&self) -> Vec<Move> {
-        self.actions.clone()
+    fn actions<F>(&self,f: &mut F) where F: FnMut(Move) {
+        for a in &self.actions {
+            f(*a);
+        }
     }
     
     fn gameover(&self) -> Option<GameResult> {

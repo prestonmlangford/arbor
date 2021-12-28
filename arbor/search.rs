@@ -15,7 +15,19 @@ impl MCTS {
             go(&state,&mut tree,&self);
         }
         
-        best(&tree)
+        let mut actions = vec!();
+        let mut best = None;
+        let mut value = -1.0;
+        tree.first_ply(&mut actions);
+        for (a,w,e) in actions {
+            println!("{:?} {} {}",a,w,e);
+            if w > value {
+                value = w;
+                best = Some(a);
+            }
+        }
+        
+        best.expect("should have found best move")
     }
     
     ///Call this method to incrementally search the given game state while allowing the caller to check progress.
@@ -90,25 +102,12 @@ fn uct_policy<A: Action>(
     best_edge.expect("UCT policy should find a best edge")
 }
 
-#[inline]
-fn rmake<A: Action, S: GameState<A>>(state: &S,rand: &mut impl Rng) -> S {
-    let actions = state.actions();
-    
-    debug_assert!(
-        actions.len() > 0,
-        "Expected at least one action for state {}",state
-    );
-    
-    let action = *actions.choose(rand).unwrap();
-    
-    state.make(action)
-}
-
 fn rollout<A: Action, S: GameState<A>>(state: &S) -> f32 {
     let mut rand = Rand::from_entropy();
-    let mut sim = rmake(state, &mut rand);
-    let p = state.player();
-
+    let mut actions = Vec::new();
+    let mut sim = state.clone();
+    let p = sim.player();
+    
     loop {
         if let Some(result) = sim.gameover() {
             let side = sim.player() == p;
@@ -116,7 +115,12 @@ fn rollout<A: Action, S: GameState<A>>(state: &S) -> f32 {
             return if side {v} else {1.0 - v}
         }
         
-        sim = rmake(&sim, &mut rand);
+        actions.clear();
+        sim.actions(&mut |a|{
+            actions.push(a);
+        });
+        let action = *actions.choose(&mut rand).unwrap();
+        sim = sim.make(action);
     }
 }
 
