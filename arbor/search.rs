@@ -3,7 +3,6 @@ use super::*;
 use super::tree::*;
 use rand_xorshift::XorShiftRng as Rand;
 use rand::SeedableRng;
-use rand::Rng;
 
 impl MCTS {
     ///Call this method to search the given game state for a duration of time.
@@ -186,43 +185,5 @@ fn go<A: Action, S: GameState<A>>(
             tree.set(hash, update);
             v
         },
-    }
-}
-
-fn best<A: Action>(tree: &Tree<A>) -> A {
-    match tree.root() {
-        Node::Branch(player,_qr,_nr,e) => {
-            //println!("root -> expected value {:0.4}",_qr/(_nr as f32));
-
-            let mut a_best = 
-                e.first().expect("Best found no actions for root").0;
-            let mut v_best = -1.0;
-            for (a,u) in e.iter() {
-                match tree.get(*u) {
-                    Node::Terminal(p,q) => {
-                        let win = 
-                            ((p == player) && (q > 0.5)) ||
-                            ((p != player) && (q < 0.5));
-                        if win {
-                            return *a;
-                        }
-                    },
-                    Node::Unexplored => (),
-                    Node::Leaf(p,q,n) |
-                    Node::Branch(p,q,n,_) => {
-                        let s = q/(n as f32);
-                        let v = if p == player {s} else {1.0 - s};
-                        //println!("{:?} {} {:>8.1} {:>6} {:<6.5}",a,p,q,n,v);
-                        if v > v_best {
-                            a_best = *a;
-                            v_best = v;
-                        }
-                    },
-                }
-            }
-            
-            a_best
-        },
-        _ => panic!("Called best on non branch node"),
     }
 }
