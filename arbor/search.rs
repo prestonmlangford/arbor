@@ -64,22 +64,30 @@ fn uct_policy<A: Action>(
     
     debug_assert!(np != 0,"UCT policy called with 0 parent value");
     
-    let mut best_edge = *edges.first().expect("UCT policy had no choices");
+    let mut best_edge = None;
     let mut best_uct = -1.0;
     
     for (a,u) in edges.iter() {
-        match tree.get(*u) {
+        let uct = match tree.get(*u) {
             Node::Terminal(p,q) => {
-                let win = 
-                    ((p == player) && (q > 0.5)) ||
-                    ((p != player) && (q < 0.5));
-                if win {
-                    return (*a,*u);
-                }
+                if p == player {q} else {1.0 - q}
+                //let win = 
+                //    ((p == player) && (q > 0.5)) ||
+                //    ((p != player) && (q < 0.5));
+                //if win {
+                //    //println!("win!");
+                //    //return (*a,*u);
+                //    1.0
+                //} else {
+                //    0.0
+                //}
             },
             Node::Unexplored => {
-                best_edge = (*a,*u);
-                best_uct = f32::INFINITY;
+                //return (*a,*u);
+                //best_edge = (*a,*u);
+                //best_uct = f32::INFINITY;
+                println!("unexplored");
+                f32::INFINITY
             },
             Node::Leaf(p,q,n) |
             Node::Branch(p,q,n,_) => {
@@ -88,16 +96,16 @@ fn uct_policy<A: Action>(
                 let k = (np as f32).ln();
                 let s = q/nf32;
                 let v = if p == player {s} else {1.0 - s};
-                let uct = v + c*(k/nf32).sqrt();
-                if uct > best_uct {
-                    best_edge = (*a,*u);
-                    best_uct = uct;
-                }
+                v + c*(k/nf32).sqrt()
             },
+        };
+        if uct > best_uct {
+            best_edge = Some((*a,*u));
+            best_uct = uct;
         }
     }
     
-    best_edge
+    best_edge.expect("UCT policy should find a best edge")
 }
 
 #[inline]
@@ -179,7 +187,7 @@ fn go<A: Action, S: GameState<A>>(
                 v
             }
         },
-        Node::Terminal(_,q) => q,
+        Node::Terminal(p,q) => if p == state.player() {q} else {1.0 - q},
         Node::Unexplored => {
             let p = state.player();
             let (v,update) = if let Some(result) = state.gameover() {

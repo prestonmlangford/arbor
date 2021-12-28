@@ -12,6 +12,7 @@ use rand::seq::SliceRandom;
 pub trait Action: Copy + Clone + Debug {}
 
 ///This enum describes the result of a game.
+#[derive(Debug)]
 pub enum GameResult {Win,Lose,Draw}
 
 ///This trait describes the current state of the game from which to begin searching for the best move.

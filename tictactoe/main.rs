@@ -1,184 +1,87 @@
 extern crate arbor;
 extern crate rand_xorshift;
 
-
-use std::fmt::Display;
-use std::fmt;
-
+mod tictactoe;
+use std::io;
+use std::io::prelude::*;
+use tictactoe::*;
 use arbor::*;
-use std::time::Duration;
-
-#[derive(Copy,Clone,PartialEq,Debug)]
-enum Mark {N,X,O}
-
-impl Display for Mark {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::X => write!(f,"X"),
-            Self::O => write!(f,"O"),
-            Self::N => write!(f," "),
-        }
-    }
-}
-
-#[derive(Copy,Clone,Debug, PartialEq)]
-enum Grid {
-    TL,TM,TR,
-    ML,MM,MR,
-    BL,BM,BR
-}
-
-use Grid::*;
-static ALLMOVES: [Grid;9] = [
-    TL,TM,TR,
-    ML,MM,MR,
-    BL,BM,BR
-];
-
-#[derive(Copy,Clone,Debug)]
-struct TicTacToe {
-    space: [Mark;9],
-    turn: usize,
-    side: Mark,
-    hash: u64,
-}
 
 
-impl Display for TicTacToe {
+
+
+fn main() {
+    println!("Tic Tac Toe!");
     
-    //  X | O | X 
-    // -----------
-    //    |   |   
-    // -----------
-    //  O | O | X
+    let game = [];
+
+    let mut gamestate = TicTacToe::load(&game);
+    println!("{}",gamestate);
     
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, 
-"
-{}
- {} | {} | {}
------------
- {} | {} | {}
------------
- {} | {} | {}
-",
-            if self.side == Mark::X {"Player X"} else {"Player O"},
-            self.space[0],self.space[1],self.space[2],
-            self.space[3],self.space[4],self.space[5],
-            self.space[6],self.space[7],self.space[8]
-        )
-    }
-}
-
-impl TicTacToe {
-    fn new() -> TicTacToe {
-        TicTacToe {
-            space: [Mark::N;9],
-            turn: 0,
-            side: Mark::X,
-            hash: 0,
-        }
-    }
-
-
-    #[allow(dead_code)]
-    fn load(moves: &[Grid]) -> TicTacToe {
-        let mut b = TicTacToe::new();
-        for m in moves {
-            println!("{}",b);
-            b = b.make(*m);
-        }
-        b
-    }
-
-    fn check(&self, a: usize, b: usize, c: usize) -> bool {
-         (self.space[a] == self.space[b]) && (self.space[b] == self.space[c])
-    }
-
-    fn winner(&self) -> Mark {
-        let lines = [
-            (0,1,2),(3,4,5),(6,7,8),
-            (0,3,6),(1,4,7),(2,5,8),
-            (0,4,8),(2,4,6)
-        ];
-
-        for (a,b,c) in lines.iter() {
-            if self.check(*a, *b, *c) {
-                return self.space[*a];
+    loop {
+        if gamestate.side == Mark::X {
+            print!("=> ");
+            //flushes standard out so the print statements are actually displayed
+            io::stdout().flush().unwrap();
+            
+            let mut input = String::new();
+            if let Err(_) = io::stdin().read_line(&mut input) {
+                println!("Failed to read user input");
+                continue;
             }
-        }
-        
-        Mark::N
-    }
-}
-
-
-impl Action for Grid {}
-
-impl GameState<Grid> for TicTacToe {
-
-    fn actions(&self) -> Vec<Grid> {
-        debug_assert!(self.gameover().is_none());
-        let mut result = Vec::new();
-        for mark in ALLMOVES.iter() {
-            let i = *mark as usize;
-            if self.space[i] == Mark::N {
-                result.push(ALLMOVES[i])
-            }
-        }
-        result
-    }
-    
-    fn make(&self, action: Grid) -> Self {
-        debug_assert!(self.gameover().is_none(),"Make called while gameover\n{}",self);
-        debug_assert!(self.space[action as usize] == Mark::N,"Make called on invalid space {:?}\n{}",action,self);
-
-        let mut next = TicTacToe {
-            space: self.space,
-            turn: self.turn + 1,
-            side: if self.side == Mark::X {Mark::O} else {Mark::X},
-            hash: self.hash | ((if self.side == Mark::X {1} else {512}) << (action as u64)),
-        };
-
-        next.space[action as usize] = self.side;
-
-        next
-    }
-
-    fn hash(&self) -> u64 {
-        self.hash
-    }
-
-    
-    fn gameover(&self) -> Option<GameResult> {
-        if (self.turn == 9) || (self.winner() != Mark::N) {
-            return match self.winner() {
-                Mark::N => Some(GameResult::Draw),
-
-                // Side to play last always wins
-                _ => Some(GameResult::Lose),
+            
+            if let Ok(p) = input.split_whitespace().next().unwrap().parse::<usize>() {
+                if (1 <= p) && (p <= 9) {
+                    let space = gamestate.space[p-1];
+                    //println!("{:?}",pit);
+                    if space == Mark::N {
+                        gamestate = gamestate.make(ALLMOVES[p-1]);
+                    } else {
+                        println!("invalid move");
+                    }
+                } else {
+                    println!("validation failed");
+                }
+            } else {
+                println!("parse failed");
             }
         } else {
-            None
+            let state = gamestate.clone();
+            let search = MCTS::new();
+            
+            let mut best = None;
+            search.incremental_search(state,&mut |ply|{
+                let mut value = -1.0;
+                let mut error = 1.0;
+                for (a,w,e) in ply.iter() {
+                    println!("{:?} {} {}",*a,*w,*e);
+                    if *w >= value {
+                        error = *e;
+                        value = *w;
+                        best = Some(*a);
+                    }
+                }
+                println!("");
+                if error < 0.01 {0} else {100}
+            });
+            
+            let result = best.expect("should have found a best move");
+            
+            println!("{:?}",result);
+            gamestate = gamestate.make(result);
+        }
+        
+        
+        println!("{}",gamestate);
+        
+        
+        match gamestate.gameover() {
+            Some(side) => {
+                println!("{:?} side wins!",side);
+            },
+            None => ()
         }
     }
-
-    fn player(&self) -> u32 {
-        self.side as u32
-    }
-}
-
-fn main(){
-    let game = [MM,ML,MR,TL,];
-    let gamestate = TicTacToe::load(&game);
-    
-    println!("{}",gamestate);
-
-    let result = MCTS::new()
-        .with_exploration(2.0)
-        .timed_search(gamestate,Duration::new(1, 0));
-
-    println!("{:?}",result);
 }
 
 #[cfg(test)]

@@ -361,7 +361,7 @@ fn main() {
                     }
                 }
                 
-                if error < 0.01 {0} else {100}
+                if error < 0.001 {0} else {100}
             });
             
             let result = best.expect("should have found a best move");

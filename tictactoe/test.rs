@@ -1,4 +1,5 @@
-use super::*;
+use super::tictactoe::Grid::*;
+use super::tictactoe::*;
 use arbor::MCTS;
 use std::time::Duration;
 

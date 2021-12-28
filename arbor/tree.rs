@@ -21,8 +21,9 @@ impl<A: Action> Tree<A> {
     }
     
     pub fn get(&self,key: u64) -> Node<A> {
-        //self.table.insert(key, Node::Unexplored).unwrap_or(Node::Unexplored)
-        self.table.get(&key).unwrap_or(&Node::Unexplored).clone()//PMLFIXME why is this cloned? Shouldn't I be able to reference it?
+        //PMLFIXME why is this cloned? Shouldn't I be able to reference it?
+        //Look into RefCell as a way to borrow without cloning
+        self.table.get(&key).unwrap_or(&Node::Unexplored).clone()
     }
 
     pub fn set(&mut self,key: u64, val: Node<A>) {
@@ -51,7 +52,10 @@ impl<A: Action> Tree<A> {
             Node::Branch(player,_,_,e) => {
                 for (a,u) in e.iter() {
                     match self.get(*u) {
-                        Node::Terminal(_,q) => result.push((*a,q,0.0)),
+                        Node::Terminal(p,q) => {
+                            let w = if p == player {q} else {1.0 - q};
+                            result.push((*a,w,0.0));
+                        },
                         Node::Unexplored => result.push((*a,0.5,0.5)),
                         Node::Leaf(p,q,n) |
                         Node::Branch(p,q,n,_) => {
