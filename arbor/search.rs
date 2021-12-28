@@ -69,26 +69,8 @@ fn uct_policy<A: Action>(
     
     for (a,u) in edges.iter() {
         let uct = match tree.get(*u) {
-            Node::Terminal(p,q) => {
-                if p == player {q} else {1.0 - q}
-                //let win = 
-                //    ((p == player) && (q > 0.5)) ||
-                //    ((p != player) && (q < 0.5));
-                //if win {
-                //    //println!("win!");
-                //    //return (*a,*u);
-                //    1.0
-                //} else {
-                //    0.0
-                //}
-            },
-            Node::Unexplored => {
-                //return (*a,*u);
-                //best_edge = (*a,*u);
-                //best_uct = f32::INFINITY;
-                println!("unexplored");
-                f32::INFINITY
-            },
+            Node::Terminal(p,q) => if p == player {q} else {1.0 - q},
+            Node::Unexplored => f32::INFINITY,
             Node::Leaf(p,q,n) |
             Node::Branch(p,q,n,_) => {
                 let nf32 = n as f32;

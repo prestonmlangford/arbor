@@ -54,7 +54,6 @@ fn main() {
                 let mut value = -1.0;
                 let mut error = 1.0;
                 for (a,w,e) in ply.iter() {
-                    println!("{:?} {} {}",*a,*w,*e);
                     if *w >= value {
                         error = *e;
                         value = *w;
