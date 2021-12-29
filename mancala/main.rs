@@ -344,24 +344,27 @@ fn main() {
             }
         } else {
             let state = gamestate.clone();
-            let search = MCTS::new();
-            
-            let mut best = None;
-            search.incremental_search(state,&mut |ply|{
-                let mut value = 0.0;
-                let mut error = 1.0;
-                for (a,w,e) in ply.iter() {
-                    if *w >= value {
-                        error = *e;
-                        value = *w;
-                        best = Some(*a);
+            let mut mcts = MCTS::new(state);
+            let result;
+            let t = std::time::Duration::new(0,10_000_000);
+            loop {
+                let (a,_,e) = *mcts
+                .search(t)
+                .iter()
+                .max_by(|(_,w1,_),(_,w2,_)| {
+                    if w1 > w2 {
+                        std::cmp::Ordering::Greater
+                    } else {
+                        std::cmp::Ordering::Less
                     }
-                }
+                })
+                .expect("should have found a best move");
                 
-                if error < 0.001 {0} else {100}
-            });
-            
-            let result = best.expect("should have found a best move");
+                if e < 0.001 {
+                    result = a;
+                    break;
+                }
+            }
             
             println!("{:?}",result);
             gamestate = gamestate.make(result);

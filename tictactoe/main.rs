@@ -47,26 +47,23 @@ fn main() {
             }
         } else {
             let state = gamestate.clone();
-            let mcts = MCTS::new();
+            let mut mcts = MCTS::new(state);
+            let t = std::time::Duration::new(1, 0);
+            let (action,_value,_error) = *mcts
+                .search(t)
+                .iter()
+                .max_by(|(_,w1,_),(_,w2,_)| {
+                    if w1 > w2 {
+                        std::cmp::Ordering::Greater
+                    } else {
+                        std::cmp::Ordering::Less
+                    }
+                })
+                .expect("should have found a best move");
+                
             
-            let mut best = None;
-            mcts.incremental_search(state,&mut |ply|{
-               let mut value = -1.0;
-               let mut error = 1.0;
-               for (a,w,e) in ply.iter() {
-                   if *w >= value {
-                       error = *e;
-                       value = *w;
-                       best = Some(*a);
-                   }
-               }
-               println!("");
-               if error < 0.01 {0} else {100}
-            });
-            let result = best.expect("should have found a best move");
-            
-            println!("{:?}",result);
-            gamestate = gamestate.make(result);
+            println!("{:?}",action);
+            gamestate = gamestate.make(action);
         }
         
         

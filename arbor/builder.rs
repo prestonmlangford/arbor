@@ -1,13 +1,15 @@
-use super::MCTS;
+use super::*;
 
 
-impl MCTS {
+impl<A: Action, S: GameState<A>> MCTS<A,S> {
     ///Call this method to instantiate a new search with default parameters.
-    pub fn new() -> Self {
+    pub fn new(state: S) -> Self {
         Self {
             exploration: (2.0 as f32).sqrt(),
             expansion: 10,
             use_custom_evaluation: false,
+            tree: tree::Tree::new(&state),
+            root: state,
         }
     }
     

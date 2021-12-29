@@ -272,11 +272,22 @@ fn main() {
             }
         } else {
             let state = gamestate.clone();
-            let result = MCTS::new()
-                .timed_search(state,Duration::new(3, 0));
+            let t = Duration::new(1,0);
+            let mut mcts = MCTS::new(state);
+            let (action,_value,_error) = *mcts
+                .search(t)
+                .iter()
+                .max_by(|(_,w1,_),(_,w2,_)| {
+                    if w1 > w2 {
+                        std::cmp::Ordering::Greater
+                    } else {
+                        std::cmp::Ordering::Less
+                    }
+                })
+                .expect("should have found a best move");
             
-            println!("{:?}",result);
-            gamestate = gamestate.make(result);
+            println!("{:?}",action);
+            gamestate = gamestate.make(action);
         }
         
         

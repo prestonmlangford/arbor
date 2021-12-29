@@ -11,14 +11,10 @@ pub enum Node<A: Action> {
 
 #[derive(Default)]
 pub struct Tree<A: Action> {
-    table: HashMap<u64,Node<A>>,
-    rootkey: u64
+    table: HashMap<u64,Node<A>>
 }
 
 impl<A: Action> Tree<A> {
-    pub fn root(&self) -> &Node<A> {
-        self.get(self.rootkey)
-    }
     
     pub fn get(&self,key: u64) -> &Node<A> {
        self.table.get(&key).unwrap_or(&Node::Unexplored)
@@ -48,37 +44,47 @@ impl<A: Action> Tree<A> {
         );
     }
     
-    pub fn first_ply<F>(&self,f: &mut F) where F: FnMut(A,f32,f32)
+    pub fn new<S: GameState<A>>(state: &S) -> Tree<A> {
+        let mut tree = Tree{table: HashMap::new()};
+        tree.expand(state,0.5,1);
+        tree
+    }
+}
+
+
+impl<A: Action> Node<A> {
+    pub fn uct(&self,k: u32, c: f32, prev: u32) -> f32
     {
-        match self.root() {
-            Node::Branch(player,_,_n,e) => {
-                //println!("N = {}",_n);
-                for (a,u) in e.iter() {
-                    match self.get(*u) {
-                        Node::Terminal(p,q) => {
-                            let w = if p == player {*q} else {1.0 - *q};
-                            f(*a,w,0.0);
-                        },
-                        Node::Unexplored => f(*a,0.5,0.5),
-                        Node::Leaf(p,q,n) |
-                        Node::Branch(p,q,n,_) => {
-                            let nf32 = *n as f32;
-                            let w = *q/nf32;
-                            let w = if p == player {w} else {1.0 - w};
-                            let s = 1.0/nf32 + (w*(1.0 - w)/nf32).sqrt();
-                            f(*a,w,s);
-                        },
-                    }
-                }
+        match self {
+            Node::Terminal(p,q) => if *p == prev {*q} else {1.0 - *q},
+            Node::Unexplored => f32::INFINITY,
+            Node::Leaf(p,q,n) |
+            Node::Branch(p,q,n,_) => {
+                let nf32 = *n as f32;
+                let kf32 = k as f32;
+                let w = q/nf32;
+                let v = if *p == prev {w} else {1.0 - w};
+                v + c*(kf32.ln()/nf32).sqrt()
             },
-            _ => panic!("Root is not a branch node"),
         }
     }
     
-    pub fn new<S: GameState<A>>(state: &S) -> Tree<A> {
-        let hash = state.hash();
-        let mut tree = Tree{table: HashMap::new(), rootkey: hash};
-        tree.expand(state,0.5,1);
-        tree
+    pub fn err(&self,prev: u32) -> (f32,f32)
+    {
+        match self {
+            Node::Terminal(p,q) => {
+                let w = if *p == prev {*q} else {1.0 - *q};
+                (w,0.0)
+            },
+            Node::Unexplored => (0.5,0.5),
+            Node::Leaf(p,q,n) |
+            Node::Branch(p,q,n,_) => {
+                let nf32 = *n as f32;
+                let w = *q/nf32;
+                let w = if *p == prev {w} else {1.0 - w};
+                let s = 1.0/nf32 + (w*(1.0 - w)/nf32).sqrt();
+                (w,s)
+            },
+        }
     }
 }

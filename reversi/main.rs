@@ -6,7 +6,6 @@ use std::io;
 use std::io::prelude::*;
 use std::fmt::Display;
 use std::fmt;
-use std::time::Duration;
 use arbor::*;
 
 
@@ -402,10 +401,23 @@ fn main() {
             }
         } else {
             let state = gamestate.clone();
-            let result = MCTS::new()
-                .with_exploration(2.0)
-                .timed_search(state,Duration::new(3, 0));
-            gamestate = gamestate.make(result);
+            let mut mcts = MCTS::new(state).with_exploration(2.0);
+            let t = std::time::Duration::new(2, 0);
+            let (action,_value,_error) = *mcts
+                .search(t)
+                .iter()
+                .max_by(|(_,w1,_),(_,w2,_)| {
+                    if w1 > w2 {
+                        std::cmp::Ordering::Greater
+                    } else {
+                        std::cmp::Ordering::Less
+                    }
+                })
+                .expect("should have found a best move");
+                
+            
+            println!("{:?}",action);
+            gamestate = gamestate.make(action);
         }
         
         

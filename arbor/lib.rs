@@ -42,8 +42,8 @@ pub trait GameState<A: Action>: Debug + Display + Clone {
 }
 
 ///This struct provides methods to set search parameters and control execution. It uses a builder pattern allowing only the desired parameters to be changed from default.
-#[derive(Copy,Clone,Debug)]
-pub struct MCTS {
+//#[derive(Copy,Clone,Debug)]
+pub struct MCTS<A: Action, S: GameState<A>> {
     
     ///Controls whether exploration vs. exploitation is preferred by the MCTS algorithm. This parameter is described in more detail by the UCT algorithm.
     pub exploration: f32,
@@ -53,4 +53,7 @@ pub struct MCTS {
     
     ///Sets whether the custom evaluation method is used instead of a random playout.
     pub use_custom_evaluation: bool,
+    
+    tree: tree::Tree<A>,
+    root: S,
 }
