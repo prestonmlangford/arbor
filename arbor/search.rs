@@ -70,30 +70,28 @@ fn uct_policy<A: Action>(
     np: u32,
     edges: &Vec<(A,u64)>,
     player: u32
-) -> (A,u64) {
-    
-    
+) -> A {
     debug_assert!(np != 0,"UCT policy called with 0 parent value");
     
     let mut best_edge = None;
     let mut best_uct = -1.0;
     
-    for (a,u) in edges.iter() {
+    for (a,u) in edges {
         let uct = match tree.get(*u) {
-            Node::Terminal(p,q) => if p == player {q} else {1.0 - q},
+            Node::Terminal(p,q) => if *p == player {*q} else {1.0 - *q},
             Node::Unexplored => f32::INFINITY,
             Node::Leaf(p,q,n) |
             Node::Branch(p,q,n,_) => {
-                let nf32 = n as f32;
+                let nf32 = *n as f32;
                 let c = params.exploration;
                 let k = (np as f32).ln();
                 let s = q/nf32;
-                let v = if p == player {s} else {1.0 - s};
+                let v = if *p == player {s} else {1.0 - s};
                 v + c*(k/nf32).sqrt()
             },
         };
         if uct > best_uct {
-            best_edge = Some((*a,*u));
+            best_edge = Some(*a);
             best_uct = uct;
         }
     }
@@ -137,22 +135,15 @@ fn go<A: Action, S: GameState<A>>(
     params: &MCTS
 ) -> f32 {
     let hash = state.hash();
-    match tree.get(hash) {
+    let node = tree.remove(hash);
+    match node {
         Node::Branch(p,q,n,e) => {
 
-            let (action,child) = uct_policy(tree,params,n,&e,p);
+            let action = uct_policy(tree,params,n,&e,p);
             
             let next = state.make(action);
             let player = next.player();
-            debug_assert!({
-                let next_hash = next.hash();
-                if next_hash == child {
-                    true
-                } else {
-                    println!("{}",next);
-                    false
-                }
-            },"hashes don't match!");
+            
             
             let s = go(&next,tree,params);
 
@@ -172,7 +163,10 @@ fn go<A: Action, S: GameState<A>>(
                 v
             }
         },
-        Node::Terminal(p,q) => if p == state.player() {q} else {1.0 - q},
+        Node::Terminal(p,q) => {
+            tree.set(hash,node);
+            q//if p == state.player() {q} else {1.0 - q}
+        },
         Node::Unexplored => {
             let p = state.player();
             let (v,update) = if let Some(result) = state.gameover() {

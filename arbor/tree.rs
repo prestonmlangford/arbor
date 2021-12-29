@@ -16,14 +16,16 @@ pub struct Tree<A: Action> {
 }
 
 impl<A: Action> Tree<A> {
-    pub fn root(&self) -> Node<A> {
+    pub fn root(&self) -> &Node<A> {
         self.get(self.rootkey)
     }
     
-    pub fn get(&self,key: u64) -> Node<A> {
-        //PMLFIXME why is this cloned? Shouldn't I be able to reference it?
-        //Look into RefCell as a way to borrow without cloning
-        self.table.get(&key).unwrap_or(&Node::Unexplored).clone()
+    pub fn get(&self,key: u64) -> &Node<A> {
+       self.table.get(&key).unwrap_or(&Node::Unexplored)
+    }
+    
+    pub fn remove(&mut self,key: u64) -> Node<A> {
+       self.table.remove(&key).unwrap_or(Node::Unexplored)
     }
 
     pub fn set(&mut self,key: u64, val: Node<A>) {
@@ -50,18 +52,18 @@ impl<A: Action> Tree<A> {
     {
         match self.root() {
             Node::Branch(player,_,_n,e) => {
-                println!("N = {}",_n);
+                //println!("N = {}",_n);
                 for (a,u) in e.iter() {
                     match self.get(*u) {
                         Node::Terminal(p,q) => {
-                            let w = if p == player {q} else {1.0 - q};
+                            let w = if p == player {*q} else {1.0 - *q};
                             result.push((*a,w,0.0));
                         },
                         Node::Unexplored => result.push((*a,0.5,0.5)),
                         Node::Leaf(p,q,n) |
                         Node::Branch(p,q,n,_) => {
-                            let nf32 = n as f32;
-                            let w = q/nf32;
+                            let nf32 = *n as f32;
+                            let w = *q/nf32;
                             let w = if p == player {w} else {1.0 - w};
                             let s = 1.0/nf32 + (w*(1.0 - w)/nf32).sqrt();
                             result.push((*a,w,s));
