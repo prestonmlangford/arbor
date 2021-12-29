@@ -14,17 +14,15 @@ impl MCTS {
             go(&state,&mut tree,&self);
         }
         
-        let mut actions = vec!();
         let mut best = None;
         let mut value = -1.0;
-        tree.first_ply(&mut actions);
-        for (a,w,e) in actions {
+        tree.first_ply(&mut |a,w,e|{
             println!("{:?} {} {}",a,w,e);
             if w > value {
                 value = w;
                 best = Some(a);
             }
-        }
+        });
         
         best.expect("should have found best move")
     }
@@ -38,8 +36,7 @@ impl MCTS {
         let mut result = vec!();
         loop {
             result.clear();
-            
-            tree.first_ply(&mut result);
+            tree.first_ply(&mut |a,w,e| result.push((a,w,e)));
             
             let n = f(&result);
             if n == 0 {

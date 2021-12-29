@@ -48,7 +48,7 @@ impl<A: Action> Tree<A> {
         );
     }
     
-    pub fn first_ply(&self,result: &mut Vec<(A,f32,f32)>)
+    pub fn first_ply<F>(&self,f: &mut F) where F: FnMut(A,f32,f32)
     {
         match self.root() {
             Node::Branch(player,_,_n,e) => {
@@ -57,16 +57,16 @@ impl<A: Action> Tree<A> {
                     match self.get(*u) {
                         Node::Terminal(p,q) => {
                             let w = if p == player {*q} else {1.0 - *q};
-                            result.push((*a,w,0.0));
+                            f(*a,w,0.0);
                         },
-                        Node::Unexplored => result.push((*a,0.5,0.5)),
+                        Node::Unexplored => f(*a,0.5,0.5),
                         Node::Leaf(p,q,n) |
                         Node::Branch(p,q,n,_) => {
                             let nf32 = *n as f32;
                             let w = *q/nf32;
                             let w = if p == player {w} else {1.0 - w};
                             let s = 1.0/nf32 + (w*(1.0 - w)/nf32).sqrt();
-                            result.push((*a,w,s));
+                            f(*a,w,s);
                         },
                     }
                 }
