@@ -160,9 +160,9 @@ fn go<A: Action, S: GameState<A>>(
                 v
             }
         },
-        Node::Terminal(p,q) => {
+        Node::Terminal(_p,q) => {
             tree.set(hash,node);
-            q//if p == state.player() {q} else {1.0 - q}
+            q
         },
         Node::Unexplored => {
             let p = state.player();
