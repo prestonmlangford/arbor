@@ -170,10 +170,10 @@ impl Connect4 {
     
 }
 
-
+impl Player for Disc {}
 impl Action for Column {}
 
-impl GameState<Column> for Connect4 {
+impl GameState<Disc,Column> for Connect4 {
     
     fn actions<F>(&self,f: &mut F) where F: FnMut(Column){
         for c in 0..W {
@@ -235,8 +235,8 @@ impl GameState<Column> for Connect4 {
         }
     }
 
-    fn player(&self) -> u32 {
-        if self.side {1} else {2}
+    fn player(&self) -> Disc {
+        if self.side {Disc::R} else {Disc::Y}
     }
 }
 

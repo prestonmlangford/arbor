@@ -30,7 +30,7 @@ fn mancala_free_move_1() {
     game = game.make(Pit::R6);
     println!("{}",game);
 
-    assert!(game.side == Player::L);
+    assert!(game.side == super::Player::L);
     assert!(game.pit[RB] == 2);
     assert!(game.pit[LB] == 0);
 }
@@ -53,7 +53,7 @@ fn mancala_free_move_2() {
     println!("{}",game);
 
 
-    assert!(game.side == Player::R);
+    assert!(game.side == super::Player::R);
     assert!(game.pit[RB] == 2);
     assert!(game.pit[LB] == 2);
 }
@@ -72,7 +72,7 @@ fn mancala_right_capture() {
     game = game.make(Pit::R1);
     println!("{}",game);
     
-    assert!(game.side == Player::L);
+    assert!(game.side == super::Player::L);
     assert!(game.pit[RB] == 1 + 1 + 5);
     assert!(game.pit[LB] == 1);
     assert!(game.pit[Pit::R6 as usize] == 0);
@@ -111,7 +111,7 @@ fn mancala_left_capture() {
     game = game.make(Pit::L2);
     println!("{}",game);
     
-    assert!(game.side == Player::R);
+    assert!(game.side == super::Player::R);
     assert!(game.pit[RB] == 4);
     assert!(game.pit[LB] == 12);
     assert!(game.pit[Pit::R4 as usize] == 0);

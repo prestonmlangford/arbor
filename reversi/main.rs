@@ -281,8 +281,9 @@ impl Reversi {
 
 
 impl Action for Move {}
+impl Player for Disc {}
 
-impl GameState<Move> for Reversi {
+impl GameState<Disc,Move> for Reversi {
     
     fn actions<F>(&self,f: &mut F) where F: FnMut(Move) {
         for a in &self.actions {
@@ -362,8 +363,8 @@ impl GameState<Move> for Reversi {
     }
     
 
-    fn player(&self) -> u32 {
-        if self.side == Disc::W {1} else {2}
+    fn player(&self) -> Disc {
+        self.side
     }
 }
 

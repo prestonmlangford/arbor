@@ -114,8 +114,9 @@ impl TicTacToe {
 
 
 impl Action for Grid {}
+impl Player for Mark {}
 
-impl GameState<Grid> for TicTacToe {
+impl GameState<Mark,Grid> for TicTacToe {
 
     fn actions<F>(&self,f: &mut F) where F: FnMut(Grid){
         debug_assert!(self.gameover().is_none());
@@ -163,7 +164,7 @@ impl GameState<Grid> for TicTacToe {
         }
     }
 
-    fn player(&self) -> u32 {
-        self.side as u32
+    fn player(&self) -> Mark {
+        self.side
     }
 }

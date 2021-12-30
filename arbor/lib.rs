@@ -11,12 +11,17 @@ use rand::seq::SliceRandom;
 ///This trait describes an allowed move for a game state. This type is passed to the "make" function to produce the next game state. The algorithm keeps track of all allowed actions for each game state that is visited. Limit the size of this type and prefer a contiguous memory layout for best performance (e.g. enum, integer). 
 pub trait Action: Copy + Clone + Debug {}
 
+
+//PMLFIXME really necessary if I am "restricting" it to a boolean value?
+///This trait describes the players in the game. For now it should be a two-state like a bolean.
+pub trait Player: Copy + Clone + Debug + PartialEq {}
+
 ///This enum describes the result of a game.
 #[derive(Debug)]
 pub enum GameResult {Win,Lose,Draw}
 
 ///This trait describes the current state of the game from which to begin searching for the best move.
-pub trait GameState<A: Action>: Debug + Display + Clone {
+pub trait GameState<P: Player, A: Action>: Debug + Display + Clone {
 
     ///Iterate a list of legal actions for the current game state. Call "f" for each action.
     fn actions<F>(&self,f: &mut F) where F: FnMut(A);
@@ -31,7 +36,7 @@ pub trait GameState<A: Action>: Debug + Display + Clone {
     fn gameover(&self) -> Option<GameResult>;
 
     ///Indicate the side to play for the current game state (e.g. white -> 1, black -> 2).
-    fn player(&self) -> u32;
+    fn player(&self) -> P;
 
     ///Optional: Override this method to provide a custom method for evaluating leaf nodes. The default algorithm for evaluating leaf nodes performs a random playout of the current game state using the GameState trait methods. This is a good starting point, but it should be possible to make a more efficient random playout function using the internals of the type that implements GameState. 
     /// 
@@ -43,7 +48,7 @@ pub trait GameState<A: Action>: Debug + Display + Clone {
 
 ///This struct provides methods to set search parameters and control execution. It uses a builder pattern allowing only the desired parameters to be changed from default.
 //#[derive(Copy,Clone,Debug)]
-pub struct MCTS<A: Action, S: GameState<A>> {
+pub struct MCTS<P: Player, A: Action, S: GameState<P,A>> {
     
     ///Controls whether exploration vs. exploitation is preferred by the MCTS algorithm. This parameter is described in more detail by the UCT algorithm.
     pub exploration: f32,
@@ -54,6 +59,6 @@ pub struct MCTS<A: Action, S: GameState<A>> {
     ///Sets whether the custom evaluation method is used instead of a random playout.
     pub use_custom_evaluation: bool,
     
-    tree: tree::Tree<A>,
+    tree: tree::Tree<P,A>,
     root: S,
 }

@@ -170,8 +170,9 @@ impl Mancala {
 }
 
 impl Action for Pit {}
+impl arbor::Player for Player {}
 
-impl GameState<Pit> for Mancala {
+impl GameState<Player,Pit> for Mancala {
     
 
     fn make(&self, pit: Pit) -> Self {
@@ -306,8 +307,8 @@ impl GameState<Pit> for Mancala {
     }
 
 
-    fn player(&self) -> u32 {
-        self.side as u32
+    fn player(&self) -> Player {
+        self.side
     }
 }
 use GameState;
@@ -346,9 +347,9 @@ fn main() {
             let state = gamestate.clone();
             let mut mcts = MCTS::new(state);
             let result;
-            let t = std::time::Duration::new(0,10_000_000);
+            let t = std::time::Duration::new(0,100_000_000);
             loop {
-                let (a,_,e) = *mcts
+                let (a,_w,e) = *mcts
                 .search(t)
                 .iter()
                 .max_by(|(_,w1,_),(_,w2,_)| {
@@ -359,6 +360,8 @@ fn main() {
                     }
                 })
                 .expect("should have found a best move");
+                
+                //println!("{:?} {} {}",a,w,e);
                 
                 if e < 0.001 {
                     result = a;

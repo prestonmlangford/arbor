@@ -1,7 +1,7 @@
 use super::*;
 
 
-impl<A: Action, S: GameState<A>> MCTS<A,S> {
+impl<P: Player, A: Action, S: GameState<P,A>> MCTS<P,A,S> {
     ///Call this method to instantiate a new search with default parameters.
     pub fn new(state: S) -> Self {
         Self {

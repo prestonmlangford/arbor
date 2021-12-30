@@ -1,90 +1,81 @@
-use std::collections::HashMap;
 use super::*;
 
 #[derive(Clone,Debug)]
-pub enum Node<A: Action> {
-    Unexplored,
-    Terminal(u32,f32),
-    Leaf(u32,f32,u32),
-    Branch(u32,f32,u32,Vec<(A,u64)>),
+pub enum Node<P: Player, A: Action> {
+    //a,s
+    Unknown(A,Option<usize>),
+    
+    //p,a,n,w,s,c
+    Branch(P,A,u32,f32,Option<usize>,usize),
+    
+    //p,a,n,w,s
+    Leaf(P,A,u32,f32,Option<usize>),
+    
+    //p,a,n,w,s
+    Terminal(P,A,f32,Option<usize>),
 }
 
 #[derive(Default)]
-pub struct Tree<A: Action> {
-    table: HashMap<u64,Node<A>>
+pub struct Tree<P: Player, A: Action> {
+    pub stack: Vec<Node<P,A>>
 }
 
-impl<A: Action> Tree<A> {
+impl<P: Player, A: Action> Tree<P,A> {
     
-    pub fn get(&self,key: u64) -> &Node<A> {
-       self.table.get(&key).unwrap_or(&Node::Unexplored)
+    pub fn get(&self,index: usize) -> &Node<P,A> {//PMLFIXME could this be referenced instead?
+       &self.stack[index]
     }
     
-    pub fn remove(&mut self,key: u64) -> Node<A> {
-       self.table.remove(&key).unwrap_or(Node::Unexplored)
+    pub fn set(&mut self,index: usize, val: Node<P,A>) {
+        self.stack[index] = val;
     }
+    
+    pub fn expand<S: GameState<P,A>>(&mut self, state: &S, index: usize) {
 
-    pub fn set(&mut self,key: u64, val: Node<A>) {
-        self.table.insert(key, val);
+        if let Node::Leaf(player,action,n,w,sibling) = self.stack[index] {
+            let child = self.stack.len();
+            let mut next = child;
+            
+            state.actions(&mut |a| {
+                next += 1;
+                self.stack.push(Node::Unknown(a,Some(next)));
+            });
+            
+            debug_assert!(next != child,"Why did it expand a state with no actions?");
+            
+            if let Some(Node::Unknown(action,_sibling)) = self.stack.pop() {
+                self.stack.push(Node::Unknown(action,None));
+            }
+            
+            self.stack[index] = Node::Branch(player,action,n,w,sibling,child);
+            
+        } else {
+            panic!("Why is it expanding a non-leaf node?");
+        }
     }
     
-    pub fn expand<S: GameState<A>>(&mut self,state: &S, q: f32, n: u32) {
-        let mut e = Vec::new();
+    pub fn new<S: GameState<P,A>>(state: &S) -> Tree<P,A> {
+        let mut tree = Tree{stack: Vec::new()};//PMLFIXME should I specify a capacity?
         
-        state.actions(&mut |a|{
-            let next = state.make(a);
-            let hash = next.hash();
-            e.push((a,hash));
-            self.set(hash,Node::Unexplored);
-        });
+        let mut actions = Vec::new();
+        state.actions(&mut |a| actions.push(a));
         
-        self.set(
-            state.hash(),
-            Node::Branch(state.player(),q,n,e)
-        );
-    }
-    
-    pub fn new<S: GameState<A>>(state: &S) -> Tree<A> {
-        let mut tree = Tree{table: HashMap::new()};
-        tree.expand(state,0.5,1);
+        
+        tree.stack.push(Node::Leaf(
+            state.player(),
+            
+            // This action is never used, so it doesn't matter what it is
+            *actions.first().expect("should have at least one action"),
+            0,
+            0.5,
+            None,
+        ));
+        
+        tree.expand(state, 0);
+        
         tree
     }
-}
-
-
-impl<A: Action> Node<A> {
-    pub fn uct(&self,k: u32, c: f32, prev: u32) -> f32
-    {
-        match self {
-            Node::Terminal(p,q) => if *p == prev {*q} else {1.0 - *q},
-            Node::Unexplored => f32::INFINITY,
-            Node::Leaf(p,q,n) |
-            Node::Branch(p,q,n,_) => {
-                let nf32 = *n as f32;
-                let kf32 = k as f32;
-                let w = q/nf32;
-                let v = if *p == prev {w} else {1.0 - w};
-                v + c*(kf32.ln()/nf32).sqrt()
-            },
-        }
-    }
     
-    pub fn err(&self,prev: u32) -> (f32,f32)
-    {
-        match self {
-            Node::Terminal(p,q) => {
-                let w = if *p == prev {*q} else {1.0 - *q};
-                (w,0.0)
-            },
-            Node::Unexplored => (0.5,0.5),
-            Node::Leaf(p,q,n) |
-            Node::Branch(p,q,n,_) => {
-                let nf32 = *n as f32;
-                let w = *q/nf32;
-                let w = if *p == prev {w} else {1.0 - w};
-                let s = 1.0/nf32 + (w*(1.0 - w)/nf32).sqrt();
-                (w,s)
-            },
-        }
-    }
+    
 }
+
