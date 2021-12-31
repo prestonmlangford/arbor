@@ -167,6 +167,30 @@ impl Mancala {
     fn terminal(&self) -> bool {
         (self.pit[LB] + self.pit[RB]) == NS as u8
     }
+    
+    #[allow(dead_code)]
+    fn hash(&self) -> u64 {
+        let mut s = 0;
+        for p in 0..NP {
+            let n = self.pit[p] as usize;
+            let z = p*NS + n;
+            debug_assert!(
+                if z < (NS*NP) {
+                    true
+                } else {
+                    false
+                }
+            );
+            s ^= ZTABLE[z];
+        }
+        
+        let t = match self.side {
+            Player::L => 0,
+            Player::R => ZTURN,
+        };
+
+        t ^ s
+    }
 }
 
 impl Action for Pit {}
@@ -270,28 +294,6 @@ impl GameState<Player,Pit> for Mancala {
         }
     }
     
-    fn hash(&self) -> u64 {
-        let mut s = 0;
-        for p in 0..NP {
-            let n = self.pit[p] as usize;
-            let z = p*NS + n;
-            debug_assert!(
-                if z < (NS*NP) {
-                    true
-                } else {
-                    false
-                }
-            );
-            s ^= ZTABLE[z];
-        }
-        
-        let t = match self.side {
-            Player::L => 0,
-            Player::R => ZTURN,
-        };
-
-        t ^ s
-    }
     
 
     fn gameover(&self) -> Option<GameResult> {
@@ -345,32 +347,22 @@ fn main() {
             }
         } else {
             let state = gamestate.clone();
-            let mut mcts = MCTS::new(state);
-            let result;
-            let t = std::time::Duration::new(0,100_000_000);
-            loop {
-                let (a,_w,e) = *mcts
-                .search(t)
-                .iter()
-                .max_by(|(_,w1,_),(_,w2,_)| {
-                    if w1 > w2 {
-                        std::cmp::Ordering::Greater
-                    } else {
-                        std::cmp::Ordering::Less
-                    }
-                })
-                .expect("should have found a best move");
-                
-                //println!("{:?} {} {}",a,w,e);
-                
-                if e < 0.001 {
-                    result = a;
-                    break;
+            let mut mcts = MCTS::new(&state);
+            let t = std::time::Duration::new(1,0);
+            let (a,_w,_e) = *mcts
+            .search(t)
+            .iter()
+            .max_by(|(_,w1,_),(_,w2,_)| {
+                if w1 > w2 {
+                    std::cmp::Ordering::Greater
+                } else {
+                    std::cmp::Ordering::Less
                 }
-            }
+            })
+            .expect("should have found a best move");
             
-            println!("{:?}",result);
-            gamestate = gamestate.make(result);
+            println!("{:?}",a);
+            gamestate = gamestate.make(a);
         }
         
         

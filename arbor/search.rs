@@ -1,6 +1,5 @@
 use instant::Instant;
 use super::*;
-use super::tree::*;
 use rand_xorshift::XorShiftRng as Rand;
 use rand::SeedableRng;
 
@@ -20,43 +19,78 @@ impl GameResult {
 fn rollout<P: Player, A: Action, S: GameState<P,A>>(state: &S) -> f32 {
     let mut rand = Rand::from_entropy();
     let mut actions = Vec::new();
-    let mut sim = state.clone();
-    let p = sim.player();
+    let mut sim;
+    let mut s = state;
+    let p = s.player();
     
     loop {
-        if let Some(result) = sim.gameover() {
-            let side = sim.player() == p;
+        if let Some(result) = s.gameover() {
+            let side = s.player() == p;
             let v = result.value();
             return if side {v} else {1.0 - v}
         }
         
         actions.clear();
-        sim.actions(&mut |a|{
+        s.actions(&mut |a|{
             actions.push(a);
         });
         let action = *actions.choose(&mut rand).unwrap();
-        sim = sim.make(action);
+        sim = s.make(action);
+        s = &sim;
     }
 }
 
-impl<P: Player, A: Action, S: GameState<P,A>> MCTS<P,A,S> {
+impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
+    ///Call this method to instantiate a new search with default parameters.
+    pub fn new(state: &'s S) -> Self {
+        let mut stack = Vec::new();//PMLFIXME should I specify a capacity?
+        
+        let mut actions = Vec::new();
+        state.actions(&mut |a| actions.push(a));
+        
+        
+        stack.push(Node::Leaf(
+            state.player(),
+            
+            // This action is never used, so it doesn't matter what it is
+            *actions.first().expect("should have at least one action"),
+            1,
+            0.5,
+            None,
+        ));
+        
+        
+        let mut result = Self {
+            exploration: 2.0f32.sqrt(),
+            expansion: 0,
+            use_custom_evaluation: false,
+            stack: stack,
+            root: state,
+        };
+        
+        //Call go once with expansion set to zero to force the root to expand 
+        result.go(state,0);
+        result.expansion = 10;
+        result
+    }
+    
+    
     ///Call this method to search the given game state for a duration of time. 
-    /// Results are 
+    ///Results are 
     pub fn search(&mut self,time: Duration) -> Vec<(A, f32, f32)> {
         let mut result = vec!();
-        let state = self.root.clone();//PMLFIXME pretty silly this needs to be cloned . . .
         let start = Instant::now();
         
         while (Instant::now() - start) < time {
-            self.go(&state,0);
+            self.go(self.root,0);
         }
         
-        let player = state.player();
-        if let Node::Branch(_,_,n,_,_,c) = self.tree.stack[0] {
+        let player = self.root.player();
+        if let Node::Branch(_,_,n,_,_,c) = self.stack[0] {
             println!("n = {}",n);
             let mut index = Some(c);
             while let Some(u) = index {
-                match self.tree.get(u) {
+                match &self.stack[u] {
                     Node::Leaf(p,a,n,w,s) |
                     Node::Branch(p,a,n,w,s,_) => {
                         let n = *n as f32;
@@ -97,14 +131,14 @@ impl<P: Player, A: Action, S: GameState<P,A>> MCTS<P,A,S> {
     }
 
     fn go(&mut self,state: &S, index: usize) -> f32 {
-        match self.tree.stack[index] {
+        match self.stack[index] {
             Node::Branch(player,a,nt,w,s,c) => {
                 let mut selection = None;
                 let mut best = -1.0;
                 let mut sibling = Some(c);
                 
                 while let Some(u) = sibling {
-                    match self.tree.stack[u] {//PMLFIXME could make this a reference instead
+                    match self.stack[u] {//PMLFIXME could make this a reference instead
                         Node::Terminal(p,a,w,s) => {
                             sibling = s;
                             let uct = if p == player {w} else {1.0 - w};
@@ -140,31 +174,28 @@ impl<P: Player, A: Action, S: GameState<P,A>> MCTS<P,A,S> {
                 let v = self.go(&next,next_index);
 
                 let v = if p == player {v} else {1.0 - v};
-                self.tree.stack[index] = Node::Branch(player,a,nt + 1,w + v,s,c);
+                self.stack[index] = Node::Branch(player,a,nt + 1,w + v,s,c);
                 v
             },
             Node::Leaf(p,a,n,w,s) => {
                 if n > self.expansion {
-                    //self.tree.expand(state,index);
-                    let child = self.tree.stack.len();
-                    let mut next = child;
+                    let child = self.stack.len();
                     
                     state.actions(&mut |a| {
-                        next += 1;
-                        self.tree.stack.push(Node::Unknown(a,Some(next)));
+                        let next = self.stack.len() + 1;
+                        self.stack.push(Node::Unknown(a,Some(next)));
                     });
                     
-                    debug_assert!(next != child,"Why did it expand a state with no actions?");
                     
-                    if let Some(Node::Unknown(action,_sibling)) = self.tree.stack.pop() {
-                        self.tree.stack.push(Node::Unknown(action,None));
+                    if let Some(Node::Unknown(action,_sibling)) = self.stack.pop() {
+                        self.stack.push(Node::Unknown(action,None));
                     }
                     
-                    self.tree.stack[index] = Node::Branch(p,a,n,w,s,child);
+                    self.stack[index] = Node::Branch(p,a,n,w,s,child);
                     self.go(state,index)
                 } else {
                     let v = self.evaluate(state);
-                    self.tree.stack[index] = Node::Leaf(p,a,n + 1,w + v,s);
+                    self.stack[index] = Node::Leaf(p,a,n + 1,w + v,s);
                     v
                 }
             },
@@ -175,11 +206,11 @@ impl<P: Player, A: Action, S: GameState<P,A>> MCTS<P,A,S> {
                 let p = state.player();
                 if let Some(result) = state.gameover() {
                     let v = result.value();
-                    self.tree.stack[index] = Node::Terminal(p,a,v,s);
+                    self.stack[index] = Node::Terminal(p,a,v,s);
                     v
                 } else {
                     let v = self.evaluate(state);
-                    self.tree.stack[index] = Node::Leaf(p,a,1,v,s);
+                    self.stack[index] = Node::Leaf(p,a,1,v,s);
                     v
                 }
             },

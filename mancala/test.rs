@@ -4,7 +4,7 @@ use std::time::Duration;
 fn best(moves: &[Pit]) -> Pit {
     let game = Mancala::load(&moves);
     let t = Duration::new(1,0);
-    let mut mcts = MCTS::new(game);
+    let mut mcts = MCTS::new(&game);
     let (action,_value,_error) = *mcts
         .search(t)
         .iter()

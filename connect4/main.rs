@@ -218,10 +218,6 @@ impl GameState<Disc,Column> for Connect4 {
         next
     }
 
-    fn hash(&self) -> u64 {
-        self.hash
-    }
-    
     fn gameover(&self) -> Option<GameResult> {
         if self.gameover {
             if self.winner == Disc::N {
@@ -273,7 +269,7 @@ fn main() {
         } else {
             let state = gamestate.clone();
             let t = Duration::new(1,0);
-            let mut mcts = MCTS::new(state);
+            let mut mcts = MCTS::new(&state);
             let (action,_value,_error) = *mcts
                 .search(t)
                 .iter()

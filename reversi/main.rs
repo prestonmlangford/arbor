@@ -277,6 +277,19 @@ impl Reversi {
         }
         None
     }
+    
+    #[allow(dead_code)]
+    fn hash(&self) -> u64 {
+        let mut f = self.f;
+        let mut e = self.e;
+        let mut result = 0;
+        for _ in 0..10 {
+            f = f.rotate_right(23);
+            e = e.rotate_right(37);
+            result ^= f ^ e;
+        }
+        result
+    }
 }
 
 
@@ -350,19 +363,6 @@ impl GameState<Disc,Move> for Reversi {
         }
     }
     
-    fn hash(&self) -> u64 {
-        let mut f = self.f;
-        let mut e = self.e;
-        let mut result = 0;
-        for _ in 0..10 {
-            f = f.rotate_right(23);
-            e = e.rotate_right(37);
-            result ^= f ^ e;
-        }
-        result
-    }
-    
-
     fn player(&self) -> Disc {
         self.side
     }
@@ -402,7 +402,7 @@ fn main() {
             }
         } else {
             let state = gamestate.clone();
-            let mut mcts = MCTS::new(state).with_exploration(2.0);
+            let mut mcts = MCTS::new(&state).with_exploration(2.0);
             let t = std::time::Duration::new(2, 0);
             let (action,_value,_error) = *mcts
                 .search(t)

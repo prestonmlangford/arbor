@@ -37,24 +37,25 @@ struct TicTacToe {
     space: [Mark;9],
     turn: usize,
     side: Mark,
-    hash: u64,
 }
 
 
+
 impl Action for Grid {}
+impl Player for Mark {}
 
-impl GameState<Grid> for TicTacToe {
+impl GameState<Mark,Grid> for TicTacToe {
 
-    fn actions(&self) -> Vec<Grid> {
-        assert!(self.gameover().is_none());
-        for i in 0..9 {
+    fn actions<F>(&self,f: &mut F) where F: FnMut(Grid){
+        debug_assert!(self.gameover().is_none());
+        
+        for mark in ALLMOVES.iter() {
+            let i = *mark as usize;
             if self.space[i] == Mark::N {
-                result.push(ALLMOVES[i])
+                f(ALLMOVES[i])
             }
         }
-        result
     }
-
     
     fn make(&self, action: Grid) -> Self {
         debug_assert!(self.gameover().is_none(),"Make called while gameover\n{}",self);
@@ -64,22 +65,17 @@ impl GameState<Grid> for TicTacToe {
             space: self.space,
             turn: self.turn + 1,
             side: if self.side == Mark::X {Mark::O} else {Mark::X},
-            hash: self.hash | ((if self.side == Mark::X {1} else {512}) << (action as u64)),
         };
 
         next.space[action as usize] = self.side;
 
         next
     }
-
-    fn hash(&self) -> u64 {
-        self.hash
-    }
-
     
     fn gameover(&self) -> Option<GameResult> {
-        if self.terminal() {
-            return match self.winner() {
+        let winner = self.winner();
+        if (self.turn == 9) || (winner != Mark::N) {
+            return match winner {
                 Mark::N => Some(GameResult::Draw),
 
                 // Side to play last always wins
@@ -90,8 +86,8 @@ impl GameState<Grid> for TicTacToe {
         }
     }
 
-    fn player(&self) -> u32 {
-        self.side as u32
+    fn player(&self) -> Mark {
+        self.side
     }
 }
 

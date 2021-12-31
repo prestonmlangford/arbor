@@ -47,7 +47,7 @@ fn main() {
             }
         } else {
             let state = gamestate.clone();
-            let mut mcts = MCTS::new(state);
+            let mut mcts = MCTS::new(&state);
             let t = std::time::Duration::new(1, 0);
             let (action,_value,_error) = *mcts
                 .search(t)
