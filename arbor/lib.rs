@@ -43,17 +43,12 @@ pub trait GameState<P: Player, A: Action>: Debug + Display {
 
 #[derive(Debug)]
 enum Node<P: Player, A: Action> {
-    //a,s
-    Unknown(A,Option<usize>),
-    
-    //p,a,n,w,s,c
-    Branch(P,A,u32,f32,Option<usize>,usize),
-    
-    //p,a,n,w,s
-    Leaf(P,A,u32,f32,Option<usize>),
-    
-    //p,a,n,w,s
-    Terminal(P,A,f32,Option<usize>),
+    //sibling?, action, player, value, visits, child
+    //s,a,p,w,n,c
+    Unknown(bool,A),
+    Terminal(bool,A,P,f32),
+    Leaf(bool,A,P,f32,u32),
+    Branch(bool,A,P,f32,u32,usize),
 }
 
 ///This struct provides methods to set search parameters and control execution. It uses a builder pattern allowing only the desired parameters to be changed from default.

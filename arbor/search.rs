@@ -50,13 +50,12 @@ impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
         
         
         stack.push(Node::Leaf(
-            state.player(),
-            
+            false,
             // This action is never used, so it doesn't matter what it is
             *actions.first().expect("should have at least one action"),
-            1,
+            state.player(),
             0.5,
-            None,
+            1
         ));
         
         
@@ -75,8 +74,7 @@ impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
     }
     
     
-    ///Call this method to search the given game state for a duration of time. 
-    ///Results are 
+    ///Call this method to search the given game state for a duration of time. Results are improved each time it is called. This behavior can be used to implement a user defined stopping criteria that monitors progress.
     pub fn search(&mut self,time: Duration) -> Vec<(A, f32, f32)> {
         let mut result = vec!();
         let start = Instant::now();
@@ -86,28 +84,27 @@ impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
         }
         
         let player = self.root.player();
-        if let Node::Branch(_,_,n,_,_,c) = self.stack[0] {
-            println!("n = {}",n);
-            let mut index = Some(c);
-            while let Some(u) = index {
+        if let Node::Branch(_,_,_,_,_,c) = &self.stack[0] {
+            let mut sibling = Some(*c);
+            while let Some(u) = sibling {
                 match &self.stack[u] {
-                    Node::Leaf(p,a,n,w,s) |
-                    Node::Branch(p,a,n,w,s,_) => {
+                    Node::Leaf(s,a,p,w,n) |
+                    Node::Branch(s,a,p,w,n,_) => {
                         let n = *n as f32;
                         let w = w/n;
                         let w = if *p == player {w} else {1.0 - w};
                         let e = 0.5/n + (w*(1.0 - w)/n).sqrt();
                         result.push((*a,w,e));
-                        index = *s;
+                        sibling = s.then(||u+1);
                     },
-                    Node::Terminal(p,a,w,s) => {
+                    Node::Terminal(s,a,p,w) => {
                         let w = if *p == player {*w} else {1.0 - *w};
                         result.push((*a,w,0.0));
-                        index = *s;
+                        sibling = s.then(||u+1);
                     },
-                    Node::Unknown(a,s) => {
+                    Node::Unknown(s,a) => {
                         result.push((*a,0.5,0.5));
-                        index = *s;
+                        sibling = s.then(||u+1);
                     }
                 }
             }
@@ -116,9 +113,10 @@ impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
         }
         
         for (a,w,e) in &result {
-            println!("{:?} {} {} {}",*a,*w,*e,result.len());
+            println!("{:?} {:0.4} {}",*a,*w,*e);
         }
-        println!("");
+        println!("stack {}\n",self.stack.len());
+        
         result
     }
     
@@ -132,38 +130,37 @@ impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
 
     fn go(&mut self,state: &S, index: usize) -> f32 {
         match self.stack[index] {
-            Node::Branch(player,a,nt,w,s,c) => {
+            Node::Branch(s,a,player,w,nt,c) => {
                 let mut selection = None;
                 let mut best = -1.0;
                 let mut sibling = Some(c);
                 
                 while let Some(u) = sibling {
-                    match self.stack[u] {//PMLFIXME could make this a reference instead
-                        Node::Terminal(p,a,w,s) => {
-                            sibling = s;
-                            let uct = if p == player {w} else {1.0 - w};
+                    match &self.stack[u] {
+                        Node::Terminal(s,a,p,w) => {
+                            let uct = if *p == player {*w} else {1.0 - *w};
                             if uct > best {
                                 best = uct;
-                                selection = Some((a,u));
+                                selection = Some((*a,u));
                             }
+                            sibling = s.then(||u+1);
                         },
-                        Node::Unknown(a,_) => {
-                            selection = Some((a,u));
+                        Node::Unknown(_,a) => {
+                            selection = Some((*a,u));
                             break;
                         },
-                        Node::Leaf(p,a,n,w,s) |
-                        Node::Branch(p,a,n,w,s,_) => {
-                            sibling = s;
-                            let n = n as f32;
+                        Node::Leaf(s,a,p,w,n) |
+                        Node::Branch(s,a,p,w,n,_) => {
+                            let n = *n as f32;
                             let nt = nt as f32;
-                            let w = w/n;
-                            let w = if p == player {w} else {1.0 - w};
+                            let w = if *p == player {*w} else {n - *w};
                             let c = self.exploration;
-                            let uct = w + c*(nt.ln()/n).sqrt();
+                            let uct = w/n + c*(nt.ln()/n).sqrt();
                             if uct > best {
                                 best = uct;
-                                selection = Some((a,u));
+                                selection = Some((*a,u));
                             }
+                            sibling = s.then(||u+1);
                         },
                     }
                 }
@@ -174,43 +171,42 @@ impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
                 let v = self.go(&next,next_index);
 
                 let v = if p == player {v} else {1.0 - v};
-                self.stack[index] = Node::Branch(player,a,nt + 1,w + v,s,c);
+                self.stack[index] = Node::Branch(s,a,player,w + v,nt + 1,c);
                 v
             },
-            Node::Leaf(p,a,n,w,s) => {
+            Node::Leaf(s,a,p,w,n) => {
                 if n > self.expansion {
-                    let child = self.stack.len();
+                    let c = self.stack.len();
                     
                     state.actions(&mut |a| {
-                        let next = self.stack.len() + 1;
-                        self.stack.push(Node::Unknown(a,Some(next)));
+                        self.stack.push(Node::Unknown(true,a));
                     });
                     
                     
-                    if let Some(Node::Unknown(action,_sibling)) = self.stack.pop() {
-                        self.stack.push(Node::Unknown(action,None));
+                    if let Some(Node::Unknown(_,a)) = self.stack.pop() {
+                        self.stack.push(Node::Unknown(false,a));
                     }
                     
-                    self.stack[index] = Node::Branch(p,a,n,w,s,child);
+                    self.stack[index] = Node::Branch(s,a,p,w,n,c);
                     self.go(state,index)
                 } else {
                     let v = self.evaluate(state);
-                    self.stack[index] = Node::Leaf(p,a,n + 1,w + v,s);
+                    self.stack[index] = Node::Leaf(s,a,p,w + v,n + 1);
                     v
                 }
             },
-            Node::Terminal(_p,_a,w,_s) => {
-                w//PMLFIXME seems a little silly to drop back into go after already unwrapping this enum during selection
+            Node::Terminal(_,_,_,w) => {
+                w
             },
-            Node::Unknown(a,s) => {
+            Node::Unknown(s,a) => {
                 let p = state.player();
                 if let Some(result) = state.gameover() {
                     let v = result.value();
-                    self.stack[index] = Node::Terminal(p,a,v,s);
+                    self.stack[index] = Node::Terminal(s,a,p,v);
                     v
                 } else {
                     let v = self.evaluate(state);
-                    self.stack[index] = Node::Leaf(p,a,1,v,s);
+                    self.stack[index] = Node::Leaf(s,a,p,v,1);
                     v
                 }
             },
