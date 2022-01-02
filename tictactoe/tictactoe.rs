@@ -35,6 +35,7 @@ pub struct TicTacToe {
     pub space: [Mark;9],
     turn: usize,
     pub side: Mark,
+    hash: u64,
 }
 
 
@@ -76,6 +77,7 @@ impl TicTacToe {
             space: [Mark::N;9],
             turn: 0,
             side: Mark::X,
+            hash: 0,
         }
     }
 
@@ -135,13 +137,20 @@ impl GameState<Mark,Grid> for TicTacToe {
             space: self.space,
             turn: self.turn + 1,
             side: if self.side == Mark::X {Mark::O} else {Mark::X},
+            hash: self.hash | ((if self.side == Mark::X {1} else {512}) << (action as u64)),
         };
 
         next.space[action as usize] = self.side;
 
         next
     }
-    
+
+    #[cfg(feature="transposition")]
+    fn hash(&self) -> u64 {
+        self.hash
+    }
+
+
     fn gameover(&self) -> Option<GameResult> {
         let winner = self.winner();
         if (self.turn == 9) || (winner != Mark::N) {

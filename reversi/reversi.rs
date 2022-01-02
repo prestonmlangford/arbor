@@ -271,19 +271,7 @@ impl Reversi {
         }
         None
     }
-    
-    #[allow(dead_code)]
-    fn hash(&self) -> u64 {
-        let mut f = self.f;
-        let mut e = self.e;
-        let mut result = 0;
-        for _ in 0..10 {
-            f = f.rotate_right(23);
-            e = e.rotate_right(37);
-            result ^= f ^ e;
-        }
-        result
-    }
+
 }
 
 
@@ -355,6 +343,19 @@ impl GameState<Disc,Move> for Reversi {
         } else {
             next
         }
+    }
+    
+    #[cfg(feature="transposition")]
+    fn hash(&self) -> u64 {
+        let mut f = self.f;
+        let mut e = self.e;
+        let mut result = 0;
+        for _ in 0..10 {
+            f = f.rotate_right(23);
+            e = e.rotate_right(37);
+            result ^= f ^ e;
+        }
+        result
     }
     
     fn player(&self) -> Disc {

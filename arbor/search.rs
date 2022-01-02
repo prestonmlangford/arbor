@@ -3,6 +3,9 @@ use super::*;
 use rand_xorshift::XorShiftRng as Rand;
 use rand::SeedableRng;
 
+#[cfg(feature="transposition")]
+use std::collections::HashMap;
+
 
 impl GameResult {
     #[inline]
@@ -64,6 +67,8 @@ impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
             expansion: 0,
             use_custom_evaluation: false,
             stack: stack,
+            #[cfg(feature="transposition")]
+            map: HashMap::new(),
             root: state,
         };
         
@@ -84,7 +89,8 @@ impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
         }
         
         let player = self.root.player();
-        if let Node::Branch(_,_,_,_,_,c) = &self.stack[0] {
+        if let Node::Branch(_,_,_,_,nt,c) = &self.stack[0] {
+            println!("nt {}",nt);
             let mut sibling = Some(*c);
             while let Some(u) = sibling {
                 match &self.stack[u] {
@@ -106,6 +112,8 @@ impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
                         result.push((*a,0.5,0.5));
                         sibling = s.then(||u+1);
                     }
+                    #[cfg(feature="transposition")]
+                    Node::Transpose(_,_,_) => panic!("Transpositions should not be possible at root ply")
                 }
             }
         } else {
@@ -116,6 +124,30 @@ impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
             println!("{:?} {:0.4} {}",*a,*w,*e);
         }
         println!("stack {}\n",self.stack.len());
+        
+        let mut resolved = 0;
+        let mut unknown = 0;
+        
+        #[cfg(feature="transposition")]
+        let mut transposed = 0;
+        
+        for node in self.stack.iter() {
+            match node {
+                Node::Leaf(_,_,_,_,_) |
+                Node::Branch(_,_,_,_,_,_) |
+                Node::Terminal(_,_,_,_) => {resolved += 1;}
+                Node::Unknown(_,_) => {unknown += 1;}
+                
+                #[cfg(feature="transposition")]
+                Node::Transpose(_,_,_) => {transposed += 1;}
+            }
+        }
+        
+        println!("resolved = {}",resolved);
+        println!("unknown = {}",unknown);
+        
+        #[cfg(feature="transposition")]
+        println!("transposed = {}",transposed);
         
         result
     }
@@ -128,50 +160,55 @@ impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
         }
     }
 
+    fn uct(&self,index: usize, player: P, nt: u32) -> (bool,&A,f32) {
+        match &self.stack[index] {
+            Node::Terminal(s,a,p,w) => {
+                let val = if *p == player {*w} else {1.0 - *w};
+                (*s,a,val)
+            },
+            Node::Unknown(_,a) => {
+                (false,a,f32::INFINITY)
+            },
+            Node::Leaf(s,a,p,w,n) |
+            Node::Branch(s,a,p,w,n,_) => {
+                let n = *n as f32;
+                let nt = nt as f32;
+                let w = if *p == player {*w} else {n - *w};
+                let c = self.exploration;
+                let val = w/n + c*(nt.ln()/n).sqrt();
+                (*s,a,val)
+            },
+            #[cfg(feature="transposition")]
+            Node::Transpose(s,a,u) => {
+                let (_,_,v) = self.uct(*u,player,nt);
+                (*s,a,v)
+            }
+        }
+    }
+    
     fn go(&mut self,state: &S, index: usize) -> f32 {
         match self.stack[index] {
-            Node::Branch(s,a,player,w,nt,c) => {
+            Node::Branch(s,a,player,w,n,c) => {
                 let mut selection = None;
                 let mut best = -1.0;
                 let mut sibling = Some(c);
                 
                 while let Some(u) = sibling {
-                    match &self.stack[u] {
-                        Node::Terminal(s,a,p,w) => {
-                            let uct = if *p == player {*w} else {1.0 - *w};
-                            if uct > best {
-                                best = uct;
-                                selection = Some((*a,u));
-                            }
-                            sibling = s.then(||u+1);
-                        },
-                        Node::Unknown(_,a) => {
-                            selection = Some((*a,u));
-                            break;
-                        },
-                        Node::Leaf(s,a,p,w,n) |
-                        Node::Branch(s,a,p,w,n,_) => {
-                            let n = *n as f32;
-                            let nt = nt as f32;
-                            let w = if *p == player {*w} else {n - *w};
-                            let c = self.exploration;
-                            let uct = w/n + c*(nt.ln()/n).sqrt();
-                            if uct > best {
-                                best = uct;
-                                selection = Some((*a,u));
-                            }
-                            sibling = s.then(||u+1);
-                        },
+                    let (s,a,uct) = self.uct(u,player,n);
+                    if uct > best {
+                        best = uct;
+                        selection = Some((a,u));
                     }
+                    sibling = s.then(||u+1);
                 }
-                let (action,next_index) = selection.expect("should find a best action");
+                let (&action,next_index) = selection.expect("should find a best action");
                 let next = state.make(action);
                 let p = next.player();
                 
                 let v = self.go(&next,next_index);
 
                 let v = if p == player {v} else {1.0 - v};
-                self.stack[index] = Node::Branch(s,a,player,w + v,nt + 1,c);
+                self.stack[index] = Node::Branch(s,a,player,w + v,n + 1,c);
                 v
             },
             Node::Leaf(s,a,p,w,n) => {
@@ -200,16 +237,36 @@ impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
             },
             Node::Unknown(s,a) => {
                 let p = state.player();
+                
+                #[cfg(feature="transposition")]
+                let h = state.hash();
+                
+                #[cfg(feature="transposition")]
+                if let Some(&u) = self.map.get(&h) {
+                    self.stack[index] = Node::Transpose(s,a,u);
+                    return self.go(state,u);
+                }
+                
                 if let Some(result) = state.gameover() {
+                    #[cfg(feature="transposition")]
+                    self.map.insert(h, index);
+                    
                     let v = result.value();
                     self.stack[index] = Node::Terminal(s,a,p,v);
                     v
                 } else {
+                    #[cfg(feature="transposition")]
+                    self.map.insert(h, index);
+                    
                     let v = self.evaluate(state);
                     self.stack[index] = Node::Leaf(s,a,p,v,1);
                     v
                 }
             },
+            #[cfg(feature="transposition")]
+            Node::Transpose(_,_,u) => {
+                self.go(state,u)
+            }
         }
     }
 }

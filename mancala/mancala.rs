@@ -2,8 +2,6 @@ use std::fmt::Display;
 use std::fmt;
 
 use arbor::*;
-use rand_xorshift::XorShiftRng as Rand;
-use rand::{RngCore,SeedableRng};
 
 #[derive(Copy,Clone,PartialEq,Debug)]
 pub enum Player {L,R}
@@ -34,18 +32,7 @@ pub const PIT: [Pit; NP] = [
     L1,L2,L3,L4,L5,L6,LBank,
 ];
 
-lazy_static!{
-    static ref ZTABLE: [u64;NP*NS] = {
-        let mut table = [0;NP*NS];
-        let mut rand = Rand::from_seed([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]);
-        //let mut rand = rand::thread_rng();
-        for entry in table.iter_mut() {
-            *entry = rand.next_u64();
-        }
-        table
-    };
-}
-const ZTURN: u64 = 0x123456789ABCDEF0;
+
 
 #[derive(Copy,Clone,Debug)]
 pub struct Mancala {
@@ -160,29 +147,6 @@ impl Mancala {
         (self.pit[LB] + self.pit[RB]) == NS as u8
     }
     
-    #[allow(dead_code)]
-    fn hash(&self) -> u64 {
-        let mut s = 0;
-        for p in 0..NP {
-            let n = self.pit[p] as usize;
-            let z = p*NS + n;
-            debug_assert!(
-                if z < (NS*NP) {
-                    true
-                } else {
-                    false
-                }
-            );
-            s ^= ZTABLE[z];
-        }
-        
-        let t = match self.side {
-            Player::L => 0,
-            Player::R => ZTURN,
-        };
-
-        t ^ s
-    }
 }
 
 impl Action for Pit {}
@@ -300,6 +264,45 @@ impl GameState<Player,Pit> for Mancala {
         }
     }
 
+    #[cfg(feature="transposition")]
+    fn hash(&self) -> u64 {
+        use rand_xorshift::XorShiftRng as Rand;
+        use rand::{RngCore,SeedableRng};
+
+        lazy_static!{
+            static ref ZTABLE: [u64;NP*NS] = {
+                let mut table = [0;NP*NS];
+                let mut rand = Rand::from_seed([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]);
+                //let mut rand = rand::thread_rng();
+                for entry in table.iter_mut() {
+                    *entry = rand.next_u64();
+                }
+                table
+            };
+        }
+        const ZTURN: u64 = 0x123456789ABCDEF0;
+        
+        let mut s = 0;
+        for p in 0..NP {
+            let n = self.pit[p] as usize;
+            let z = p*NS + n;
+            debug_assert!(
+                if z < (NS*NP) {
+                    true
+                } else {
+                    false
+                }
+            );
+            s ^= ZTABLE[z];
+        }
+        
+        let t = match self.side {
+            Player::L => 0,
+            Player::R => ZTURN,
+        };
+
+        t ^ s
+    }
 
     fn player(&self) -> Player {
         self.side

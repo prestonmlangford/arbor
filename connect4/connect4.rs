@@ -220,6 +220,11 @@ impl GameState<Disc,Column> for Connect4 {
             None
         }
     }
+    
+    #[cfg(feature="transposition")]
+    fn hash(&self) -> u64 {
+        self.hash
+    }
 
     fn player(&self) -> Disc {
         if self.side {Disc::R} else {Disc::Y}

@@ -7,6 +7,9 @@ use std::fmt::Display;
 use std::time::Duration;
 use rand::seq::SliceRandom;
 
+#[cfg(feature="transposition")]
+use std::collections::HashMap;
+
 ///This trait describes an allowed move for a game state. This type is passed to the "make" function to produce the next game state. The algorithm keeps track of all allowed actions for each game state that is visited. Limit the size of this type and prefer a contiguous memory layout for best performance (e.g. enum, integer). 
 pub trait Action: Copy + Clone + Debug {}
 
@@ -32,6 +35,10 @@ pub trait GameState<P: Player, A: Action>: Debug + Display {
 
     ///Indicate the side to play for the current game state (e.g. white, black).
     fn player(&self) -> P;
+    
+    ///Provide a hash for the current game state. This hash must be sufficiently unique to avoid hash collisions with other game states. It is possible to have completely unique hashes for simple games like tic tac toe. An incremental hash may be a good approach in games with more complicated states like chess or checkers (see zobrist hashing).
+    #[cfg(feature="transposition")]
+    fn hash(&self) -> u64;
 
     ///Optional: Override this method to provide a custom method for evaluating leaf nodes. The default algorithm for evaluating leaf nodes performs a random playout of the current game state using the GameState trait methods. This is a good starting point, but it should be possible to make a more efficient random playout function using the internals of the type that implements GameState. 
     /// 
@@ -49,6 +56,9 @@ enum Node<P: Player, A: Action> {
     Terminal(bool,A,P,f32),
     Leaf(bool,A,P,f32,u32),
     Branch(bool,A,P,f32,u32,usize),
+    
+    #[cfg(feature="transposition")]
+    Transpose(bool,A,usize),
 }
 
 ///This struct provides methods to set search parameters and control execution. It uses a builder pattern allowing only the desired parameters to be changed from default.
@@ -64,5 +74,7 @@ pub struct MCTS<'s,P: Player, A: Action, S: GameState<P,A>> {
     pub use_custom_evaluation: bool,
     
     stack: Vec<Node<P,A>>,
+    #[cfg(feature="transposition")]
+    map: HashMap<u64,usize>,
     root: &'s S,
 }
