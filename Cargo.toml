@@ -41,4 +41,5 @@ path = "connect4/main.rs"
 name = "reversi"
 path = "reversi/main.rs"
 
-# add a binary that pits two AIs against eachother to track performance.
+#PMLFIXME add a binary that pits two AIs against eachother to track performance.
+#PMLFIXME add a checkers implementation
