@@ -39,9 +39,10 @@ pub trait GameState<P: Player, A: Action>: Debug + Display {
     ///Indicate the side to play for the current game state (e.g. white, black).
     fn player(&self) -> P;
     
-    ///Provide a hash for the current game state. This hash must be sufficiently unique to avoid hash collisions with other game states. It is possible to have completely unique hashes for simple games like tic tac toe. An incremental hash may be a good approach in games with more complicated states like chess or checkers (see zobrist hashing).
+    ///Optional: Provide a hash for the current game state. The hash is used to detect transpositions between game state when the "transposition" feature is activated. It must be sufficiently unique to avoid hash collisions with other game states. It is possible to have completely unique hashes for simple games like tic tac toe. An incremental hash may be a good approach in games with more complicated states like chess or checkers (see zobrist hashing).
     #[cfg(feature="transposition")]
     fn hash(&self) -> u64;
+
 
     ///Optional: Override this method to provide a custom method for evaluating leaf nodes. The default algorithm for evaluating leaf nodes performs a random playout of the current game state using the GameState trait methods. This is a good starting point, but it should be possible to make a more efficient random playout function using the internals of the type that implements GameState. 
     /// 
@@ -66,7 +67,9 @@ enum Node<P: Player, A: Action> {
 
 ///This struct provides metrics for the types of nodes in the search tree.
 #[derive(Default,Debug)]
-pub struct Statistics {
+pub struct Info {
+    pub q: f32,
+    pub n: u32,
     pub branch: u32,
     pub leaf: u32,
     pub terminal: u32,
@@ -78,22 +81,18 @@ pub struct Statistics {
 
 //PMLFIXME add an API that does "pretraining". It should take a Vec<f32> and train on the random playout policy. This should be used "offline" by the developer.
 
-///This struct provides methods to set search parameters and control execution. It uses a builder pattern allowing only the desired parameters to be changed from default.
+
+///This struct is the main launch point for this crate. It holds the state of execution for the MCTS algorithm. Use it's associated methods to operate the search and tune performance.
 pub struct MCTS<'s,P: Player, A: Action, S: GameState<P,A>> {
+    exploration: f32,
+    expansion: u32,
+    use_custom_evaluation: bool,
     
-    ///Controls whether exploration vs. exploitation is preferred by the MCTS algorithm. This parameter is described in more detail by the UCT algorithm.
-    pub exploration: f32,
-     
-    ///The minimum number of times a leaf node is visited before it expands to a branch node. A high number will result in a smaller game tree but more confidence about which node to expand next.
-    pub expansion: u32,
+    ///Provides metrics about the shape and size of the game tree. For informational purposes only.
+    pub info: Info,
     
-    ///Sets whether the custom evaluation method is used instead of a random playout.
-    pub use_custom_evaluation: bool,
-    
-    pub stats: Statistics,
-    
-    stack: Vec<Node<P,A>>,
     root: &'s S,
+    stack: Vec<Node<P,A>>,
     actions: Vec<A>,
     rand: XorShiftRng,
     #[cfg(feature="transposition")]

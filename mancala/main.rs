@@ -56,6 +56,7 @@ fn main() {
             })
             .expect("should have found a best move");
             
+            println!("{:?}",mcts.info);
             println!("{:?}",a);
             gamestate = gamestate.make(a);
         }

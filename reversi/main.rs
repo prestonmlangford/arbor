@@ -41,7 +41,8 @@ fn main() {
             }
         } else {
             let state = gamestate.clone();
-            let mut mcts = MCTS::new(&state).with_exploration(2.0);
+            let mut mcts = MCTS::new(&state)
+                .with_exploration(2.0);
             let t = std::time::Duration::new(2, 0);
             let (action,_value,_error) = *mcts
                 .search(t)
@@ -55,7 +56,7 @@ fn main() {
                 })
                 .expect("should have found a best move");
                 
-            println!("{:?}",mcts.stats);
+            println!("{:?}",mcts.info);
             println!("{:?}",action);
             gamestate = gamestate.make(action);
         }

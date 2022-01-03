@@ -43,7 +43,7 @@ impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
             exploration: 2.0f32.sqrt(),
             expansion: 0,
             use_custom_evaluation: false,
-            stats: Statistics::default(),
+            info: Info::default(),
             stack: stack,
             root: state,
             actions: Vec::new(),
@@ -52,14 +52,13 @@ impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
             map: HashMap::default(),
         };
         
-        result.stats.leaf = 1;
+        result.info.leaf = 1;
         
         //Call go once with expansion set to zero to force the root to expand 
         result.go(state,0);
         result.expansion = 10;
         result
     }
-    
     
     ///Call this method to search the given game state for a duration of time. Results are improved each time it is called. This behavior can be used to implement a user defined stopping criteria that monitors progress.
     pub fn search(&mut self,time: Duration) -> Vec<(A, f32, f32)> {
@@ -71,9 +70,9 @@ impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
         }
         
         let player = self.root.player();
-        if let Node::Branch(_,_,_,w,nt,c) = &self.stack[0] {
-            println!("nt {}",nt);
-            println!("q {}",w/(*nt as f32));
+        if let Node::Branch(_,_,_,w,n,c) = &self.stack[0] {
+            self.info.q = w/(*n as f32);
+            self.info.n = *n;
             let mut sibling = Some(*c);
             while let Some(u) = sibling {
                 match &self.stack[u] {
@@ -94,7 +93,7 @@ impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
                     Node::Unknown(s,a) => {
                         result.push((*a,0.5,0.5));
                         sibling = s.then(||u+1);
-                    }
+                    },
                     #[cfg(feature="transposition")]
                     Node::Transpose(_,_,_) => panic!("Transpositions should not be possible at root ply")
                 }
@@ -102,11 +101,6 @@ impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
         } else {
             panic!("root node is not a branch");
         }
-        
-        for (a,w,e) in &result {
-            println!("{:?} {:0.4} {}",*a,*w,*e);
-        }
-        println!("stack {}\n",self.stack.len());
         
         result
     }
@@ -138,7 +132,6 @@ impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
         }
     }
     
-    #[inline(never)]
     fn rollout(&mut self,state: &S) -> f32 {
         let mut sim;
         let mut s = state;
@@ -201,7 +194,7 @@ impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
                     
                     state.actions(&mut |a| {
                         self.stack.push(Node::Unknown(true,a));
-                        self.stats.unknown += 1;
+                        self.info.unknown += 1;
                     });
                     
                     
@@ -210,8 +203,8 @@ impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
                     }
                     
                     self.stack[index] = Node::Branch(s,a,p,w,n,c);
-                    self.stats.leaf -= 1;
-                    self.stats.branch += 1;
+                    self.info.leaf -= 1;
+                    self.info.branch += 1;
                     self.go(state,index)
                 } else {
                     let v = if self.use_custom_evaluation {
@@ -233,8 +226,8 @@ impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
                     let h = state.hash();
                     if let Some(&u) = self.map.get(&h) {
                         self.stack[index] = Node::Transpose(s,a,u);
-                        self.stats.unknown -= 1;
-                        self.stats.transpose += 1;
+                        self.info.unknown -= 1;
+                        self.info.transpose += 1;
                         return self.go(state,u);
                     } else {
                         self.map.insert(h, index);
@@ -244,18 +237,17 @@ impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
                 let p = state.player();
                 if let Some(result) = state.gameover() {   
                     self.stack[index] = Node::Terminal(s,a,p,result.value());
-                    self.stats.unknown -= 1;
-                    self.stats.terminal += 1;
+                    self.info.unknown -= 1;
+                    self.info.terminal += 1;
                 } else {
                     
                     self.stack[index] = Node::Leaf(s,a,p,0.0,0);
-                    self.stats.unknown -= 1;
-                    self.stats.leaf += 1;
+                    self.info.unknown -= 1;
+                    self.info.leaf += 1;
                 }
                 
                 self.go(state,index)
             },
-            
             #[cfg(feature="transposition")]
             Node::Transpose(_,_,u) => {
                 self.go(state,u)
