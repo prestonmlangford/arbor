@@ -2,6 +2,7 @@ use instant::Instant;
 use super::*;
 use rand_xorshift::XorShiftRng;
 use rand::SeedableRng;
+use rand::RngCore;
 
 impl GameResult {
     #[inline]
@@ -137,6 +138,7 @@ impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
         }
     }
     
+    #[inline(never)]
     fn rollout(&mut self,state: &S) -> f32 {
         let mut sim;
         let mut s = state;
@@ -153,8 +155,18 @@ impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
             s.actions(&mut |a|{
                 self.actions.push(a);
             });
-            let action = *self.actions.choose(&mut self.rand).unwrap();
-            sim = s.make(action);
+            
+            //use rejection sampling to choose a random action
+            let max = self.actions.len();
+            let mask = max.next_power_of_two() - 1;
+            loop {
+                let r = (self.rand.next_u64() as usize) & mask;
+                if r < max {
+                    sim = s.make(self.actions[r]);
+                    break;
+                }
+            }
+            
             s = &sim;
         }
     }

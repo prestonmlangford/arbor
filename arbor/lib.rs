@@ -5,7 +5,6 @@ mod builder;
 use std::fmt::Debug;
 use std::fmt::Display;
 use std::time::Duration;
-use rand::seq::SliceRandom;
 use rand_xorshift::XorShiftRng;
 
 #[cfg(feature="transposition")]
