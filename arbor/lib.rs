@@ -77,6 +77,7 @@ pub struct Statistics {
     pub transpose: u32,
 }
 
+//PMLFIXME add an API that does "pretraining". It should take a Vec<f32> and train on the random playout policy. This should be used "offline" by the developer.
 
 ///This struct provides methods to set search parameters and control execution. It uses a builder pattern allowing only the desired parameters to be changed from default.
 pub struct MCTS<'s,P: Player, A: Action, S: GameState<P,A>> {
