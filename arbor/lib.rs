@@ -6,9 +6,13 @@ use std::fmt::Debug;
 use std::fmt::Display;
 use std::time::Duration;
 use rand::seq::SliceRandom;
+use rand_xorshift::XorShiftRng;
 
 #[cfg(feature="transposition")]
-use std::collections::HashMap;
+type HashMap<K,V> = fnv::FnvHashMap<K,V>;
+
+
+
 
 ///This trait describes an allowed move for a game state. This type is passed to the "make" function to produce the next game state. The algorithm keeps track of all allowed actions for each game state that is visited. Limit the size of this type and prefer a contiguous memory layout for best performance (e.g. enum, integer). 
 pub trait Action: Copy + Clone + Debug {}
@@ -90,7 +94,8 @@ pub struct MCTS<'s,P: Player, A: Action, S: GameState<P,A>> {
     
     stack: Vec<Node<P,A>>,
     root: &'s S,
-    
+    actions: Vec<A>,
+    rand: XorShiftRng,
     #[cfg(feature="transposition")]
     map: HashMap<u64,usize>,//PMLFIXME try a different data structure like binary heap to speed up transposition access times
 }

@@ -8,14 +8,13 @@ const N: usize = S*S;
 
 
 #[derive(Debug,Copy,Clone,PartialEq)]
-pub enum Disc {N,W,B}
+pub enum Disc {W,B}
 
 impl Disc {
     fn other(&self) -> Self {
         match *self {
             Disc::W => Disc::B,
-            Disc::B => Disc::W,
-            Disc::N => Disc::N,
+            Disc::B => Disc::W
         }
     }
 }
@@ -24,8 +23,7 @@ impl Display for Disc {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::W => write!(f,"W"),
-            Self::B => write!(f,"B"),
-            Self::N => write!(f,"-"),
+            Self::B => write!(f,"B")
         }
     }
 }
@@ -41,11 +39,8 @@ const DIRECTIONS: [Direction;8] = [North,South,East,West,NorthWest,NorthEast,Sou
 pub struct Reversi {
     f: u64,
     e: u64,
-    pass: bool,
-    gameover: bool,
     side: Disc,
-    winner: Disc,
-    actions: Vec<Move>,
+    pass: bool
 }
 
 trait BitBoard {
@@ -166,13 +161,12 @@ impl Display for Reversi {
         let colnum = "    0   1   2   3   4   5   6   7\n";
         let rowsep = "  ---------------------------------\n";
 
-        let mut moves = 0;
-        for m in &self.actions {
-            if let Move::Capture(c) = m {
-                moves |= c;
+        let mut moves = 0u64;
+        self.actions(&mut |a| {
+            if let Move::Capture(u) = a {
+                moves |= u;
             }
-        }
-
+        });
         moves &= !(self.f | self.e);
         let fp = self.f.count_ones();
         let ep = self.e.count_ones();
@@ -235,16 +229,8 @@ impl Reversi {
         Reversi {
             f: (1 << 0o43) | (1 << 0o34),
             e: (1 << 0o33) | (1 << 0o44),
-            pass: false,
-            gameover: false,
             side: Disc::W,
-            winner: Disc::N,
-            actions: vec!(
-                Move::Capture((1 << 0o54)|(1 << 0o44)),
-                Move::Capture((1 << 0o45)|(1 << 0o44)),
-                Move::Capture((1 << 0o32)|(1 << 0o33)),
-                Move::Capture((1 << 0o23)|(1 << 0o33))
-            ),
+            pass: false
         }
     }
     
@@ -261,15 +247,17 @@ impl Reversi {
 
     pub fn get_move(&self, row: u64, col: u64) -> Option<Move>
     {
+        let mut result = None;
         let space = 1u64 << ((row << 3) + col);
-        for m in &self.actions {
-            if let Move::Capture(c) = m {
+        self.actions(&mut |a| {
+            if let Move::Capture(c) = a {
                 if c.has(space) && !self.f.has(space) && !self.e.has(space) {
-                    return Some(*m);
+                    result = Some(a);
                 }
             }
-        }
-        None
+        });
+        
+        result
     }
 
 }
@@ -280,68 +268,78 @@ impl Player for Disc {}
 
 impl GameState<Disc,Move> for Reversi {
     
+    //PMLFIXME this is still the most time consuming routine. Implement with magic bitboards for better speed.
     fn actions<F>(&self,f: &mut F) where F: FnMut(Move) {
-        for a in &self.actions {
-            f(*a);
+        let mut adj = 0;
+        for idx in self.e.iter() {
+            adj |= ADJ[idx as usize];
+        }
+        adj &= !(self.f | self.e);
+        
+        let mut pass = true;
+        
+        for idx in adj.iter() {
+            let mut c = 0;
+            for direction in DIRECTIONS.iter() {
+                c |= sandwich(self.f, self.e, 1 << idx, *direction);
+            }
+            if c != 0 {
+                f(Move::Capture(c));
+                pass = false;
+            }
+        }
+        
+        if pass {
+            f(Move::Pass);
         }
     }
     
     fn gameover(&self) -> Option<GameResult> {
-        if self.gameover {
-            Some(match self.winner {
-                Disc::N => GameResult::Draw,
-                _ => if self.side == self.winner {GameResult::Win} else {GameResult::Lose}
-            })
+        if self.pass {
+            let mut done = true;
+            self.actions(&mut |a| {
+                if let Move::Capture(_) = a {
+                    done = false;
+                }
+            });
+            
+            if done {
+                let f = self.f.count_ones();
+                let e = self.e.count_ones();
+                
+                if f > e {
+                    Some(GameResult::Win)
+                } else if f < e {
+                    Some(GameResult::Lose)
+                } else {
+                    Some(GameResult::Draw)
+                }
+            } else {
+                None
+            }
         } else {
             None
         }
     }
 
     fn make(&self,m: Move) -> Self {
-        let capture = match m {
-            Move::Pass => 0,
-            Move::Capture(u) => u
-        };
-        let e = self.f.set(capture);
-        let f = self.e.clr(capture);
-        let d = f.count_ones() as i32 - e.count_ones() as i32;
-        let side = self.side.other();
-        let winner = if d > 0 {side} else if d < 0 {side.other()} else {Disc::N};
-        let mut actions = Vec::new();
-        let mut adj = 0;
-        for idx in e.iter() {
-            let a = ADJ[idx as usize];
-            adj |= a;
-        }
-        adj &= !(f | e);
-        for idx in adj.iter() {
-            let mut c = 0;
-            for direction in DIRECTIONS.iter() {
-                c |= sandwich(f, e, 1 << idx, *direction);
+        match m {
+            Move::Pass => {
+                Reversi {
+                    f: self.e,
+                    e: self.f,
+                    side: self.side.other(),
+                    pass: true
+                }
+            },
+            Move::Capture(u) => {
+                Reversi {
+                    f: self.e.clr(u),
+                    e: self.f.set(u),
+                    side: self.side.other(),
+                    pass: false
+                }
             }
-            if c != 0 {
-                actions.push(Move::Capture(c))
-            }
-        }
-
-        let pass = actions.len() == 0;
-
-        let gameover = pass && self.pass;
-
-        let next = Reversi {
-            e,
-            f,
-            pass,
-            gameover,
-            side,
-            winner,
-            actions
-        };
-
-        if pass && !gameover {
-            next.make(Move::Pass)
-        } else {
-            next
         }
     }
     

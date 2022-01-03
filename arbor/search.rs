@@ -1,11 +1,7 @@
 use instant::Instant;
 use super::*;
-use rand_xorshift::XorShiftRng as Rand;
+use rand_xorshift::XorShiftRng;
 use rand::SeedableRng;
-
-#[cfg(feature="transposition")]
-use std::collections::HashMap;
-
 
 impl GameResult {
     #[inline]
@@ -19,29 +15,7 @@ impl GameResult {
 }
 
 
-fn rollout<P: Player, A: Action, S: GameState<P,A>>(state: &S) -> f32 {
-    let mut rand = Rand::from_entropy();
-    let mut actions = Vec::new();
-    let mut sim;
-    let mut s = state;
-    let p = s.player();
-    
-    loop {
-        if let Some(result) = s.gameover() {
-            let side = s.player() == p;
-            let v = result.value();
-            return if side {v} else {1.0 - v}
-        }
-        
-        actions.clear();
-        s.actions(&mut |a|{
-            actions.push(a);
-        });
-        let action = *actions.choose(&mut rand).unwrap();
-        sim = s.make(action);
-        s = &sim;
-    }
-}
+
 
 impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
     ///Call this method to instantiate a new search with default parameters.
@@ -70,9 +44,11 @@ impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
             use_custom_evaluation: false,
             stats: Statistics::default(),
             stack: stack,
-            #[cfg(feature="transposition")]
-            map: HashMap::new(),
             root: state,
+            actions: Vec::new(),
+            rand: XorShiftRng::from_entropy(),
+            #[cfg(feature="transposition")]
+            map: HashMap::default(),
         };
         
         result.stats.leaf = 1;
@@ -161,6 +137,28 @@ impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
         }
     }
     
+    fn rollout(&mut self,state: &S) -> f32 {
+        let mut sim;
+        let mut s = state;
+        let p = s.player();
+        
+        loop {
+            if let Some(result) = s.gameover() {
+                let side = s.player() == p;
+                let v = result.value();
+                return if side {v} else {1.0 - v}
+            }
+            
+            self.actions.clear();
+            s.actions(&mut |a|{
+                self.actions.push(a);
+            });
+            let action = *self.actions.choose(&mut self.rand).unwrap();
+            sim = s.make(action);
+            s = &sim;
+        }
+    }
+    
     fn go(&mut self,state: &S, index: usize) -> f32 {
         match self.stack[index] {
             Node::Branch(s,a,player,w,n,c) => {
@@ -207,7 +205,7 @@ impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
                     let v = if self.use_custom_evaluation {
                         state.custom_evaluation()
                     } else {
-                        rollout(state)
+                        self.rollout(state)
                     };
                     self.stack[index] = Node::Leaf(s,a,p,w + v,n + 1);
                     v
