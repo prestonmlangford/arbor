@@ -92,5 +92,5 @@ pub struct MCTS<'s,P: Player, A: Action, S: GameState<P,A>> {
     root: &'s S,
     
     #[cfg(feature="transposition")]
-    map: HashMap<u64,usize>,
+    map: HashMap<u64,usize>,//PMLFIXME try a different data structure like binary heap to speed up transposition access times
 }

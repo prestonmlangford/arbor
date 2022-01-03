@@ -40,3 +40,5 @@ path = "connect4/main.rs"
 [[bin]]
 name = "reversi"
 path = "reversi/main.rs"
+
+# add a binary that pits two AIs against eachother to track performance.

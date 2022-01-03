@@ -164,6 +164,7 @@ impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
     fn go(&mut self,state: &S, index: usize) -> f32 {
         match self.stack[index] {
             Node::Branch(s,a,player,w,n,c) => {
+                //PMLFIXME experiment with a "branching factor" loop for each branch that performs selection "b" times
                 let mut selection = None;
                 let mut best = -1.0;
                 let mut sibling = Some(c);
