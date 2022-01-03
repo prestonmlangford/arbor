@@ -61,6 +61,19 @@ enum Node<P: Player, A: Action> {
     Transpose(bool,A,usize),
 }
 
+///This struct provides metrics for the types of nodes in the search tree.
+#[derive(Default,Debug)]
+pub struct Statistics {
+    pub branch: u32,
+    pub leaf: u32,
+    pub terminal: u32,
+    pub unknown: u32,
+    
+    #[cfg(feature="transposition")]
+    pub transpose: u32,
+}
+
+
 ///This struct provides methods to set search parameters and control execution. It uses a builder pattern allowing only the desired parameters to be changed from default.
 pub struct MCTS<'s,P: Player, A: Action, S: GameState<P,A>> {
     
@@ -73,8 +86,11 @@ pub struct MCTS<'s,P: Player, A: Action, S: GameState<P,A>> {
     ///Sets whether the custom evaluation method is used instead of a random playout.
     pub use_custom_evaluation: bool,
     
+    pub stats: Statistics,
+    
     stack: Vec<Node<P,A>>,
+    root: &'s S,
+    
     #[cfg(feature="transposition")]
     map: HashMap<u64,usize>,
-    root: &'s S,
 }

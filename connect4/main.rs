@@ -58,6 +58,7 @@ fn main() {
                 })
                 .expect("should have found a best move");
             
+            println!("{:?}",mcts.stats);
             println!("{:?}",action);
             gamestate = gamestate.make(action);
         }
