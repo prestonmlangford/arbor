@@ -264,7 +264,6 @@ impl GameState<Player,Pit> for Mancala {
         }
     }
 
-    #[cfg(feature="transposition")]
     fn hash(&self) -> u64 {
         use rand_xorshift::XorShiftRng as Rand;
         use rand::{RngCore,SeedableRng};

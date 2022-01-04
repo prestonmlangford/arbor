@@ -5,11 +5,9 @@ mod builder;
 use std::fmt::Debug;
 use std::fmt::Display;
 use std::time::Duration;
-use rand_xorshift::XorShiftRng;
 
-#[cfg(feature="transposition")]
-type HashMap<K,V> = fnv::FnvHashMap<K,V>;
-
+type HashMap<K,V> = rustc_hash::FxHashMap<K,V>;
+type Rng = rand_xorshift::XorShiftRng;
 
 
 
@@ -40,9 +38,7 @@ pub trait GameState<P: Player, A: Action>: Debug + Display {
     fn player(&self) -> P;
     
     ///Optional: Provide a hash for the current game state. The hash is used to detect transpositions between game state when the "transposition" feature is activated. It must be sufficiently unique to avoid hash collisions with other game states. It is possible to have completely unique hashes for simple games like tic tac toe. An incremental hash may be a good approach in games with more complicated states like chess or checkers (see zobrist hashing).
-    #[cfg(feature="transposition")]
-    fn hash(&self) -> u64;
-
+    fn hash(&self) -> u64 {0}
 
     ///Optional: Override this method to provide a custom method for evaluating leaf nodes. The default algorithm for evaluating leaf nodes performs a random playout of the current game state using the GameState trait methods. This is a good starting point, but it should be possible to make a more efficient random playout function using the internals of the type that implements GameState. 
     /// 
@@ -60,8 +56,6 @@ enum Node<P: Player, A: Action> {
     Terminal(bool,A,P,f32),
     Leaf(bool,A,P,f32,u32),
     Branch(bool,A,P,f32,u32,usize),
-    
-    #[cfg(feature="transposition")]
     Transpose(bool,A,usize),
 }
 
@@ -74,8 +68,6 @@ pub struct Info {
     pub leaf: u32,
     pub terminal: u32,
     pub unknown: u32,
-    
-    #[cfg(feature="transposition")]
     pub transpose: u32,
 }
 
@@ -87,6 +79,8 @@ pub struct MCTS<'s,P: Player, A: Action, S: GameState<P,A>> {
     exploration: f32,
     expansion: u32,
     use_custom_evaluation: bool,
+    use_transposition: bool,
+    
     
     ///Provides metrics about the shape and size of the game tree. For informational purposes only.
     pub info: Info,
@@ -94,7 +88,6 @@ pub struct MCTS<'s,P: Player, A: Action, S: GameState<P,A>> {
     root: &'s S,
     stack: Vec<Node<P,A>>,
     actions: Vec<A>,
-    rand: XorShiftRng,
-    #[cfg(feature="transposition")]
-    map: HashMap<u64,usize>,//PMLFIXME try a different data structure like binary heap to speed up transposition access times
+    rand: Rng,
+    map: HashMap<u64,usize>,
 }

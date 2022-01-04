@@ -1,6 +1,5 @@
 use instant::Instant;
 use super::*;
-use rand_xorshift::XorShiftRng;
 use rand::SeedableRng;
 use rand::RngCore;
 
@@ -14,9 +13,6 @@ impl GameResult {
         }
     }
 }
-
-
-
 
 impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
     ///Call this method to instantiate a new search with default parameters.
@@ -36,19 +32,17 @@ impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
             1
         ));
         
-        
-        
-        
+        let s = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
         let mut result = Self {
             exploration: 2.0f32.sqrt(),
             expansion: 0,
             use_custom_evaluation: false,
+            use_transposition: false,
             info: Info::default(),
             stack: stack,
             root: state,
             actions: Vec::new(),
-            rand: XorShiftRng::from_entropy(),
-            #[cfg(feature="transposition")]
+            rand: Rng::from_seed(s),
             map: HashMap::default(),
         };
         
@@ -94,7 +88,6 @@ impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
                         result.push((a,0.5,0.5));
                         sibling = s.then(||u+1);
                     },
-                    #[cfg(feature="transposition")]
                     Node::Transpose(_,_,_) => panic!("Transpositions should not be possible at root ply")
                 }
             }
@@ -106,6 +99,7 @@ impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
     }
     
     fn uct(&self,index: usize, player: P, nt: u32) -> (bool,A,f32) {
+        
         match self.stack[index] {
             Node::Terminal(s,a,p,w) => {
                 let val = if p == player {w} else {1.0 - w};
@@ -123,9 +117,28 @@ impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
                 let val = w/n + c*(nt.ln()/n).sqrt();
                 (s,a,val)
             },
-            #[cfg(feature="transposition")]
             Node::Transpose(s,a,u) => {
-                let (_,_,v) = self.uct(u,player,nt);
+                
+                //Do not use recursion to allow the compiler to inline
+                let v = match self.stack[u] {
+                    Node::Terminal(_,_,p,w) => {
+                        if p == player {w} else {1.0 - w}
+                    },
+                    Node::Unknown(_,_) => {
+                        f32::INFINITY
+                    },
+                    Node::Leaf(_,_,p,w,n) |
+                    Node::Branch(_,_,p,w,n,_) => {
+                        let n = n as f32;
+                        let nt = nt as f32;
+                        let w = if p == player {w} else {n - w};
+                        let c = self.exploration;
+                        w/n + c*(nt.ln()/n).sqrt()
+                    },
+                    Node::Transpose(_,_,_) => {
+                        panic!("should not be possible to transpose to another transpose");
+                    }
+                };
                 (s,a,v)
             }
         }
@@ -220,8 +233,7 @@ impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
             },
             Node::Unknown(s,a) => {
                 
-                #[cfg(feature="transposition")]
-                {
+                if self.use_transposition {
                     let h = state.hash();
                     if let Some(&u) = self.map.get(&h) {
                         self.stack[index] = Node::Transpose(s,a,u);
@@ -247,7 +259,6 @@ impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
                 
                 self.go(state,index)
             },
-            #[cfg(feature="transposition")]
             Node::Transpose(_,_,u) => {
                 self.go(state,u)
             }

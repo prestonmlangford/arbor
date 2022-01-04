@@ -268,7 +268,7 @@ impl Player for Disc {}
 
 impl GameState<Disc,Move> for Reversi {
     
-    //PMLFIXME this is still the most time consuming routine. Implement with magic bitboards for better speed.
+    //PMLFIXME this is still the most time consuming routine. Implement with magic bitboards for better speed. Look into the phf crate.
     fn actions<F>(&self,f: &mut F) where F: FnMut(Move) {
         let mut adj = 0;
         for idx in self.e.iter() {
@@ -343,7 +343,6 @@ impl GameState<Disc,Move> for Reversi {
         }
     }
     
-    #[cfg(feature="transposition")]
     fn hash(&self) -> u64 {
         let mut f = self.f;
         let mut e = self.e;

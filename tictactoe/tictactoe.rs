@@ -145,7 +145,6 @@ impl GameState<Mark,Grid> for TicTacToe {
         next
     }
 
-    #[cfg(feature="transposition")]
     fn hash(&self) -> u64 {
         self.hash
     }

@@ -221,7 +221,6 @@ impl GameState<Disc,Column> for Connect4 {
         }
     }
     
-    #[cfg(feature="transposition")]
     fn hash(&self) -> u64 {
         self.hash
     }

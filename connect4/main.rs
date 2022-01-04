@@ -45,7 +45,7 @@ fn main() {
         } else {
             let state = gamestate.clone();
             let t = Duration::new(1,0);
-            let mut mcts = MCTS::new(&state);
+            let mut mcts = MCTS::new(&state).with_transposition();
             let (action,_value,_error) = *mcts
                 .search(t)
                 .iter()

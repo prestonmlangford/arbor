@@ -22,4 +22,17 @@ impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
         self.use_custom_evaluation = true;
         self
     }
+    
+    ///Enables transposition detection.
+    pub fn with_transposition(mut self) -> Self {
+        self.use_transposition = true;
+        self
+    }
+    
+    ///Seeds the random number generator from entropy. This causes the search to produce different results every time. 
+    pub fn with_entropy(mut self) -> Self {
+        use rand::SeedableRng;
+        self.rand = Rng::from_entropy();
+        self
+    }
 }
