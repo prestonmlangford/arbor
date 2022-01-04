@@ -19,7 +19,7 @@ fn main() {
     println!("{}",gamestate);
     
     loop {
-        if gamestate.side == Mark::X {
+        if gamestate.side == Mark::O {
             print!("=> ");
             //flushes standard out so the print statements are actually displayed
             io::stdout().flush().unwrap();

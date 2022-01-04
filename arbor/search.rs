@@ -70,28 +70,28 @@ impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
         }
         
         let player = self.root.player();
-        if let Node::Branch(_,_,_,w,n,c) = &self.stack[0] {
-            self.info.q = w/(*n as f32);
-            self.info.n = *n;
-            let mut sibling = Some(*c);
+        if let Node::Branch(_,_,_,w,n,c) = self.stack[0] {
+            self.info.q = w/(n as f32);
+            self.info.n = n;
+            let mut sibling = Some(c);
             while let Some(u) = sibling {
-                match &self.stack[u] {
+                match self.stack[u] {
                     Node::Leaf(s,a,p,w,n) |
                     Node::Branch(s,a,p,w,n,_) => {
-                        let n = *n as f32;
+                        let n = n as f32;
                         let w = w/n;
-                        let w = if *p == player {w} else {1.0 - w};
+                        let w = if p == player {w} else {1.0 - w};
                         let e = 0.5/n + (w*(1.0 - w)/n).sqrt();
-                        result.push((*a,w,e));
+                        result.push((a,w,e));
                         sibling = s.then(||u+1);
                     },
                     Node::Terminal(s,a,p,w) => {
-                        let w = if *p == player {*w} else {1.0 - *w};
-                        result.push((*a,w,0.0));
+                        let w = if p == player {w} else {1.0 - w};
+                        result.push((a,w,0.0));
                         sibling = s.then(||u+1);
                     },
                     Node::Unknown(s,a) => {
-                        result.push((*a,0.5,0.5));
+                        result.push((a,0.5,0.5));
                         sibling = s.then(||u+1);
                     },
                     #[cfg(feature="transposition")]
@@ -105,24 +105,23 @@ impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
         result
     }
     
-
-    fn uct(&self,index: usize, player: P, nt: u32) -> (bool,&A,f32) {
-        match &self.stack[index] {
+    fn uct(&self,index: usize, player: P, nt: u32) -> (bool,A,f32) {
+        match self.stack[index] {
             Node::Terminal(s,a,p,w) => {
-                let val = if *p == player {*w} else {1.0 - *w};
-                (*s,a,val)
+                let val = if p == player {w} else {1.0 - w};
+                (s,a,val)
             },
             Node::Unknown(_,a) => {
                 (false,a,f32::INFINITY)
             },
             Node::Leaf(s,a,p,w,n) |
             Node::Branch(s,a,p,w,n,_) => {
-                let n = *n as f32;
+                let n = n as f32;
                 let nt = nt as f32;
-                let w = if *p == player {*w} else {n - *w};
+                let w = if p == player {w} else {n - w};
                 let c = self.exploration;
                 let val = w/n + c*(nt.ln()/n).sqrt();
-                (*s,a,val)
+                (s,a,val)
             },
             #[cfg(feature="transposition")]
             Node::Transpose(s,a,u) => {
@@ -180,7 +179,7 @@ impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
                     }
                     sibling = s.then(||u+1);
                 }
-                let (&action,next_index) = selection.expect("should find a best action");
+                let (action,next_index) = selection.expect("should find a best action");
                 let next = state.make(action);
                 let v = self.go(&next,next_index);
 
