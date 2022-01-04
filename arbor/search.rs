@@ -125,8 +125,8 @@ impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
             },
             #[cfg(feature="transposition")]
             Node::Transpose(s,a,u) => {
-                let (_,_,v) = self.uct(*u,player,nt);
-                (*s,a,v)
+                let (_,_,v) = self.uct(u,player,nt);
+                (s,a,v)
             }
         }
     }
