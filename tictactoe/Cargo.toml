@@ -1,0 +1,18 @@
+[package]
+name = "tictactoe"
+version = "0.1.0"
+authors = ["prestonmlangford <prestonmlangford@gmail.com>"]
+edition = "2018"
+description = "An implementation of Tic Tac Toe"
+repository = "https://github.com/prestonmlangford/arbor.git"
+license = "MIT"
+readme = "README.md"
+keywords = ["mcts", "ai", "game", "search", "tree"]
+categories = ["algorithms", "game-development", "games"]
+
+[dependencies]
+arbor = { path = "../arbor" }
+
+[[bin]]
+name = "tictactoe"
+path = "src/main.rs"

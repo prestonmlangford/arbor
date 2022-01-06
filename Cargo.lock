@@ -33,6 +33,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
+name = "connect4"
+version = "0.1.0"
+dependencies = [
+ "arbor",
+ "lazy_static",
+ "rand",
+ "rand_xorshift",
+]
+
+[[package]]
 name = "const_fn"
 version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -89,6 +99,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "51b9bbe6c47d51fc3e1a9b945965946b4c44142ab8792c50835a980d362c2710"
 dependencies = [
  "cfg-if",
+]
+
+[[package]]
+name = "mancala"
+version = "0.1.0"
+dependencies = [
+ "arbor",
+ "lazy_static",
+ "rand",
+ "rand_xorshift",
 ]
 
 [[package]]
@@ -168,6 +188,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d25bf25ec5ae4a3f1b92f929810509a2f53d7dca2f50b794ff57e3face536c8f"
 dependencies = [
  "rand_core",
+]
+
+[[package]]
+name = "reversi"
+version = "0.1.0"
+dependencies = [
+ "arbor",
+ "lazy_static",
 ]
 
 [[package]]
@@ -307,6 +335,13 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-xid",
+]
+
+[[package]]
+name = "tictactoe"
+version = "0.1.0"
+dependencies = [
+ "arbor",
 ]
 
 [[package]]

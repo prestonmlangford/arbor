@@ -1,0 +1,21 @@
+[package]
+name = "mancala"
+version = "0.1.0"
+authors = ["prestonmlangford <prestonmlangford@gmail.com>"]
+edition = "2018"
+description = "An implementation of Mancala"
+repository = "https://github.com/prestonmlangford/arbor.git"
+license = "MIT"
+readme = "README.md"
+keywords = ["mcts", "ai", "game", "search", "tree"]
+categories = ["algorithms", "game-development", "games"]
+
+[dependencies]
+rand = "0.8.0"
+lazy_static = "1.4.0"
+rand_xorshift = "0.3.0"
+arbor = { path = "../arbor" }
+
+[[bin]]
+name = "mancala"
+path = "src/main.rs"

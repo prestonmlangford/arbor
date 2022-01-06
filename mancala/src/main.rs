@@ -1,7 +1,5 @@
 #[macro_use]
 extern crate lazy_static;
-extern crate arbor;
-extern crate rand_xorshift;
 
 mod mancala;
 

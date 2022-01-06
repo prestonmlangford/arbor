@@ -1,49 +1,9 @@
-[package]
-name = "arbor"
-version = "0.1.0"
-authors = ["prestonmlangford <prestonmlangford@gmail.com>"]
-edition = "2018"
-description = "A generic interface to the Monte Carlo Tree Search algorithm."
-repository = "https://github.com/prestonmlangford/arbor.git"
-license = "MIT"
-readme = "README.md"
-keywords = ["mcts", "ai", "game", "search", "tree"]
-categories = ["algorithms", "game-development", "games"]
+[workspace]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-[features]
-transposition = []
-
-[dependencies]
-time = "0.2.25"
-rand = "0.8.0"
-lazy_static = "1.4.0"
-rand_xorshift = "0.3.0"
-instant = "0.1.12"
-rustc-hash = "1.1.0"
-
-[profile.release]
-debug = true
-
-[lib]
-name = "arbor"
-path = "arbor/lib.rs"
-
-[[bin]]
-name = "tictactoe"
-path = "tictactoe/main.rs"
-
-[[bin]]
-name = "mancala"
-path = "mancala/main.rs"
-
-[[bin]]
-name = "connect4"
-path = "connect4/main.rs"
-
-[[bin]]
-name = "reversi"
-path = "reversi/main.rs"
-
-#PMLFIXME add a binary that pits two AIs against eachother to track performance.
-#PMLFIXME add a checkers implementation
+members = [
+    "arbor",
+    "mancala",
+    "reversi",
+    "connect4",
+    "tictactoe",
+]

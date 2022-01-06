@@ -2,7 +2,6 @@
 extern crate lazy_static;
 extern crate arbor;
 extern crate rand;
-extern crate rand_xorshift;
 
 mod connect4;
 
