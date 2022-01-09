@@ -1,5 +1,3 @@
-#[macro_use]
-extern crate lazy_static;
 extern crate arbor;
 
 mod reversi;
@@ -9,6 +7,7 @@ use std::io;
 use std::io::prelude::*;
 use arbor::*;
 
+
 fn main() {
     println!("Reversi!");
 
@@ -17,7 +16,7 @@ fn main() {
     let mut gamestate = Reversi::load(&game);
     
     loop {
-        if gamestate.player() == Disc::W {
+        if gamestate.player() == Disc::B {
             print!("=> ");
             //flushes standard out so the print statements are actually displayed
             io::stdout().flush().unwrap();
@@ -28,11 +27,18 @@ fn main() {
                 continue;
             }
             
-            if let Ok(oct) = input.split_whitespace().next().unwrap().parse::<u64>() {
-                let row = oct / 10;
-                let col = oct % 10;
-                if let Some(m) = gamestate.get_move(row, col) {
-                    gamestate = gamestate.make(m);
+            if "pass" == input.as_str() {
+                gamestate = gamestate.make(Move::Pass);
+            }
+            else if let Ok(u) = u64::from_str_radix(input.as_str().trim(),8){
+                let mut ok = false;
+                gamestate.actions(&mut |a|{
+                    if let Move::Capture(i) = a {
+                        ok |= i == u;
+                    }
+                });
+                if ok {
+                    gamestate = gamestate.make(Move::Capture(u));
                 } else {
                     println!("validation failed");
                 }

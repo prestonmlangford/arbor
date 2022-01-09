@@ -4,8 +4,12 @@ use arbor::*;
 
 
 const S: usize = 8;
-const N: usize = S*S;
 
+#[inline]
+fn mask(condition: bool) -> u64 {
+    let arr = [0,!0];
+    arr[condition as usize]
+}
 
 #[derive(Debug,Copy,Clone,PartialEq)]
 pub enum Disc {W,B}
@@ -30,10 +34,6 @@ impl Display for Disc {
 
 #[derive(Debug,Copy,Clone)]
 pub enum Move {Pass,Capture(u64)}
-#[derive(Copy,Clone)]
-pub enum Direction {North,South,East,West,NorthWest,NorthEast,SouthWest,SouthEast}
-use Direction::*;
-const DIRECTIONS: [Direction;8] = [North,South,East,West,NorthWest,NorthEast,SouthWest,SouthEast];
 
 #[derive(Debug,Clone)]
 pub struct Reversi {
@@ -47,19 +47,44 @@ trait BitBoard {
     fn set(&self,space: u64) -> u64;
     fn clr(&self,space: u64) -> u64;
     fn has(&self,space: u64) -> bool;
-    fn go(&self, direction: Direction) -> Option<u64>;
     fn coordinate(&self) -> (usize,usize);
     fn space(row: usize, col: usize) -> u64;
     fn iter(&self) -> IterBB;
 }
-const NORTHBOUND: u64 = 0xFF00000000000000u64;
-const SOUTHBOUND: u64 = 0x00000000000000FFu64;
+
 const EASTBOUND: u64  = 0x8080808080808080u64;
 const WESTBOUND: u64  = 0x0101010101010101u64;
+
+
+#[inline]
+fn north(x: u64) -> u64 {x << 8}
+
+#[inline]
+fn south(x: u64) -> u64 {x >> 8}
+
+#[inline]
+fn east(x: u64) -> u64 {(x << 1) & !WESTBOUND}
+
+#[inline]
+fn west(x: u64) -> u64 {(x >> 1) & !EASTBOUND}
+
+#[inline]
+fn northeast(x: u64) -> u64 {(x << 9) & !WESTBOUND}
+
+#[inline]
+fn northwest(x: u64) -> u64 {(x << 7) & !EASTBOUND}
+
+#[inline]
+fn southeast(x: u64) -> u64 {(x >> 7) & !WESTBOUND}
+
+#[inline]
+fn southwest(x: u64) -> u64 {(x >> 9) & !EASTBOUND}
+
 
 pub struct IterBB {
     bits: u64,
 }
+
 
 impl <'a> Iterator for IterBB {
     type Item = u64;
@@ -75,6 +100,8 @@ impl <'a> Iterator for IterBB {
     }
 }
 
+
+
 impl BitBoard for u64 {
     #[inline]
     fn set(&self, space: u64) -> u64 {*self | space}
@@ -84,19 +111,7 @@ impl BitBoard for u64 {
 
     #[inline]
     fn has(&self, space: u64) -> bool {(*self & space) != 0}
-
-    fn go(&self, direction: Direction) -> Option<Self> {
-        match direction {
-            North => if NORTHBOUND.has(*self){None} else {Some(*self << 8)},
-            East => if EASTBOUND.has(*self){None} else {Some(*self << 1)},
-            NorthWest => if (NORTHBOUND | WESTBOUND).has(*self){None} else {Some(*self << 7)},
-            NorthEast => if (NORTHBOUND | EASTBOUND).has(*self){None} else {Some(*self << 9)},
-            South => if SOUTHBOUND.has(*self){None} else {Some(*self >> 8)},
-            West => if WESTBOUND.has(*self){None} else {Some(*self >> 1)},
-            SouthEast => if (SOUTHBOUND | EASTBOUND).has(*self){None} else {Some(*self >> 7)},
-            SouthWest => if (SOUTHBOUND | WESTBOUND).has(*self){None} else {Some(*self >> 9)},
-        }
-    }
+    
 
     fn coordinate(&self) -> (usize,usize) {
         let idx = (*self).trailing_zeros();
@@ -114,21 +129,6 @@ impl BitBoard for u64 {
             bits: *self,
         }
     }
-}
-
-lazy_static!{
-    static ref ADJ: [u64; N] = {
-        let mut result = [0;N];
-        for i in 0..N {
-            let space = 1u64 << i;
-            for d in DIRECTIONS.iter() {
-                if let Some(next) = space.go(*d) {
-                    result[i] |= next;
-                }
-            }
-        }
-        result
-    };
 }
 
 
@@ -161,13 +161,7 @@ impl Display for Reversi {
         let colnum = "    0   1   2   3   4   5   6   7\n";
         let rowsep = "  ---------------------------------\n";
 
-        let mut moves = 0u64;
-        self.actions(&mut |a| {
-            if let Move::Capture(u) = a {
-                moves |= u;
-            }
-        });
-        moves &= !(self.f | self.e);
+        let moves = self.parallel_capture();
         let fp = self.f.count_ones();
         let ep = self.e.count_ones();
         let (w,b) = if self.side == Disc::W {(fp,ep)} else {(ep,fp)};
@@ -207,23 +201,6 @@ impl Display for Reversi {
     }
 }
 
-fn sandwich(f: u64, e: u64, space: u64, direction: Direction) -> u64 {
-    if let Some(next) = space.go(direction){
-        if f.has(next) && e.has(space) {
-            return space
-        }
-        else if e.has(next) {
-            let capture = sandwich(f,e,next,direction);
-            if capture != 0 {
-                return capture | space
-            }
-        }
-    }
-    0
-}
-
-
-
 impl Reversi {
     fn new() -> Self {
         Reversi {
@@ -245,21 +222,56 @@ impl Reversi {
         g
     }
 
-    pub fn get_move(&self, row: u64, col: u64) -> Option<Move>
-    {
-        let mut result = None;
-        let space = 1u64 << ((row << 3) + col);
-        self.actions(&mut |a| {
-            if let Move::Capture(c) = a {
-                if c.has(space) && !self.f.has(space) && !self.e.has(space) {
-                    result = Some(a);
-                }
-            }
-        });
+    // 0 1 2 3 4 5 6 7
+    // - - W B B - - -
+    // 0 0 0 1 0 0 0 0
+    // 0 0 0 1 1 0 0 0
+    // 0 0 0 1 1 0 0 0
+    // 0 0 0 1 1 0 0 0
+    // 0 0 0 1 1 0 0 0
+    // 0 0 0 1 1 0 0 0
+    // 0 0 0 0 0 1 0 0
+    
+    
+    // 0 1 2 3 4 5 6 7
+    // W B B B B B B -
+    // 0 1 0 0 0 0 0 0
+    // 0 1 1 0 0 0 0 0
+    // 0 1 1 1 0 0 0 0
+    // 0 1 1 1 1 0 0 0
+    // 0 1 1 1 1 1 0 0
+    // 0 1 1 1 1 1 1 0
+    // 0 0 0 0 0 0 0 1
+    
+    //https://www.gamedev.net/forums/topic/646988-generating-moves-in-reversi/    
+    fn parallel_capture(&self) -> u64 {
         
-        result
+        fn check<F>(f: u64, e: u64, n: u64, shift: F) -> u64 where F: Fn(u64) -> u64 {
+            let mut x;
+            
+            x = shift(f) & e;
+            x |= shift(x) & e;
+            x |= shift(x) & e;
+            x |= shift(x) & e;
+            x |= shift(x) & e;
+            x |= shift(x) & e;
+            
+            shift(x) & n
+        }
+        
+        let e = self.e;
+        let f = self.f;
+        let n = !(self.f | self.e);
+        
+          check(f,e,n,north)
+        | check(f,e,n,south)
+        | check(f,e,n,east)
+        | check(f,e,n,west)
+        | check(f,e,n,northeast)
+        | check(f,e,n,northwest)
+        | check(f,e,n,southeast)
+        | check(f,e,n,southwest)
     }
-
 }
 
 
@@ -268,25 +280,13 @@ impl Player for Disc {}
 
 impl GameState<Disc,Move> for Reversi {
     
-    //PMLFIXME this is still the most time consuming routine. Implement with magic bitboards for better speed. Look into the phf crate.
+    
     fn actions<F>(&self,f: &mut F) where F: FnMut(Move) {
-        let mut adj = 0;
-        for idx in self.e.iter() {
-            adj |= ADJ[idx as usize];
-        }
-        adj &= !(self.f | self.e);
-        
         let mut pass = true;
         
-        for idx in adj.iter() {
-            let mut c = 0;
-            for direction in DIRECTIONS.iter() {
-                c |= sandwich(self.f, self.e, 1 << idx, *direction);
-            }
-            if c != 0 {
-                f(Move::Capture(c));
-                pass = false;
-            }
+        for i in self.parallel_capture().iter() {
+            f(Move::Capture(i));
+            pass = false;
         }
         
         if pass {
@@ -296,12 +296,7 @@ impl GameState<Disc,Move> for Reversi {
     
     fn gameover(&self) -> Option<GameResult> {
         if self.pass {
-            let mut done = true;
-            self.actions(&mut |a| {
-                if let Move::Capture(_) = a {
-                    done = false;
-                }
-            });
+            let done = self.parallel_capture() == 0;
             
             if done {
                 let f = self.f.count_ones();
@@ -332,15 +327,49 @@ impl GameState<Disc,Move> for Reversi {
                     pass: true
                 }
             },
-            Move::Capture(u) => {
+            Move::Capture(i) => {
+                // 0 1 2 3 4 5 6 7
+                // W B B B B B B W
+                // 1 1 0 0 0 0 0 0
+                // 1 1 1 0 0 0 0 0
+                // 1 1 1 1 0 0 0 0
+                // 1 1 1 1 1 0 0 0
+                // 1 1 1 1 1 1 0 0
+                // 1 1 1 1 1 1 1 0
+                #[inline]
+                fn capture<F>(mut p: u64, f: u64, e: u64, shift: F) -> u64 where F: Fn(u64) -> u64 {
+                    p |= shift(p) & e;
+                    p |= shift(p) & e;
+                    p |= shift(p) & e;
+                    p |= shift(p) & e;
+                    p |= shift(p) & e;
+                    p |= shift(p) & e;
+                    
+                    mask((shift(p) & f) != 0) & p
+                }
+                
+                let e = self.e;
+                let f = self.f;
+                let p = 1 << i;
+                
+                let c = 0 
+                    | capture(p,f,e,north)
+                    | capture(p,f,e,south)
+                    | capture(p,f,e,east)
+                    | capture(p,f,e,west)
+                    | capture(p,f,e,northeast)
+                    | capture(p,f,e,northwest)
+                    | capture(p,f,e,southeast)
+                    | capture(p,f,e,southwest);
+                
                 Reversi {
-                    f: self.e.clr(u),
-                    e: self.f.set(u),
+                    f: self.e | c,
+                    e: self.f & !c,
                     side: self.side.other(),
                     pass: false
                 }
             }
-        }
+        }        
     }
     
     fn hash(&self) -> u64 {
