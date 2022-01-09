@@ -27,7 +27,7 @@ fn main() {
                 continue;
             }
             
-            if "pass" == input.as_str() {
+            if "pass" == input.as_str().trim() {
                 gamestate = gamestate.make(Move::Pass);
             }
             else if let Ok(u) = u64::from_str_radix(input.as_str().trim(),8){
