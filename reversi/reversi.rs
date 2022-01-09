@@ -246,6 +246,7 @@ impl Reversi {
     //https://www.gamedev.net/forums/topic/646988-generating-moves-in-reversi/    
     fn parallel_capture(&self) -> u64 {
         
+        //#[inline]
         fn check<F>(f: u64, e: u64, n: u64, shift: F) -> u64 where F: Fn(u64) -> u64 {
             let mut x;
             
