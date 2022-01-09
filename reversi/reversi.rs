@@ -363,8 +363,8 @@ impl GameState<Disc,Move> for Reversi {
                     | capture(p,f,e,southwest);
                 
                 Reversi {
-                    f: self.e | c,
-                    e: self.f & !c,
+                    f: self.e & !c,
+                    e: self.f | c,
                     side: self.side.other(),
                     pass: false
                 }
