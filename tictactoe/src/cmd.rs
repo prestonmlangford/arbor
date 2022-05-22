@@ -1,5 +1,5 @@
 extern crate arbor;
-extern crate rand_xorshift;
+
 
 mod tictactoe;
 use std::io;
