@@ -309,18 +309,19 @@ impl GameState<Player,Pit> for Mancala {
     }
 }
 
-
 #[cfg(test)]
 mod test {
     use super::*;
-    use std::time::Duration;
 
     fn best(moves: &[Pit]) -> Pit {
         let game = Mancala::load(&moves);
-        let t = Duration::new(1,0);
-        let mut mcts = MCTS::new(&game);
-        let (action,_value,_error) = *mcts
-            .search(t)
+        let mut mcts = MCTS::new(&game).with_transposition();
+        let mut actions = vec!();
+        
+        mcts.search(10000,&mut actions);
+        
+        let (action,_value,_error) = 
+            actions
             .iter()
             .max_by(|(_,w1,_),(_,w2,_)| {
                 if w1 > w2 {
@@ -330,7 +331,8 @@ mod test {
                 }
             })
             .expect("should have found a best move");
-        action
+        
+        *action
     }
 
     #[test]

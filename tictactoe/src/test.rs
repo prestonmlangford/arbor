@@ -1,14 +1,16 @@
 use super::tictactoe::Grid::*;
 use super::tictactoe::*;
 use arbor::MCTS;
-use std::time::Duration;
 
 fn best(moves: &[Grid]) -> Grid {
     let game = TicTacToe::load(&moves);
-    let t = Duration::new(1,0);
-    let mut mcts = MCTS::new(&game);
-    let (action,_value,_error) = *mcts
-        .search(t)
+    let mut mcts = MCTS::new(&game).with_transposition();
+    let mut actions = vec!();
+    
+    mcts.search(10000,&mut actions);
+    
+    let (action,_value,_error) = 
+        actions
         .iter()
         .max_by(|(_,w1,_),(_,w2,_)| {
             if w1 > w2 {
@@ -18,10 +20,9 @@ fn best(moves: &[Grid]) -> Grid {
             }
         })
         .expect("should have found a best move");
-    action
+    
+    *action
 }
-
-
 
 #[test]
 fn tictactoe_best_obvious() {
