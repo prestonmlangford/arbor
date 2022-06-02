@@ -104,7 +104,9 @@ impl TicTacToe {
             let b = self.space[*j];
             let c = self.space[*k];
             if (a == b) && (b == c) {
-                return a;
+                if a != Mark::N {
+                    return a;
+                }
             }
         }
         
@@ -148,7 +150,6 @@ impl GameState<Mark,Grid> for TicTacToe {
     fn hash(&self) -> u64 {
         self.hash
     }
-
 
     fn gameover(&self) -> Option<GameResult> {
         let winner = self.winner();

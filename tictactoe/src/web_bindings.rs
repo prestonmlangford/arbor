@@ -2,9 +2,11 @@ use serde_json::json;
 use wasm_bindgen::prelude::*;
 
 mod tictactoe;
-use tictactoe::*;
+use self::tictactoe::*;
 use arbor::*;
 use serde_json::Value;
+use instant::Instant;
+
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
@@ -65,28 +67,23 @@ impl TicTacToeBindings {
             Value::Null
         };
         
-        json!({
-            "board"  : board,
-            "side"   : side,
-            "result" : result
-        }).to_string()
-    }
-    
-    
-    pub fn action_str(&self) -> String {
-        let mut result = String::new();
+        let mut actions = Vec::new();
         
         self.game.actions(&mut |a|{
             for (i,&_a) in ALLMOVES.iter().enumerate() {
                 if a == _a {
-                    result.push_str(&format!("{},",i));
+                    actions.push(i);
                     break;
                 }
             }
         });
         
-        result.pop();
-        result
+        json!({
+            "board"  : board,
+            "side"   : side,
+            "result" : result,
+            "actions" : actions
+        }).to_string()
     }
     
     pub fn make(&mut self,index: u8) {
@@ -100,7 +97,8 @@ impl TicTacToeBindings {
         let mut actions = Vec::new();
         if let Some(a) = action {
             self.actions.clear();
-            self.game.make(a);
+            let next = self.game.make(a);
+            self.game = Box::new(next);
             self.game.actions(&mut |a| {
                 actions.push(a);
             });
@@ -109,5 +107,32 @@ impl TicTacToeBindings {
         }
         
         self.actions = actions;
+    }
+    
+    pub fn ai_make(&mut self) {
+        let state = (*self.game).clone();
+        let mut mcts = MCTS::new(&state).with_transposition();
+        let duration = std::time::Duration::new(1, 0);
+        let mut actions = vec!();
+        let start = Instant::now();
+        while (Instant::now() - start) < duration {
+            mcts.search(100,&mut actions);
+        }
+        
+        let best = 
+            actions
+            .iter()
+            .max_by(|(_,w1,_),(_,w2,_)| {
+                if w1 > w2 {
+                    std::cmp::Ordering::Greater
+                } else {
+                    std::cmp::Ordering::Less
+                }
+            });
+
+        if let Some((action,_value,_error)) = best {
+            let next = self.game.make(*action);
+            self.game = Box::new(next);
+        }
     }
 }

@@ -1,4 +1,3 @@
-use instant::Instant;
 use super::*;
 use rand::SeedableRng;
 use rand::RngCore;
@@ -55,14 +54,12 @@ impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
     }
     
     ///Call this method to search the given game state for a duration of time. Results are improved each time it is called. This behavior can be used to implement a user defined stopping criteria that monitors progress.
-    pub fn search(&mut self,time: Duration) -> Vec<(A, f32, f32)> {
-        let mut result = vec!();
-        let start = Instant::now();
-        
-        while (Instant::now() - start) < time {
+    pub fn search(&mut self,n: usize, actions: &mut Vec<(A, f32, f32)>) {
+        for _ in 0..n {
             self.go(self.root,0);
         }
-        
+
+        actions.clear();
         let player = self.root.player();
         if let Node::Branch(_,_,_,w,n,c) = self.stack[0] {
             self.info.q = w/(n as f32);
@@ -76,16 +73,16 @@ impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
                         let w = w/n;
                         let w = if p == player {w} else {1.0 - w};
                         let e = 0.5/n + (w*(1.0 - w)/n).sqrt();
-                        result.push((a,w,e));
+                        actions.push((a,w,e));
                         sibling = s.then(||u+1);
                     },
                     Node::Terminal(s,a,p,w) => {
                         let w = if p == player {w} else {1.0 - w};
-                        result.push((a,w,0.0));
+                        actions.push((a,w,0.0));
                         sibling = s.then(||u+1);
                     },
                     Node::Unknown(s,a) => {
-                        result.push((a,0.5,0.5));
+                        actions.push((a,0.5,0.5));
                         sibling = s.then(||u+1);
                     },
                     Node::Transpose(_,_,_) => panic!("Transpositions should not be possible at root ply")
@@ -94,8 +91,6 @@ impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
         } else {
             panic!("root node is not a branch");
         }
-        
-        result
     }
     
     fn uct(&self,index: usize, player: P, nt: u32) -> (bool,A,f32) {

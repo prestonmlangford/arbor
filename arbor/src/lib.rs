@@ -4,7 +4,6 @@ mod search;
 mod builder;
 use std::fmt::Debug;
 use std::fmt::Display;
-use std::time::Duration;
 
 type HashMap<K,V> = rustc_hash::FxHashMap<K,V>;
 type Rng = rand_xorshift::XorShiftRng;

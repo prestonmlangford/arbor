@@ -4,8 +4,9 @@ extern crate arbor;
 mod tictactoe;
 use std::io;
 use std::io::prelude::*;
-use tictactoe::*;
+use self::tictactoe::*;
 use arbor::*;
+use instant::Instant;
 
 
 
@@ -19,7 +20,16 @@ fn main() {
     println!("{}",gamestate);
     
     loop {
-        if gamestate.side == Mark::O {
+        if let Some(result) = gamestate.gameover() {
+            match result {
+                GameResult::Draw => println!("Draw!"),
+                GameResult::Win  => println!("{:?} side wins!",gamestate.side),
+                GameResult::Lose => println!("{:?} side loses!",gamestate.side),
+            }
+            break;
+        }
+        
+        if gamestate.side == Mark::X {
             print!("=> ");
             //flushes standard out so the print statements are actually displayed
             io::stdout().flush().unwrap();
@@ -48,9 +58,15 @@ fn main() {
         } else {
             let state = gamestate.clone();
             let mut mcts = MCTS::new(&state).with_transposition();
-            let t = std::time::Duration::new(1, 0);
-            let (action,_value,_error) = *mcts
-                .search(t)
+            let mut actions = vec!();
+            let duration = std::time::Duration::new(1, 0);
+            let start = Instant::now();
+            while (Instant::now() - start) < duration {
+                mcts.search(100,&mut actions);
+            }
+            
+            let (action,_value,_error) = 
+                actions
                 .iter()
                 .max_by(|(_,w1,_),(_,w2,_)| {
                     if w1 > w2 {
@@ -60,23 +76,14 @@ fn main() {
                     }
                 })
                 .expect("should have found a best move");
-                
+
             println!("{:?}",mcts.info);
             println!("{:?}",action);
-            gamestate = gamestate.make(action);
+            gamestate = gamestate.make(*action);
         }
         
         
         println!("{}",gamestate);
-        
-        
-        match gamestate.gameover() {
-            Some(side) => {
-                println!("{:?} side wins!",side);
-                break;
-            },
-            None => ()
-        }
     }
 }
 

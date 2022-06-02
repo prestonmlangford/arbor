@@ -7,7 +7,7 @@ mod connect4;
 
 use std::io;
 use std::io::prelude::*;
-use std::time::Duration;
+use instant::Instant;
 use connect4::*;
 use arbor::*;
 
@@ -43,10 +43,16 @@ fn main() {
             }
         } else {
             let state = gamestate.clone();
-            let t = Duration::new(1,0);
             let mut mcts = MCTS::new(&state).with_transposition();
-            let (action,_value,_error) = *mcts
-                .search(t)
+            let mut actions = vec!();
+            let duration = std::time::Duration::new(1, 0);
+            let start = Instant::now();
+            while (Instant::now() - start) < duration {
+                mcts.search(100,&mut actions);
+            }
+            
+            let (action,_value,_error) = 
+                actions
                 .iter()
                 .max_by(|(_,w1,_),(_,w2,_)| {
                     if w1 > w2 {
@@ -59,7 +65,7 @@ fn main() {
             
             println!("{:?}",mcts.info);
             println!("{:?}",action);
-            gamestate = gamestate.make(action);
+            gamestate = gamestate.make(*action);
         }
         
         

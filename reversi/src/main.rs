@@ -6,6 +6,7 @@ use reversi::*;
 use std::io;
 use std::io::prelude::*;
 use arbor::*;
+use instant::Instant;
 
 
 fn main() {
@@ -47,11 +48,16 @@ fn main() {
             }
         } else {
             let state = gamestate.clone();
-            let mut mcts = MCTS::new(&state)
-                .with_exploration(2.0);
-            let t = std::time::Duration::new(2, 0);
-            let (action,_value,_error) = *mcts
-                .search(t)
+            let mut mcts = MCTS::new(&state).with_transposition();
+            let mut actions = vec!();
+            let duration = std::time::Duration::new(1, 0);
+            let start = Instant::now();
+            while (Instant::now() - start) < duration {
+                mcts.search(100,&mut actions);
+            }
+            
+            let (action,_value,_error) = 
+                actions
                 .iter()
                 .max_by(|(_,w1,_),(_,w2,_)| {
                     if w1 > w2 {
@@ -64,7 +70,7 @@ fn main() {
                 
             println!("{:?}",mcts.info);
             println!("{:?}",action);
-            gamestate = gamestate.make(action);
+            gamestate = gamestate.make(*action);
         }
         
         

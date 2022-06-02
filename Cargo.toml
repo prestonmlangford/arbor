@@ -7,3 +7,10 @@ members = [
     "connect4",
     "tictactoe",
 ]
+
+[profile.release]
+opt-level = 3
+
+[profile.release.package.tictactoe]
+# Tell `rustc` to optimize for small code size.
+opt-level = "s"

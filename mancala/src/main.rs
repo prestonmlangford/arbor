@@ -7,6 +7,7 @@ use std::io;
 use std::io::prelude::*;
 use mancala::*;
 use arbor::*;
+use instant::Instant;
 
 fn main() {
     println!("Mancala!");
@@ -40,23 +41,29 @@ fn main() {
             }
         } else {
             let state = gamestate.clone();
-            let mut mcts = MCTS::new(&state);
-            let t = std::time::Duration::new(1,0);
-            let (a,_w,_e) = *mcts
-            .search(t)
-            .iter()
-            .max_by(|(_,w1,_),(_,w2,_)| {
-                if w1 > w2 {
-                    std::cmp::Ordering::Greater
-                } else {
-                    std::cmp::Ordering::Less
-                }
-            })
-            .expect("should have found a best move");
+            let mut mcts = MCTS::new(&state).with_transposition();
+            let mut actions = vec!();
+            let duration = std::time::Duration::new(1, 0);
+            let start = Instant::now();
+            while (Instant::now() - start) < duration {
+                mcts.search(100,&mut actions);
+            }
+            
+            let (action,_value,_error) = 
+                actions
+                .iter()
+                .max_by(|(_,w1,_),(_,w2,_)| {
+                    if w1 > w2 {
+                        std::cmp::Ordering::Greater
+                    } else {
+                        std::cmp::Ordering::Less
+                    }
+                })
+                .expect("should have found a best move");
             
             println!("{:?}",mcts.info);
-            println!("{:?}",a);
-            gamestate = gamestate.make(a);
+            println!("{:?}",action);
+            gamestate = gamestate.make(*action);
         }
         
         

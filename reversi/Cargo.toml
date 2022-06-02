@@ -13,6 +13,7 @@ categories = ["algorithms", "game-development", "games"]
 [dependencies]
 lazy_static = "1.4.0"
 arbor = { path = "../arbor" }
+instant = { version = "0.1", features = [ "wasm-bindgen" ] }
 
 [[bin]]
 name = "reversi"
