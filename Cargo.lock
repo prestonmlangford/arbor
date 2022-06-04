@@ -130,10 +130,12 @@ name = "mancala"
 version = "0.1.0"
 dependencies = [
  "arbor",
+ "getrandom",
  "instant",
  "lazy_static",
  "rand",
  "rand_xorshift",
+ "wasm-bindgen",
 ]
 
 [[package]]
@@ -220,8 +222,10 @@ name = "reversi"
 version = "0.1.0"
 dependencies = [
  "arbor",
+ "getrandom",
  "instant",
  "lazy_static",
+ "wasm-bindgen",
 ]
 
 [[package]]

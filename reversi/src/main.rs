@@ -2,7 +2,7 @@ extern crate arbor;
 
 mod reversi;
 
-use reversi::*;
+use self::reversi::*;
 use std::io;
 use std::io::prelude::*;
 use arbor::*;
@@ -17,6 +17,7 @@ fn main() {
     let mut gamestate = Reversi::load(&game);
     
     loop {
+        println!("{:?}",gamestate);
         if gamestate.player() == Disc::B {
             print!("=> ");
             //flushes standard out so the print statements are actually displayed

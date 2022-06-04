@@ -14,7 +14,14 @@ categories = ["algorithms", "game-development", "games"]
 lazy_static = "1.4.0"
 arbor = { path = "../arbor" }
 instant = { version = "0.1", features = [ "wasm-bindgen" ] }
+wasm-bindgen = "0.2.78"
+getrandom = {version = "0.2", features = ["js"]}
 
 [[bin]]
 name = "reversi"
 path = "src/main.rs"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+name = "reversi"
+path = "src/web.rs"

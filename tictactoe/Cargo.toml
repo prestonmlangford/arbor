@@ -34,7 +34,7 @@ instant = { version = "0.1", features = [ "wasm-bindgen" ] }
 [lib]
 crate-type = ["cdylib", "rlib"]
 name = "tictactoe"
-path = "src/web_bindings.rs"
+path = "src/web.rs"
 
 [[bin]]
 name = "tictactoe"

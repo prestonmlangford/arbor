@@ -40,9 +40,6 @@ pub struct Mancala {
     pit: [u8; NP],
     side: Player,
 }
-lazy_static!{
-    static ref NEWGAME: Mancala = Mancala::new();
-}
 
 impl Display for Mancala {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

@@ -1,13 +1,53 @@
-#[macro_use]
+#[macro_use(lazy_static)]
 extern crate lazy_static;
 
 mod mancala;
 
 use std::io;
 use std::io::prelude::*;
-use mancala::*;
+use self::mancala::*;
 use arbor::*;
 use instant::Instant;
+
+pub fn serialize(game: &mancala::Mancala) -> String {
+    let result = if let Some(r) = game.gameover() {
+        format!("{:?}",r)
+    } else {
+        "null".to_string()
+    };
+    
+    let mut action_str = String::new();
+    action_str.push('[');
+    game.actions(&mut |a|{
+        let s = format!("{:?}",a)
+            .replace("R","")
+            .replace("L","");
+        action_str.push_str(&s);
+        action_str.push(',');
+    });
+    if let Some('[') = action_str.pop() {
+        action_str.push('[');
+    }
+    action_str.push(']');
+
+    let mut json = format!("{:?}",game);
+    
+    json = json
+        .replace("pit","\"pit\"")
+        .replace("Mancala","")
+        .replace("side","\"side\"")
+        .replace("L","\"L\"")
+        .replace("R","\"R\"")
+        .replace(" ","")
+        .replace("}",",\"actions\":");
+    
+    json.push_str(&action_str);
+    json.push_str(r#","result":"#);
+    json.push_str(&result);
+    json.push('}');
+    
+    json
+}
 
 fn main() {
     println!("Mancala!");
@@ -17,6 +57,8 @@ fn main() {
     let mut gamestate = Mancala::load(&game);
     
     loop {
+        println!("{}",serialize(&gamestate));
+    
         if gamestate.player() == mancala::Player::R {
             print!("=> ");
             //flushes standard out so the print statements are actually displayed
