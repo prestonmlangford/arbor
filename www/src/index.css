@@ -1,0 +1,289 @@
+body {
+    font: 14px "Courier", Futura, sans-serif;
+    margin: 50px;
+}
+
+.main-layout {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+.main-layout-cell {
+    background-color: #dddddd;
+}
+
+/*------------------------------------------------------------------------------ 
+ *                        TicTacToe style options 
+ * ---------------------------------------------------------------------------*/
+
+.tictactoe {
+    display: grid;
+    grid-template-columns: 34px 34px 34px;
+    color: rgb(135, 61, 61);
+    justify-content: center;
+    margin: auto;
+}
+
+.tictactoe-cell {
+    background: rgb(255, 255, 255);
+    float: left;
+    font-size: 24px;
+    font-weight: bold;
+    line-height: 34px;
+    height: 34px;
+    margin-right: -1px;
+    margin-top: -1px;
+    padding: 0;
+    text-align: center;
+    width: 34px;
+    
+    
+}
+
+.tictactoe-info {
+    margin-left: 20px;
+    color: black;
+}
+
+.tictactoe-reset {
+    background-color: #4d4fd3;
+    border: none;
+    color: white;
+    padding: 10px 10px;
+    text-align: center;
+    text-decoration: none;
+    font-size: 16px;
+    border-radius: 9px;
+    box-shadow: 0 9px #666;
+}
+
+.tictactoe-reset:hover {background-color: #7577d2}
+
+.tictactoe-reset:active {
+  background-color: #7577d2;
+  box-shadow: 0 5px #666;
+  transform: translateY(4px);
+}
+
+
+.tictactoe-grid {
+    display: grid;
+    grid-gap: 10px;
+    grid-template-columns: 150px 100px;
+    
+    
+    margin: auto;
+    width: 60%;
+    padding: 10px;
+}
+
+.tictactoe-grid-style {
+    background-color: rgb(154, 157, 154);
+    color: #fff;
+    border-radius: 5px;
+    padding: 20px;
+    font-size: 150%;
+}
+
+.tictactoe-grid-board {
+    grid-column: 1;
+    grid-row: 2;
+}
+
+.tictactoe-grid-button {
+    grid-column: 2 ;
+    grid-row: 1 / span 2;
+}
+
+.tictactoe-grid-status {
+    grid-column: 1 / span 2 ;
+    grid-row: 1 ;
+}
+
+
+/*------------------------------------------------------------------------------ 
+ *                        Mancala style options 
+ * ---------------------------------------------------------------------------*/
+
+ .mancala {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+ 
+ .mancala-board {
+    grid-row: 2;
+    grid-column: 1 / span 2;
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 10px;
+ }
+ 
+ .mancala-status {
+    grid-row: 1;
+    grid-column: 1;
+    color: black;
+    margin-left: 20px;
+    margin-top: 15px;
+ }
+ 
+.mancala-reset {
+    grid-row: 1;
+    grid-column: 2;
+    background-color: #4d4fd3;
+    border: none;
+    color: white;
+    padding: 10px 10px;
+    text-align: center;
+    text-decoration: none;
+    font-size: 16px;
+    border-radius: 9px;
+    box-shadow: 0 9px #666;
+}
+ 
+ .pit {
+     background-color: #666;
+     padding: 10px;
+     border-radius: 5px;
+ }
+ 
+ .RB {
+     grid-column: 8;
+     grid-row: 1 / span 2;
+ }
+ 
+ .LB {
+     grid-column: 1;
+     grid-row: 1 / span 2;
+ }
+ 
+ .L1 {
+     grid-column: 2;
+     grid-row: 1;
+ }
+ 
+ .L2 {
+     grid-column: 3;
+     grid-row: 1;
+ }
+ 
+ .L3 {
+     grid-column: 4;
+     grid-row: 1;
+ }
+ 
+ .L4 {
+     grid-column: 5;
+     grid-row: 1;
+ }
+ 
+ .L5 {
+     grid-column: 6;
+     grid-row: 1;
+ }
+ 
+ .L6 {
+     grid-column: 7;
+     grid-row: 1;
+ }
+ 
+ .R1 {
+     grid-column: 2;
+     grid-row: 2;
+ }
+ 
+ .R2 {
+     grid-column: 3;
+     grid-row: 2;
+ }
+ 
+ .R3 {
+     grid-column: 4;
+     grid-row: 2;
+ }
+ 
+ .R4 {
+     grid-column: 5;
+     grid-row: 2;
+ }
+ 
+ .R5 {
+     grid-column: 6;
+     grid-row: 2;
+ }
+ 
+ .R6 {
+     grid-column: 7;
+     grid-row: 2;
+ }
+ 
+ 
+/*------------------------------------------------------------------------------ 
+ *                        Reversi style options 
+ * ---------------------------------------------------------------------------*/
+
+ .reversi {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.reversi-board-square {
+    grid-row: 2;
+    grid-column: 1 / span 2;
+    
+    /* this makes the container square */
+    height: 0;
+    width:100%;
+    padding-bottom:100%;
+    position: relative;
+}
+
+.reversi-board {
+    position: absolute;
+    
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 10px;
+}
+
+.reversi-status {
+    grid-row: 1;
+    grid-column: 1;
+    color: black;
+    margin-left: 20px;
+    margin-top: 15px;
+}
+ 
+.reversi-reset {
+    grid-row: 1;
+    grid-column: 2;
+    background-color: #4d4fd3;
+    border: none;
+    color: white;
+    padding: 10px 10px;
+    text-align: center;
+    text-decoration: none;
+    font-size: 16px;
+    border-radius: 9px;
+    box-shadow: 0 9px #666;
+}
+ 
+ .reversi-square {
+     background-color: #666;
+     padding: 10px;
+     border-radius: 5px;
+ }
+
+.white {
+    background-color: white;
+}
+
+.black {
+    background-color: black;
+}
+
+.grey {
+    background-color: #666;
+}
