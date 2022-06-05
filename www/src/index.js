@@ -4,6 +4,7 @@ import './index.css';
 import {TicTacToeBindings as ttt} from "tictactoe";
 import {MancalaBindings as mb} from "mancala";
 import {ReversiBindings as rb} from "reversi";
+import {Connect4Bindings as c4b} from "connect4";
 
 /*------------------------------------------------------------------------------ 
  *                                TicTacToe  
@@ -113,7 +114,7 @@ class TicTacToe extends React.Component {
 }
 
 ReactDOM.createRoot(
-  document.getElementById("tictactoe-board"),
+  document.getElementById("tictactoe"),
 ).render(<TicTacToe/>);
 
 /*------------------------------------------------------------------------------ 
@@ -239,7 +240,7 @@ class Mancala extends React.Component {
 }
 
 ReactDOM.createRoot(
-  document.getElementById("mancala-board"),
+  document.getElementById("mancala"),
 ).render(<Mancala/>);
 
 /*------------------------------------------------------------------------------ 
@@ -383,5 +384,146 @@ class Reversi extends React.Component {
 }
 
 ReactDOM.createRoot(
-  document.getElementById("reversi-board"),
+  document.getElementById("reversi"),
 ).render(<Reversi/>);
+
+/*------------------------------------------------------------------------------ 
+ *                                Connect4  
+ * ---------------------------------------------------------------------------*/
+
+var connect4_board_ordering = [];
+for (let r of [5,4,3,2,1,0]) {
+  for (let w of [0,1,2,3,4,5,6]) {
+    connect4_board_ordering.push(w + r*7);
+  }
+}
+
+class Connect4Board extends React.Component {
+  renderSpace(i) {
+    let s = this.props.board[i];
+    var y = s == 1;
+    var r = s == 2;
+    var color = "grey";
+    
+    if (y) {
+      color = "yellow";
+    }
+    
+    if (r) {
+      color = "red";
+    }
+    
+    return (
+      <button 
+        className={"connect4-square " + color}
+        key={i}
+        onClick={() => this.props.onClick(i)}>
+        {}
+      </button>
+    );
+  }
+
+  render() {
+    return (
+      <div className='connect4-board-square'>
+        <div className='connect4-board'>
+          {
+            connect4_board_ordering
+            .map((i) => this.renderSpace(i))
+          }
+        </div>
+      </div>
+    );
+  }
+}
+
+class Connect4 extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      game: c4b.new(),
+      uiEnabled:true
+    };
+  }
+  
+  getGame() {
+    let j = this.state.game.serialize();
+    console.log(j)
+    return JSON.parse(j)
+  }
+  
+  handleAI() {
+    setTimeout(() => {
+      let game = this.getGame();
+      
+      if ((game.result == null) && (game.side == 'Y')) {
+        this.state.game.ai_make()
+        this.setState(this.state)
+        
+        setTimeout(() => {
+          this.handleAI()
+        }, 100)
+      } else {
+        this.setState({uiEnabled: true})
+      }
+    }, 100);
+  }
+  
+  handleClick(i) {
+    let game = this.getGame();
+    let c = i % 7;
+    if ((game.result != null) || !this.state.uiEnabled) {
+      return;
+    }
+
+    this.state.game.make(c)
+    this.setState({uiEnabled:false})
+    this.handleAI();
+  }
+  
+  handleReset() {
+    this.setState({
+      game: c4b.new(),
+      uiEnabled: true,
+    });
+  }
+
+  render() {
+    let game = this.getGame();
+    
+    let status;
+    if (game.result != null) {
+      if (game.result == "Draw")
+      {
+        status = "Draw";
+      }
+      else
+      {
+        status = "Winner: " + (game.side == 'Y' ? 'R' : 'Y');
+      }
+    } else {
+      status = "Next player: " + game.side;
+    }
+
+    return (
+      <div className='connect4'>
+        <Connect4Board
+            onClick={i => this.handleClick(i)}
+            board={game.board}
+        />
+        <div className='connect4-status'>
+          {status}
+        </div>
+        <div 
+          className='connect4-reset'
+          onClick={() => this.handleReset()}>
+          reset
+        </div>
+      </div>
+    );
+  }
+}
+
+ReactDOM.createRoot(
+  document.getElementById("connect4"),
+).render(<Connect4/>);

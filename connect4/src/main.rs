@@ -8,7 +8,7 @@ mod connect4;
 use std::io;
 use std::io::prelude::*;
 use instant::Instant;
-use connect4::*;
+use self::connect4::*;
 use arbor::*;
 
 fn main() {

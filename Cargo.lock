@@ -36,10 +36,13 @@ name = "connect4"
 version = "0.1.0"
 dependencies = [
  "arbor",
+ "getrandom",
  "instant",
  "lazy_static",
  "rand",
  "rand_xorshift",
+ "serde_json",
+ "wasm-bindgen",
 ]
 
 [[package]]

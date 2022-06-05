@@ -7,7 +7,6 @@ use rand::{RngCore,SeedableRng};
 const W: usize = 7;
 const H: usize = 6;
 
-
 lazy_static!{
     static ref ZTABLE: [u64;2*W*H] = {
         let mut table = [0;2*W*H];
@@ -41,7 +40,7 @@ impl Display for Disc {
 
 #[derive(Debug,Copy,Clone)]
 pub struct Connect4 {
-    space: [Disc; W*H],
+    pub space: [Disc; W*H],
     gameover: bool,
     side: bool,
     winner: Disc,

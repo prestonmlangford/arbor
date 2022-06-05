@@ -35,6 +35,7 @@
     "tictactoe": "file:../tictactoe/pkg",
     "mancala": "file:../mancala/pkg",
     "reversi": "file:../reversi/pkg",
+    "connect4": "file:../connect4/pkg",
     "web-vitals": "^2.1.4",
     "copy-webpack-plugin": "^5.0.0",
     "webpack": "^4.29.3",
