@@ -225,6 +225,7 @@ dependencies = [
  "getrandom",
  "instant",
  "lazy_static",
+ "serde_json",
  "wasm-bindgen",
 ]
 

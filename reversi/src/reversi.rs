@@ -37,10 +37,10 @@ pub enum Move {Pass,Capture(u64)}
 
 #[derive(Debug,Clone)]
 pub struct Reversi {
-    f: u64,
-    e: u64,
-    side: Disc,
-    pass: bool
+    pub f: u64,
+    pub e: u64,
+    pub side: Disc,
+    pub pass: bool
 }
 
 trait BitBoard {
