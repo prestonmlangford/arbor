@@ -5,6 +5,7 @@ mod reversi;
 use self::reversi::*;
 use arbor::*;
 use instant::Instant;
+use std::rc::Rc;
 
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
@@ -28,17 +29,17 @@ macro_rules! logf {
 }
 
 #[wasm_bindgen]
-pub struct ReversiBindings {
-    game: Box<Reversi>,
+pub struct Bindings {
+    game: Rc<Reversi>,
     actions: Vec<u8>,
     board: Vec<u8>,
 }
 
 #[wasm_bindgen]
-impl ReversiBindings {
-    pub fn new() -> ReversiBindings {
-        ReversiBindings {
-            game: Box::new(Reversi::load(&[])),
+impl Bindings {
+    pub fn new() -> Bindings {
+        Bindings {
+            game: Rc::new(Reversi::load(&[])),
             actions: Vec::new(),
             board: Vec::new()
         }
@@ -108,15 +109,15 @@ impl ReversiBindings {
         
         if let Some(a) = action {
             let next = self.game.make(a);
-            self.game = Box::new(next);
+            self.game = Rc::new(next);
         } else {
             logf!("Move validation failed");
         }
     }
     
     pub fn ai_make(&mut self) {
-        let state = (*self.game).clone();
-        let mut mcts = MCTS::new(&state).with_transposition();
+        let state = self.game.clone();
+        let mut mcts = MCTS::new(state).with_transposition();
         let duration = std::time::Duration::new(1, 0);
         let mut actions = vec!();
         let start = Instant::now();
@@ -137,7 +138,7 @@ impl ReversiBindings {
 
         if let Some((action,_value,_error)) = best {
             let next = self.game.make(*action);
-            self.game = Box::new(next);
+            self.game = Rc::new(next);
         }
     }
 }

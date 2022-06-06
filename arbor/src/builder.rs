@@ -1,7 +1,7 @@
 use super::*;
 
 
-impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
+impl<P: Player, A: Action, S: GameState<P,A>> MCTS<P,A,S> {
     
     ///Sets the exploration parameter.
     pub fn with_exploration(mut self, exploration: f32) -> Self {

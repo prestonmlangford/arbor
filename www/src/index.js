@@ -1,10 +1,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
-import {TicTacToeBindings as ttt} from "tictactoe";
-import {MancalaBindings as mb} from "mancala";
-import {ReversiBindings as rb} from "reversi";
-import {Connect4Bindings as c4b} from "connect4";
+import {Bindings as tictactoe} from "tictactoe";
+import {MancalaBindings as mancala} from "mancala";
+import {ReversiBindings as reversi} from "reversi";
+import {Connect4Bindings as connect4} from "connect4";
 
 /*------------------------------------------------------------------------------ 
  *                                TicTacToe  
@@ -35,7 +35,7 @@ class TicTacToe extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      game: ttt.new(),
+      game: tictactoe.new(),
       uiEnabled:true
     };
   }
@@ -68,7 +68,7 @@ class TicTacToe extends React.Component {
   
   handleReset() {
     this.setState({
-      game: ttt.new(),
+      game: tictactoe.new(),
       uiEnabled: true,
     })
   }
@@ -152,7 +152,7 @@ class Mancala extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      game: mb.new(),
+      game: mancala.new(),
       uiEnabled:true
     };
   }
@@ -198,7 +198,7 @@ class Mancala extends React.Component {
   
   handleReset() {
     this.setState({
-      game: mb.new(),
+      game: mancala.new(),
       uiEnabled: true,
     });
   }
@@ -299,7 +299,7 @@ class Reversi extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      game: rb.new(),
+      game: reversi.new(),
       uiEnabled:true
     };
   }
@@ -341,7 +341,7 @@ class Reversi extends React.Component {
   
   handleReset() {
     this.setState({
-      game: rb.new(),
+      game: reversi.new(),
       uiEnabled: true,
     });
   }
@@ -441,7 +441,7 @@ class Connect4 extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      game: c4b.new(),
+      game: connect4.new(),
       uiEnabled:true
     };
   }
@@ -483,7 +483,7 @@ class Connect4 extends React.Component {
   
   handleReset() {
     this.setState({
-      game: c4b.new(),
+      game: connect4.new(),
       uiEnabled: true,
     });
   }

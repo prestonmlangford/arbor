@@ -2,6 +2,7 @@ extern crate arbor;
 
 mod reversi;
 
+use std::rc::Rc;
 use self::reversi::*;
 use std::io;
 use std::io::prelude::*;
@@ -14,7 +15,7 @@ fn main() {
 
     let game = [];
 
-    let mut gamestate = Reversi::load(&game);
+    let mut gamestate = Rc::new(Reversi::load(&game));
     
     loop {
         println!("{:?}",gamestate);
@@ -30,7 +31,8 @@ fn main() {
             }
             
             if "pass" == input.as_str().trim() {
-                gamestate = gamestate.make(Move::Pass);
+                let next = gamestate.make(Move::Pass);
+                gamestate = Rc::new(next);
             }
             else if let Ok(u) = u64::from_str_radix(input.as_str().trim(),8){
                 let mut ok = false;
@@ -40,7 +42,8 @@ fn main() {
                     }
                 });
                 if ok {
-                    gamestate = gamestate.make(Move::Capture(u));
+                    let next = gamestate.make(Move::Capture(u));
+                    gamestate = Rc::new(next);
                 } else {
                     println!("validation failed");
                 }
@@ -48,8 +51,8 @@ fn main() {
                 println!("parse failed");
             }
         } else {
-            let state = gamestate.clone();
-            let mut mcts = MCTS::new(&state).with_transposition();
+            let root = gamestate.clone();
+            let mut mcts = MCTS::new(root).with_transposition();
             let mut actions = vec!();
             let duration = std::time::Duration::new(1, 0);
             let start = Instant::now();
@@ -71,7 +74,8 @@ fn main() {
                 
             println!("{:?}",mcts.info);
             println!("{:?}",action);
-            gamestate = gamestate.make(*action);
+            let next = gamestate.make(*action);
+            gamestate = Rc::new(next);
         }
         
         

@@ -13,9 +13,9 @@ impl GameResult {
     }
 }
 
-impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
+impl<P: Player, A: Action, S: GameState<P,A>> MCTS<P,A,S> {
     ///Call this method to instantiate a new search with default parameters.
-    pub fn new(state: &'s S) -> Self {
+    pub fn new(state: Rc<S>) -> Self {
         let mut stack = Vec::new();
         
         let mut actions = Vec::new();
@@ -48,15 +48,17 @@ impl<'s,P: Player, A: Action, S: GameState<P,A>> MCTS<'s,P,A,S> {
         result.info.leaf = 1;
         
         //Call go once with expansion set to zero to force the root to expand 
-        result.go(state,0);
+        let root = result.root.clone();
+        result.go(&root,0);
         result.expansion = 10;
         result
     }
     
     ///Call this method to search the given game state for a duration of time. Results are improved each time it is called. This behavior can be used to implement a user defined stopping criteria that monitors progress.
     pub fn search(&mut self,n: usize, actions: &mut Vec<(A, f32, f32)>) {
+        let root = self.root.clone();
         for _ in 0..n {
-            self.go(self.root,0);
+            self.go(&root,0);
         }
 
         actions.clear();

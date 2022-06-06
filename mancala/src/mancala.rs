@@ -309,10 +309,11 @@ impl GameState<Player,Pit> for Mancala {
 #[cfg(test)]
 mod test {
     use super::*;
+    use std::rc::Rc;
 
     fn best(moves: &[Pit]) -> Pit {
-        let game = Mancala::load(&moves);
-        let mut mcts = MCTS::new(&game).with_transposition();
+        let game = Rc::new(Mancala::load(&moves));
+        let mut mcts = MCTS::new(game).with_transposition();
         let mut actions = vec!();
         
         mcts.search(10000,&mut actions);

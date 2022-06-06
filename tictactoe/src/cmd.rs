@@ -1,6 +1,6 @@
 extern crate arbor;
 
-
+use std::rc::Rc;
 mod tictactoe;
 use std::io;
 use std::io::prelude::*;
@@ -8,17 +8,14 @@ use self::tictactoe::*;
 use arbor::*;
 use instant::Instant;
 
-
-
-
 fn main() {
     println!("Tic Tac Toe!");
     
     let game = [];
 
-    let mut gamestate = TicTacToe::load(&game);
+    let mut gamestate = Rc::new(TicTacToe::load(&game));
     println!("{}",gamestate);
-    
+
     loop {
         if let Some(result) = gamestate.gameover() {
             match result {
@@ -45,7 +42,8 @@ fn main() {
                     let space = gamestate.space[p-1];
                     //println!("{:?}",pit);
                     if space == Mark::N {
-                        gamestate = gamestate.make(ALLMOVES[p-1]);
+                        let next = gamestate.make(ALLMOVES[p-1]);
+                        gamestate = Rc::new(next);
                     } else {
                         println!("invalid move");
                     }
@@ -56,8 +54,8 @@ fn main() {
                 println!("parse failed");
             }
         } else {
-            let state = gamestate.clone();
-            let mut mcts = MCTS::new(&state).with_transposition();
+            let root = gamestate.clone();
+            let mut mcts = MCTS::new(root).with_transposition();
             let mut actions = vec!();
             let duration = std::time::Duration::new(1, 0);
             let start = Instant::now();
@@ -79,7 +77,8 @@ fn main() {
 
             println!("{:?}",mcts.info);
             println!("{:?}",action);
-            gamestate = gamestate.make(*action);
+            let next = gamestate.make(*action);
+            gamestate = Rc::new(next);
         }
         
         

@@ -4,15 +4,13 @@ mod search;
 mod builder;
 use std::fmt::Debug;
 use std::fmt::Display;
+use std::rc::Rc;
 
 type HashMap<K,V> = rustc_hash::FxHashMap<K,V>;
 type Rng = rand_xorshift::XorShiftRng;
 
-
-
 ///This trait describes an allowed move for a game state. This type is passed to the "make" function to produce the next game state. The algorithm keeps track of all allowed actions for each game state that is visited. Limit the size of this type and prefer a contiguous memory layout for best performance (e.g. enum, integer). 
 pub trait Action: Copy + Clone + Debug {}
-
 
 ///This trait describes the players in the game. For now it should be a two-state like a boolean.
 pub trait Player: Copy + Clone + Debug + PartialEq {}
@@ -72,19 +70,17 @@ pub struct Info {
 
 //PMLFIXME add an API that does "pretraining". It should take a Vec<f32> and train on the random playout policy. This should be used "offline" by the developer.
 
-
 ///This struct is the main launch point for this crate. It holds the state of execution for the MCTS algorithm. Use it's associated methods to operate the search and tune performance.
-pub struct MCTS<'s,P: Player, A: Action, S: GameState<P,A>> {
+pub struct MCTS<P: Player, A: Action, S: GameState<P,A>> {
     exploration: f32,
     expansion: u32,
     use_custom_evaluation: bool,
     use_transposition: bool,
-    
-    
+
     ///Provides metrics about the shape and size of the game tree. For informational purposes only.
     pub info: Info,
-    
-    root: &'s S,
+
+    root: Rc<S>,
     stack: Vec<Node<P,A>>,
     actions: Vec<A>,
     rand: Rng,

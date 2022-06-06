@@ -2,7 +2,7 @@
 extern crate lazy_static;
 
 mod mancala;
-
+use std::rc::Rc;
 use std::io;
 use std::io::prelude::*;
 use self::mancala::*;
@@ -54,7 +54,7 @@ fn main() {
 
     let game = [];
 
-    let mut gamestate = Mancala::load(&game);
+    let mut gamestate = Rc::new(Mancala::load(&game));
     
     loop {
         println!("{}",serialize(&gamestate));
@@ -74,7 +74,8 @@ fn main() {
                 if (1 <= p) && (p <= 6) {
                     let pit = PIT[p-1];
                     println!("{:?}",pit);
-                    gamestate = gamestate.make(pit);
+                    let next = gamestate.make(pit);
+                    gamestate = Rc::new(next);
                 } else {
                     println!("validation failed");
                 }
@@ -83,7 +84,7 @@ fn main() {
             }
         } else {
             let state = gamestate.clone();
-            let mut mcts = MCTS::new(&state).with_transposition();
+            let mut mcts = MCTS::new(state).with_transposition();
             let mut actions = vec!();
             let duration = std::time::Duration::new(1, 0);
             let start = Instant::now();
@@ -105,7 +106,8 @@ fn main() {
             
             println!("{:?}",mcts.info);
             println!("{:?}",action);
-            gamestate = gamestate.make(*action);
+            let next = gamestate.make(*action);
+            gamestate = Rc::new(next);
         }
         
         

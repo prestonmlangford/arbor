@@ -7,7 +7,7 @@ mod mancala;
 use self::mancala::*;
 use arbor::*;
 use instant::Instant;
-
+use std::rc::Rc;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
@@ -31,14 +31,14 @@ macro_rules! logf {
 
 #[wasm_bindgen]
 pub struct MancalaBindings {
-    game: Box<Mancala>
+    game: Rc<Mancala>
 }
 
 #[wasm_bindgen]
 impl MancalaBindings {
     pub fn new() -> MancalaBindings {
         MancalaBindings {
-            game: Box::new(Mancala::new())
+            game: Rc::new(Mancala::new())
         }
     }
     
@@ -100,15 +100,15 @@ impl MancalaBindings {
         
         if let Some(a) = action {
             let next = self.game.make(a);
-            self.game = Box::new(next);
+            self.game = Rc::new(next);
         } else {
             logf!("Move validation failed");
         }
     }
     
     pub fn ai_make(&mut self) {
-        let state = (*self.game).clone();
-        let mut mcts = MCTS::new(&state).with_transposition();
+        let state = self.game.clone();
+        let mut mcts = MCTS::new(state).with_transposition();
         let duration = std::time::Duration::new(1, 0);
         let mut actions = vec!();
         let start = Instant::now();
@@ -129,7 +129,7 @@ impl MancalaBindings {
 
         if let Some((action,_value,_error)) = best {
             let next = self.game.make(*action);
-            self.game = Box::new(next);
+            self.game = Rc::new(next);
         }
     }
 }
