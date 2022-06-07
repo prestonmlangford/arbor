@@ -82,7 +82,7 @@ class TicTacToe extends React.Component {
       var max = 0;
       for (let a of this.state.actions) {
         let [i,w,_] = a;
-        if (max < w) {
+        if (max <= w) {
           max = w;
           best = i;
         }
@@ -191,6 +191,22 @@ const mancala_ordering = [
 ];
 
 class MancalaBoard extends React.Component {
+  renderStones(i) {
+    let stones = this.props.board[i];
+    if (stones > 0) {
+      return (
+        <div className='stone-container-parent'>
+          <div className='stone-container'>
+            {
+              [...Array(stones).keys()]
+              .map((j) => <div className='stone' key={(i << 10) | j}></div>)
+            }
+          </div>
+        </div>
+      );
+    }
+  }
+
   renderPit(pit,i,good,bad) {
     let r,g,b;
     if (good > 0) {
@@ -212,18 +228,15 @@ class MancalaBoard extends React.Component {
       + String(r) + ','
       + String(g) + ','
       + String(b) + ')';
-    
+
     return (
-      <button 
+      <div 
         className={"pit " + pit}
         key={pit}
         onClick={() => this.props.onClick(i)}
         style={{backgroundColor:color}}>
-        {
-          //pit
-          this.props.board[i]
-        }
-      </button>
+        {this.renderStones(i)}
+      </div>
     );
   }
 
@@ -319,7 +332,7 @@ class Mancala extends React.Component {
       for (let a of this.state.actions) {
         let [i,w,_] = a;
         console.log("i: %d, w: %f",i,w);
-        if (max < w) {
+        if (max <= w) {
           max = w;
           best = i;
         }

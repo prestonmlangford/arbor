@@ -147,9 +147,37 @@ body {
 }
 
 .pit {
+    width: 1fr;
     background-color: #666;
     border-radius: 5px;
-    width: 2.3em;
+}
+
+.stone-container-parent {
+    height: 0;
+    width:100%;
+    padding-bottom:100%;
+    position: relative;
+}
+
+.stone-container {
+    position: absolute;
+    top: 5px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: repeat(24,1fr);
+    row-gap: 5px;
+}
+
+.stone {
+    margin: auto;
+    background-color: black;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
 }
  
 /*------------------------------------------------------------------------------ 
