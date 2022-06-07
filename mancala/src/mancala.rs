@@ -37,7 +37,7 @@ pub const PIT: [Pit; NP] = [
 
 #[derive(Copy,Clone,Debug)]
 pub struct Mancala {
-    pit: [u8; NP],
+    pub pit: [u8; NP],
     side: Player,
 }
 

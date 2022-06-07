@@ -10,6 +10,7 @@ dependencies = [
  "rand",
  "rand_xorshift",
  "rustc-hash",
+ "serde",
  "time",
 ]
 
@@ -138,6 +139,8 @@ dependencies = [
  "lazy_static",
  "rand",
  "rand_xorshift",
+ "serde",
+ "serde_json",
  "wasm-bindgen",
 ]
 

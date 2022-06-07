@@ -28,12 +28,25 @@ macro_rules! logf {
     ($($t:tt)*) => (log(&format_args!($($t)*).to_string()))
 }
 
+fn grid_to_index(g: Grid) -> u8 {
+    match g {
+        Grid::TL => 0,
+        Grid::TM => 1,
+        Grid::TR => 2,
+        Grid::ML => 3,
+        Grid::MM => 4,
+        Grid::MR => 5,
+        Grid::BL => 6,
+        Grid::BM => 7,
+        Grid::BR => 8,
+    }
+}
+
 #[wasm_bindgen]
 pub struct Bindings {
     game: Rc<TicTacToe>,
     mcts: Option<MCTS<Mark,Grid,TicTacToe>>,
-    ai_actions: Vec<(Mark, f32, f32)>,
-    actions: Vec<usize>,
+    actions: Vec<(Grid, f32, f32)>
 }
 
 #[wasm_bindgen]
@@ -42,43 +55,44 @@ impl Bindings {
         Bindings {
             game: Rc::new(TicTacToe::new()),
             mcts: None,
-            ai_actions: Vec::new(),
             actions: Vec::new(),
         }
     }
     
     pub fn serialize(&mut self) -> String {
-        let game = self.game.clone();
         let board: Vec<String> = 
-            game.space
+            self.game.space
             .iter()
             .map(|s| format!("{}",s))
             .collect();
         
-        let side = format!("{}",game.side);
+        let side = format!("{}",self.game.side);
         
-        let result = if let Some(r) = game.gameover() {
+        let result = if let Some(r) = self.game.gameover() {
             Value::String(format!("{:?}",r))
         } else {
             Value::Null
         };
         
-        let actions = &mut self.actions;
-        actions.clear();
-        game.actions(&mut |a|{
-            for (i,&_a) in ALLMOVES.iter().enumerate() {
-                if a == _a {
-                    actions.push(i);
-                    break;
-                }
+        let actions = self.actions.iter().map(
+            |(a,u,v)| {
+                let i = grid_to_index(*a);
+                (i,*u,*v)
             }
-        });
+        ).collect::<Vec<(u8,f32,f32)>>();
+        
+        let info = if let Some(mcts) = &self.mcts {
+            Some(&mcts.info)
+        } else {
+            None
+        };
         
         json!({
             "board"  : board,
             "side"   : side,
             "result" : result,
-            "actions" : actions
+            "actions": actions,
+            "info"   : info,
         }).to_string()
     }
     
@@ -94,18 +108,24 @@ impl Bindings {
         if let Some(a) = action {
             let next = self.game.make(a);
             self.game = Rc::new(next);
+            self.mcts = None;
+            self.actions.clear();
+            if self.game.gameover().is_none() {
+                self.ponder(10);
+            }
+
         } else {
             logf!("Move validation failed");
         }
     }
     
-    pub fn ai_think(&mut self) {
+    pub fn ponder(&mut self, ms: u32) {
         if let Some(mcts) = &mut self.mcts {
-            let duration = std::time::Duration::new(1, 0);
-            let mut actions = vec!();
+            let ns = ms * 1000 * 1000;
+            let duration = std::time::Duration::new(0, ns);
             let start = Instant::now();
             while (Instant::now() - start) < duration {
-                mcts.search(100,&mut actions);
+                mcts.search(1000,&mut self.actions);
             }
         } else {
             let root = self.game.clone();
@@ -113,34 +133,7 @@ impl Bindings {
                 MCTS::new(root)
                 .with_transposition();
             self.mcts = Some(mcts);
-            self.ai_think();
-        }
-    }
-    
-    pub fn ai_make(&mut self) {
-        let root = self.game.clone();
-        let mut mcts = MCTS::new(root).with_transposition();
-        let duration = std::time::Duration::new(1, 0);
-        let mut actions = vec!();
-        let start = Instant::now();
-        while (Instant::now() - start) < duration {
-            mcts.search(100,&mut actions);
-        }
-        
-        let best = 
-            actions
-            .iter()
-            .max_by(|(_,w1,_),(_,w2,_)| {
-                if w1 > w2 {
-                    std::cmp::Ordering::Greater
-                } else {
-                    std::cmp::Ordering::Less
-                }
-            });
-
-        if let Some((action,_value,_error)) = best {
-            let next = self.game.make(*action);
-            self.game = Rc::new(next);
+            self.ponder(ms);
         }
     }
 }

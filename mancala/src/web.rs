@@ -2,7 +2,7 @@
 extern crate lazy_static;
 
 use wasm_bindgen::prelude::*;
-
+use serde_json::json;
 mod mancala;
 use self::mancala::*;
 use arbor::*;
@@ -29,59 +29,80 @@ macro_rules! logf {
     ($($t:tt)*) => (log(&format_args!($($t)*).to_string()))
 }
 
-#[wasm_bindgen]
-pub struct MancalaBindings {
-    game: Rc<Mancala>
+fn pit_to_index(p: Pit) -> u8 {
+    match p {
+        Pit::R1      =>  0,
+        Pit::R2      =>  1,
+        Pit::R3      =>  2,
+        Pit::R4      =>  3,
+        Pit::R5      =>  4,
+        Pit::R6      =>  5,
+        Pit::RBank   =>  6,
+        Pit::L1      =>  7,
+        Pit::L2      =>  8,
+        Pit::L3      =>  9,
+        Pit::L4      => 10,
+        Pit::L5      => 11,
+        Pit::L6      => 12,
+        Pit::LBank   => 13,
+    }
 }
 
 #[wasm_bindgen]
-impl MancalaBindings {
-    pub fn new() -> MancalaBindings {
-        MancalaBindings {
-            game: Rc::new(Mancala::new())
+pub struct Bindings {
+    game: Rc<Mancala>,
+    actions: Vec<(Pit,f32,f32)>,
+    mcts: Option<MCTS<mancala::Player,Pit,Mancala>>
+}
+
+#[wasm_bindgen]
+impl Bindings {
+    pub fn new() -> Bindings {
+        Bindings {
+            game: Rc::new(Mancala::new()),
+            actions: Vec::new(),
+            mcts: None,
         }
     }
     
     pub fn serialize(&self) -> String {
-        let game = &self.game;
 
-        let result = if let Some(r) = game.gameover() {
-            format!("\"{:?}\"",r)
+        let result = if let Some(r) = self.game.gameover() {
+            match r {
+                GameResult::Win  => Some("Win"),
+                GameResult::Lose => Some("Lose"),
+                GameResult::Draw => Some("Draw"),
+            }
         } else {
-            "null".to_string()
+            None
+        };
+
+        let side = match self.game.player() {
+            mancala::Player::L => "L",
+            mancala::Player::R => "R",
+        };
+
+        let actions = self.actions.iter().map(
+            |(a,u,v)| {
+                let i = pit_to_index(*a);
+                (i,*u,*v)
+            }
+        ).collect::<Vec<(u8,f32,f32)>>();
+        
+        
+        let info = if let Some(mcts) = &self.mcts {
+            Some(&mcts.info)
+        } else {
+            None
         };
         
-        let mut action_str = String::new();
-        action_str.push('[');
-        game.actions(&mut |a|{
-            let s = format!("{:?}",a)
-                .replace("R","")
-                .replace("L","");
-            action_str.push_str(&s);
-            action_str.push(',');
-        });
-        if let Some('[') = action_str.pop() {
-            action_str.push('[');
-        }
-        action_str.push(']');
-    
-        let mut json = format!("{:?}",game);
-        
-        json = json
-            .replace("pit","\"pit\"")
-            .replace("Mancala","")
-            .replace("side","\"side\"")
-            .replace("L","\"L\"")
-            .replace("R","\"R\"")
-            .replace(" ","")
-            .replace("}",",\"actions\":");
-        
-        json.push_str(&action_str);
-        json.push_str(r#","result":"#);
-        json.push_str(&result);
-        json.push('}');
-        
-        json
+        json!({
+            "result":result,
+            "side":side,
+            "board":self.game.pit,
+            "actions":actions,
+            "info":info,
+        }).to_string()
     }
     
     pub fn make(&mut self,index: u8) {
@@ -101,35 +122,32 @@ impl MancalaBindings {
         if let Some(a) = action {
             let next = self.game.make(a);
             self.game = Rc::new(next);
+            self.mcts = None;
+            self.actions.clear();
+            if self.game.gameover().is_none() {
+                self.ponder(10);
+            }
         } else {
             logf!("Move validation failed");
         }
     }
-    
-    pub fn ai_make(&mut self) {
-        let state = self.game.clone();
-        let mut mcts = MCTS::new(state).with_transposition();
-        let duration = std::time::Duration::new(1, 0);
-        let mut actions = vec!();
-        let start = Instant::now();
-        while (Instant::now() - start) < duration {
-            mcts.search(100,&mut actions);
-        }
-        
-        let best = 
-            actions
-            .iter()
-            .max_by(|(_,w1,_),(_,w2,_)| {
-                if w1 > w2 {
-                    std::cmp::Ordering::Greater
-                } else {
-                    std::cmp::Ordering::Less
-                }
-            });
 
-        if let Some((action,_value,_error)) = best {
-            let next = self.game.make(*action);
-            self.game = Rc::new(next);
+    pub fn ponder(&mut self, ms: u32) {
+        if let Some(mcts) = &mut self.mcts {
+            let ns = ms * 1000 * 1000;
+            let duration = std::time::Duration::new(0, ns);
+            let start = Instant::now();
+            let n = std::cmp::min(100,ms as usize);
+            while (Instant::now() - start) < duration {
+                mcts.search(n,&mut self.actions);
+            }
+        } else {
+            let root = self.game.clone();
+            let mcts = 
+                MCTS::new(root)
+                .with_transposition();
+            self.mcts = Some(mcts);
+            self.ponder(ms);
         }
     }
 }

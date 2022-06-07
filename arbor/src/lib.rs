@@ -5,6 +5,7 @@ mod builder;
 use std::fmt::Debug;
 use std::fmt::Display;
 use std::rc::Rc;
+use serde::Serialize;
 
 type HashMap<K,V> = rustc_hash::FxHashMap<K,V>;
 type Rng = rand_xorshift::XorShiftRng;
@@ -57,7 +58,7 @@ enum Node<P: Player, A: Action> {
 }
 
 ///This struct provides metrics for the types of nodes in the search tree.
-#[derive(Default,Debug)]
+#[derive(Default,Debug,Serialize)]
 pub struct Info {
     pub q: f32,
     pub n: u32,
