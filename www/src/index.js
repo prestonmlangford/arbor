@@ -80,13 +80,17 @@ function mix_color(r,g,b,good,bad) {
 
 class TicTacToeBoard extends React.Component {
   renderSquare(i,good,bad) {
-    let color = mix_color(255, 255, 255, good, bad);
-    
+    let background = mix_color(100, 100, 100, good, bad);
+    let color = 'white';
     var ch;
     switch(this.props.squares[i]) {
       case 'X': ch = 'X'; break;
       case 'O': ch = 'O'; break;
-      default:  ch = '-'; break;
+      default:  {
+        ch = '-';
+        color = background;
+        break;
+      }
     }
 
     return (
@@ -94,7 +98,10 @@ class TicTacToeBoard extends React.Component {
         className="tictactoe-cell" 
         key={i}
         onClick={() => this.props.onClick(i)}
-        style={{backgroundColor:color}}>
+        style={{
+          backgroundColor:background,
+          color:color,
+          }}>
         {ch}
       </div>
     );
@@ -267,7 +274,7 @@ class MancalaBoard extends React.Component {
   }
 
   renderPit(pit,i,good,bad) {
-    let color = mix_color(255, 255, 255, good, bad);
+    let color = mix_color(100, 100, 100, good, bad);
     
     return (
       <div 
