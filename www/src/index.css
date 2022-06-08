@@ -106,9 +106,16 @@ body {
 }
 
 .tictactoe-cell {
-    font-size: 24px;
+    font-size: 50px;
     font-weight: bold;
     text-align: center;
+    border-radius: 5px;
+    
+    /* Center justify text*/
+    display: flex;
+    justify-content: center;
+    align-content: center;
+    flex-direction: column;
 }
 
 

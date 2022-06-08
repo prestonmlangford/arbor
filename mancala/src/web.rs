@@ -89,7 +89,6 @@ impl Bindings {
             }
         ).collect::<Vec<(u8,f32,f32)>>();
         
-        
         let info = if let Some(mcts) = &self.mcts {
             Some(&mcts.info)
         } else {
