@@ -32,6 +32,7 @@ body {
     grid-template-areas:
         "title  title"
         "status reset"
+        "chance reset"
         "board  board";
 }
 
@@ -59,6 +60,14 @@ body {
 
 .status {
     grid-area: status;
+    margin: auto;
+    margin-left: 20px;
+    color: white;
+    width: 12em;
+}
+
+.chance {
+    grid-area: chance;
     margin: auto;
     margin-left: 20px;
     color: white;

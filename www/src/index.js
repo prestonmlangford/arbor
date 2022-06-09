@@ -134,7 +134,7 @@ class TicTacToeBoard extends React.Component {
 class TicTacToe extends React.Component {
   constructor(props) {
     super(props);
-    
+    this.q = 0.5;
     this.uiEnabled = true;
     this.game = tictactoe.new();
     this.pondering = false;
@@ -176,6 +176,9 @@ class TicTacToe extends React.Component {
   updateState() {
     let json = this.game.serialize();
     let update = JSON.parse(json);
+    if ((update.info != null) && (update.side == 'O')) {
+      this.q = update.info.q;
+    }
     this.setState(update);
   }
   
@@ -222,7 +225,9 @@ class TicTacToe extends React.Component {
     } else {
       status = side + "'s turn";
     }
-    
+
+    let q = (this.q*100).toFixed(0);
+
     return (
       <div className="game-layout">
         <div className="title">
@@ -230,6 +235,9 @@ class TicTacToe extends React.Component {
         </div>
         <div className="status">
           <div>{status}</div>
+        </div>
+        <div className="chance">
+          <div>AI advantage: %{q}</div>
         </div>
         <div 
           className='reset'
@@ -324,6 +332,7 @@ class MancalaBoard extends React.Component {
 class Mancala extends React.Component {
   constructor(props) {
     super(props);
+    this.q = 0.5;
     this.game = mancala.new();
     this.uiEnabled = true;
     this.game.ponder(10);
@@ -333,6 +342,9 @@ class Mancala extends React.Component {
   updateState() {
     let json = this.game.serialize();
     let update = JSON.parse(json);
+    if ((update.info != null) && (update.side == 'L')) {
+      this.q = update.info.q;
+    }
     this.setState(update);
     return update;
   }
@@ -429,6 +441,8 @@ class Mancala extends React.Component {
       status = side + "'s turn";
     }
 
+    let q = (this.q*100).toFixed(0);
+
     return (
       <div className="game-layout">
         <div className="title">
@@ -436,6 +450,9 @@ class Mancala extends React.Component {
         </div>
         <div className="status">
           <div>{status}</div>
+        </div>
+        <div className="chance">
+          <div>AI advantage: %{q}</div>
         </div>
         <div 
           className='reset'
@@ -529,6 +546,7 @@ class ReversiBoard extends React.Component {
 class Reversi extends React.Component {
   constructor(props) {
     super(props);
+    this.q = 0.5;
     this.pondering = false;
     this.game = reversi.new();    
     this.uiEnabled = true;
@@ -539,6 +557,9 @@ class Reversi extends React.Component {
   updateState() {
     let json = this.game.serialize();
     let update = JSON.parse(json);
+    if ((update.info != null) && (update.side == 'B')) {
+      this.q = update.info.q;
+    }
     this.setState(update);
     return update;
   }
@@ -632,6 +653,8 @@ class Reversi extends React.Component {
       status = side + "'s turn";
     }
 
+    let q = (this.q*100).toFixed(0);
+
     return (
       <div className="game-layout">
         <div className="title">
@@ -640,7 +663,10 @@ class Reversi extends React.Component {
         <div className="status">
           <div>{status}</div>
         </div>
-        <div 
+        <div className="chance">
+          <div>AI advantage: %{q}</div>
+        </div>
+        <div
           className='reset'
           onClick={() => this.handleReset()}>
           reset
@@ -739,6 +765,7 @@ class Connect4Board extends React.Component {
 class Connect4 extends React.Component {
   constructor(props) {
     super(props);
+    this.q = 0.5;
     this.pondering = false;
     this.game = connect4.new();
     this.uiEnabled = true;
@@ -749,6 +776,9 @@ class Connect4 extends React.Component {
   updateState() {
     let json = this.game.serialize();
     let update = JSON.parse(json);
+    if ((update.info != null) && (update.side == 'B')) {
+      this.q = update.info.q;
+    }
     this.setState(update);
     return update;
   }
@@ -832,6 +862,8 @@ class Connect4 extends React.Component {
       status = side + "'s turn";
     }
     
+    let q = (this.q*100).toFixed(0);
+
     return (
       <div className="game-layout">
         <div className="title">
@@ -839,6 +871,9 @@ class Connect4 extends React.Component {
         </div>
         <div className="status">
           <div>{status}</div>
+        </div>
+        <div className="chance">
+          <div>AI advantage: %{q}</div>
         </div>
         <div 
           className='reset'
