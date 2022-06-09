@@ -4,7 +4,7 @@ import './index.css';
 import {Bindings as tictactoe} from "tictactoe";
 import {Bindings as mancala} from "mancala";
 import {Bindings as reversi} from "reversi";
-import {Connect4Bindings as connect4} from "connect4";
+import {Bindings as connect4} from "connect4";
 
 function rescale(arr,pondering) {
   var max = 0.0;
@@ -205,18 +205,22 @@ class TicTacToe extends React.Component {
   }
 
   render() {
+    let side  = this.state.side;
+    let winner = this.state.side == 'X' ? 'O' : 'X';
+    
     let status;
-    if (this.state.result != null) {
-      if (this.state.result == "Draw")
+    let result = this.state.result;
+    if (result != null) {
+      if (result == "Draw")
       {
-        status = "Draw";
+        status = "Draw";  
       }
       else
       {
-        status = "Winner: " + (this.state.side == 'X' ? 'O' : 'X');
+        status = winner + " Wins!";
       }
     } else {
-      status = "Next player: " + this.state.side;
+      status = side + "'s turn";
     }
     
     return (
@@ -403,20 +407,26 @@ class Mancala extends React.Component {
   }
 
   render() {
-    let winner = this.state.side == 'L' ? 'Right' : 'Left';
-    let side   = this.state.side == 'L' ? 'Left'  : 'Right';
+    let side  = this.state.side == 'L' ? 'Left' : 'Right';
+    let other = this.state.side == 'R' ? 'Left' : 'Right';
+    
     let status;
-    if (this.state.result != null) {
-      if (this.state.result == "Draw")
+    let result = this.state.result;
+    if (result != null) {
+      if (result == "Draw")
       {
-        status = "Draw";
+        status = "Draw";  
+      }
+      else if (result == 'Win')
+      {
+        status = side + " Wins!";
       }
       else
       {
-        status = "Winner: " + winner;
+        status = other + " Wins!";
       }
     } else {
-      status = "Next player: " + side
+      status = side + "'s turn";
     }
 
     return (
@@ -482,7 +492,6 @@ class ReversiBoard extends React.Component {
         key={i}
         onClick={() => this.props.onClick(i)}
         style={{backgroundColor:color}}>
-        
         {}
       </div>
     );
@@ -521,7 +530,7 @@ class Reversi extends React.Component {
   constructor(props) {
     super(props);
     this.pondering = false;
-    this.game = reversi.new();
+    this.game = reversi.new();    
     this.uiEnabled = true;
     this.game.ponder(10);
     this.state = JSON.parse(this.game.serialize());
@@ -601,22 +610,26 @@ class Reversi extends React.Component {
   }
 
   render() {
-    
-    let winner = this.state.side == 'W' ? 'White' : 'Black';
-    let side   = this.state.side == 'W' ? 'Black' : 'White';
+    let side  = this.state.side == 'B' ? 'Black' : 'White';
+    let other = this.state.side == 'W' ? 'Black' : 'White';
     
     let status;
-    if (this.state.result != null) {
-      if (this.state.result == "Draw")
+    let result = this.state.result;
+    if (result != null) {
+      if (result == "Draw")
       {
-        status = "Draw";
+        status = "Draw";  
+      }
+      else if (result == 'Win')
+      {
+        status = side + " Wins!";
       }
       else
       {
-        status = "Winner: " + winner;
+        status = other + " Wins!";
       }
     } else {
-      status = "Next player: " + side;
+      status = side + "'s turn";
     }
 
     return (
@@ -651,45 +664,71 @@ ReactDOM.createRoot(
  *                                Connect4  
  * ---------------------------------------------------------------------------*/
 
-var connect4_board_ordering = [];
+var connect4_ordering = [];
 for (let r of [5,4,3,2,1,0]) {
   for (let w of [0,1,2,3,4,5,6]) {
-    connect4_board_ordering.push(w + r*7);
+    connect4_ordering.push(w + r*7);
   }
 }
 
 class Connect4Board extends React.Component {
-  renderSpace(i) {
+  renderSpace(i, good, bad) {
     let s = this.props.board[i];
-    var y = s == 1;
-    var r = s == 2;
-    var color = "grey";
+    var w = s == 2;
+    var b = s == 1;
+    var color;
     
-    if (y) {
-      color = "yellow";
-    }
-    
-    if (r) {
-      color = "red";
+    if (w) {
+      color = "white";
+    } else if (b) {
+      color = "black";
+    } else {
+      color = mix_color(100, 100, 100, good, bad);
     }
     
     return (
-      <button 
+      <div 
         className={"connect4-square " + color}
         key={i}
-        onClick={() => this.props.onClick(i)}>
+        onClick={() => this.props.onClick(i)}
+        style={{backgroundColor:color}}>
         {}
-      </button>
+      </div>
     );
   }
-
+  
+  drop(c) {
+    var i = c;
+    while ((this.props.board[i] != 0) && (i < 35)) {
+      i += 7;
+    }
+    
+    return i;
+  }
+  
   render() {
+    var spaces = [];
+    let actions = rescale(this.props.actions, this.props.pondering);
+    for (let i of connect4_ordering) {
+      var item = [i,0,0];
+      for (let [c,g,b] of actions) {
+        let j = this.drop(c);
+        if (i == j) {
+          item = [i,g,b];
+          break;
+        }
+      }
+      spaces.push(item);
+    }
+    
     return (
       <div className='board-container-parent'>
         <div className='board-container-child connect4-board'>
           {
-            connect4_board_ordering
-            .map((i) => this.renderSpace(i))
+            spaces.map((item) => {
+              let [i,good,bad] = item;
+              return this.renderSpace(i,good,bad)
+            })
           }
         </div>
       </div>
@@ -700,73 +739,99 @@ class Connect4Board extends React.Component {
 class Connect4 extends React.Component {
   constructor(props) {
     super(props);
-    this.state = {
-      game: connect4.new(),
-      uiEnabled:true
-    };
+    this.pondering = false;
+    this.game = connect4.new();
+    this.uiEnabled = true;
+    this.game.ponder(10);
+    this.state = JSON.parse(this.game.serialize());
   }
-  
-  getGame() {
-    let j = this.state.game.serialize();
-    return JSON.parse(j)
+
+  updateState() {
+    let json = this.game.serialize();
+    let update = JSON.parse(json);
+    this.setState(update);
+    return update;
   }
-  
-  handleAI() {
-    setTimeout(() => {
-      let game = this.getGame();
+
+  ponder(i) {
+    if (i <= 0) {
       
-      if ((game.result == null) && (game.side == 'Y')) {
-        this.state.game.ai_make()
-        this.setState(this.state)
-        
-        setTimeout(() => {
-          this.handleAI()
-        }, 100)
-      } else {
-        this.setState({uiEnabled: true})
+      var best;
+      var max = 0;
+      
+      for (let a of this.state.actions) {
+        let [i,w,_] = a;
+        if (max <= w) {
+          max = w;
+          best = i;
+        }
       }
-    }, 100);
-  }
-  
-  handleClick(i) {
-    let game = this.getGame();
-    let c = i % 7;
-    if ((game.result != null) || !this.state.uiEnabled) {
+      
+      this.game.make(best);
+      this.pondering = false;
+      this.updateState();
+
+      setTimeout(() => {
+        this.uiEnabled = true;
+      }, 100)
+
       return;
     }
 
-    this.state.game.make(c)
-    this.setState({uiEnabled:false})
+    setTimeout(() => {
+      this.pondering = true;
+      this.game.ponder(50);
+      this.updateState();
+      this.ponder(i - 1)
+    }, 50)
+  }
+
+  handleAI() {
+    setTimeout(() => {
+      if (this.state.result == null) {
+        this.ponder(20);
+      }
+    },100)
+  }
+  
+  handleClick(i) {
+    let c = i % 7;
+    if ((this.state.result != null) || !this.uiEnabled) {
+      return;
+    }
+
+    this.game.make(c)
+    this.updateState();
+    this.uiEnabled = false;
     this.handleAI();
   }
   
   handleReset() {
-    this.setState({
-      game: connect4.new(),
-      uiEnabled: true,
-    });
+    this.game = connect4.new();
+    this.uiEnabled = true;
+    this.game.ponder(10);
+    this.updateState();
   }
 
   render() {
-    let game = this.getGame();
-    
-    let winner = game.side == 'Y' ? 'Red'     : 'Yellow';
-    let side   = game.side == 'Y' ? 'Yellow'  : 'Red';
+    let side  = this.state.side == 'B' ? 'Black' : 'White';
+    let winner = this.state.side == 'W' ? 'Black' : 'White';
     
     let status;
-    if (game.result != null) {
-      if (game.result == "Draw")
+    let result = this.state.result;
+    if (result != null) {
+      if (result == "Draw")
       {
-        status = "Draw";
+        status = "Draw";  
       }
       else
       {
-        status = "Winner: " + winner;
+        status = winner + " Wins!";
       }
     } else {
-      status = "Next player: " + side;
+      status = side + "'s turn";
     }
-
+    
     return (
       <div className="game-layout">
         <div className="title">
@@ -781,8 +846,10 @@ class Connect4 extends React.Component {
           reset
         </div>
         <Connect4Board
-            onClick={i => this.handleClick(i)}
-            board={game.board}
+            pondering={this.pondering}
+            board={this.state.board}
+            actions={this.state.actions}
+            onClick={(i) => this.handleClick(i)}
         />
       </div>
     );

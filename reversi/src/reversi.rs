@@ -52,8 +52,9 @@ trait BitBoard {
     fn iter(&self) -> IterBB;
 }
 
-const EASTBOUND: u64  = 0x8080808080808080u64;
-const WESTBOUND: u64  = 0x0101010101010101u64;
+const FULLBOARD: u64 = 0xFFFFFFFFFFFFFFFFu64;
+const EASTBOUND: u64 = 0x8080808080808080u64;
+const WESTBOUND: u64 = 0x0101010101010101u64;
 
 
 #[inline]
@@ -296,22 +297,20 @@ impl GameState<Disc,Move> for Reversi {
     }
     
     fn gameover(&self) -> Option<GameResult> {
-        if self.pass {
-            let done = self.parallel_capture() == 0;
+        let done = 
+            (self.pass && (self.parallel_capture() == 0)) ||
+            ((self.f | self.e) == FULLBOARD);
             
-            if done {
-                let f = self.f.count_ones();
-                let e = self.e.count_ones();
-                
-                if f > e {
-                    Some(GameResult::Win)
-                } else if f < e {
-                    Some(GameResult::Lose)
-                } else {
-                    Some(GameResult::Draw)
-                }
+        if done {
+            let f = self.f.count_ones();
+            let e = self.e.count_ones();
+            
+            if f > e {
+                Some(GameResult::Win)
+            } else if f < e {
+                Some(GameResult::Lose)
             } else {
-                None
+                Some(GameResult::Draw)
             }
         } else {
             None

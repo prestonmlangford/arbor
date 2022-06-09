@@ -45,7 +45,8 @@ fn column_to_index(c: Column) -> u8 {
 #[wasm_bindgen]
 pub struct Bindings {
     game: Rc<Connect4>,
-    actions: Vec<u8>,
+    actions: Vec<(Column,f32,f32)>,
+    mcts: Option<MCTS<Disc,Column,Connect4>>,
     board: Vec<u8>,
 }
 
@@ -55,6 +56,7 @@ impl Bindings {
         Bindings {
             game: Rc::new(Connect4::load(&[])),
             actions: Vec::new(),
+            mcts: None,
             board: Vec::new()
         }
     }
@@ -72,16 +74,24 @@ impl Bindings {
             None
         };
         
-        let actions = &mut self.actions;
-        actions.clear();
-        game.actions(&mut |a|{
-            let i = column_to_index(a);
-            actions.push(i);
-        });
+        let actions = self.actions.iter().map(
+            |(a,u,v)| {
+                let i = match *a {
+                    Column::C1 => 0,
+                    Column::C2 => 1,
+                    Column::C3 => 2,
+                    Column::C4 => 3,
+                    Column::C5 => 4,
+                    Column::C6 => 5,
+                    Column::C7 => 6,
+                };
+                (i,*u,*v)
+            }
+        ).collect::<Vec<(u8,f32,f32)>>();
         
         let side = match game.player() {
-            Disc::Y => "Y",
-            Disc::R => "R",
+            Disc::Y => "B",
+            Disc::R => "W",
             Disc::N => panic!("Should have a valid player"),
         };
         
@@ -96,11 +106,18 @@ impl Bindings {
             board.push(v);
         }
         
+        let info = if let Some(mcts) = &self.mcts {
+            Some(&mcts.info)
+        } else {
+            None
+        };
+        
         json!({
-            "board"  : self.board,
-            "side"   : side,
             "result" : result,
-            "actions" : self.actions
+            "side"   : side,
+            "board"  : self.board,
+            "actions": actions,
+            "info"   : info
         }).to_string()
     }
     
@@ -116,36 +133,32 @@ impl Bindings {
         
         if let Some(a) = action {
             let next = self.game.make(a);
-            self.game = Rc::new(next);
+            self.game = Rc::new(next);self.mcts = None;
+            self.actions.clear();
+            if self.game.gameover().is_none() {
+                self.ponder(10);
+            }
         } else {
             logf!("Move validation failed");
         }
     }
     
-    pub fn ai_make(&mut self) {
-        let state = self.game.clone();
-        let mut mcts = MCTS::new(state).with_transposition();
-        let duration = std::time::Duration::new(1, 0);
-        let mut actions = vec!();
-        let start = Instant::now();
-        while (Instant::now() - start) < duration {
-            mcts.search(100,&mut actions);
-        }
-        
-        let best = 
-            actions
-            .iter()
-            .max_by(|(_,w1,_),(_,w2,_)| {
-                if w1 > w2 {
-                    std::cmp::Ordering::Greater
-                } else {
-                    std::cmp::Ordering::Less
-                }
-            });
-
-        if let Some((action,_value,_error)) = best {
-            let next = self.game.make(*action);
-            self.game = Rc::new(next);
+    pub fn ponder(&mut self, ms: u32) {
+        if let Some(mcts) = &mut self.mcts {
+            let ns = ms * 1000 * 1000;
+            let duration = std::time::Duration::new(0, ns);
+            let start = Instant::now();
+            let n = std::cmp::min(100,ms as usize);
+            while (Instant::now() - start) < duration {
+                mcts.search(n,&mut self.actions);
+            }
+        } else {
+            let root = self.game.clone();
+            let mcts = 
+                MCTS::new(root)
+                .with_transposition();
+            self.mcts = Some(mcts);
+            self.ponder(ms);
         }
     }
 }

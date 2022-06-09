@@ -28,12 +28,6 @@ extern "C" {
 //     ($($t:tt)*) => (log(&format_args!($($t)*).to_string()))
 // }
 
-fn move_to_index(m: Move) -> u8 {
-    match m {
-        Move::Capture(i) => i as u8,
-        Move::Pass       => 64,
-    }
-}
 
 #[wasm_bindgen]
 pub struct Bindings {
@@ -68,7 +62,10 @@ impl Bindings {
 
         let actions = self.actions.iter().map(
             |(a,u,v)| {
-                let i = move_to_index(*a);
+                let i = match *a {
+                    Move::Capture(j) => j as u8,
+                    Move::Pass       => 64,
+                };
                 (i,*u,*v)
             }
         ).collect::<Vec<(u8,f32,f32)>>();
@@ -151,9 +148,8 @@ impl Bindings {
             }
         } else {
             let root = self.game.clone();
-            let mcts = 
-                MCTS::new(root)
-                .with_transposition();
+            //PMLFIXME there is some issue with passing and transposition that causes a stack overflow
+            let mcts = MCTS::new(root);
             self.mcts = Some(mcts);
             self.ponder(ms);
         }

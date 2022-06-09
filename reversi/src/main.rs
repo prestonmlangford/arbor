@@ -19,7 +19,7 @@ fn main() {
     
     loop {
         println!("{:?}",gamestate);
-        if gamestate.player() == Disc::B {
+        if gamestate.player() == Disc::W {
             print!("=> ");
             //flushes standard out so the print statements are actually displayed
             io::stdout().flush().unwrap();
@@ -52,7 +52,7 @@ fn main() {
             }
         } else {
             let root = gamestate.clone();
-            let mut mcts = MCTS::new(root).with_transposition();
+            let mut mcts = MCTS::new(root);//.with_transposition();
             let mut actions = vec!();
             let duration = std::time::Duration::new(1, 0);
             let start = Instant::now();
