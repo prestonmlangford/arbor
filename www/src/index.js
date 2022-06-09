@@ -543,12 +543,18 @@ class ReversiBoard extends React.Component {
   }
 }
 
+let pass_game  = [44,43,34,45,19,18,37,41,26,38,10,2,17,24,25,16,33,42,50,51,58,59,60,49,11,57,40,56,57,21,48,61,62,52,32,33,48,9,1,3,4,39,53,20,29,46,47,55,30,54,63,31,23,15,12,22,64,13,14,7,5,7,0,63,8,54];
+let pass_game2 = [44,43,34,45,19,18,37,41,26,38,10,2,17,24,25,16,33,42,50,51,58,59,60,49,11,57,40,56,57,21,48,61,62,52,32,33,48,9,1,3,4,39,53,20,29,46,47,55,30,54,63,31,23,15,12,22,64,13,14,7,5,7,0,63];
+
 class Reversi extends React.Component {
   constructor(props) {
     super(props);
     this.q = 0.5;
     this.pondering = false;
-    this.game = reversi.new();    
+    this.game = reversi.new();
+    for (let a of pass_game2) {
+      this.game.make(a);
+    }
     this.uiEnabled = true;
     this.game.ponder(10);
     this.state = JSON.parse(this.game.serialize());
@@ -577,13 +583,22 @@ class Reversi extends React.Component {
           best = i;
         }
       }
-      
+
       this.game.make(best);
+      this.game.ponder(10);
       this.pondering = false;
       let state = this.updateState();
-
-      //PMLFIXME reversi needs a way to handle "pass"
-      if (state.side == 'B') {
+      
+      var pass = false;
+      for (let a of state.actions) {
+        let [i,w,s] = a;
+        if (i >= 64) {
+          pass = true;
+        }
+      }
+      
+      if (pass) {
+        this.game.make(64);//pass
         this.handleAI();
       } else {
         setTimeout(() => {
@@ -614,7 +629,7 @@ class Reversi extends React.Component {
     if ((this.state.result != null) || !this.uiEnabled) {
       return;
     }
-    
+
     this.game.make(i);
     let state = this.updateState();
     if (state.side == 'B') {
