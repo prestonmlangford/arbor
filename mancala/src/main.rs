@@ -11,7 +11,7 @@ fn main() {
     let game = [];
 
     let mut gamestate = Mancala::load(&game);
-    
+    println!("{:?}",gamestate);
     loop {
         if gamestate.player() == mancala::Player::R {
             print!("=> ");

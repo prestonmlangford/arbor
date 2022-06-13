@@ -27,4 +27,4 @@ path = "src/main.rs"
 [lib]
 crate-type = ["rlib"]
 name = "mancala"
-path = "src/mancala.rs"
+path = "src/mancala/mod.rs"

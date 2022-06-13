@@ -1,6 +1,3 @@
-
-use rand_xorshift::XorShiftRng as Rand;
-use rand::{RngCore,SeedableRng};
 use std::fmt::Display;
 use std::fmt;
 
@@ -35,14 +32,12 @@ pub const PIT: [Pit; NP] = [
     L1,L2,L3,L4,L5,L6,LBank,
 ];
 
-
+mod zobrist;
 
 #[derive(Copy,Clone,Debug)]
 pub struct Mancala {
     pub pit: [u8; NP],
-    side: Player,
-    ztable: [u64;NP*NS],
-    zturn: u64,
+    side: Player
 }
 
 impl Display for Mancala {
@@ -94,22 +89,9 @@ impl Mancala {
             }
         }
         
-        let ztable = {
-            let mut table = [0;NP*NS];
-            let mut rand = Rand::from_seed(
-                [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
-            );
-            //let mut rand = rand::thread_rng();
-            for entry in table.iter_mut() {
-                *entry = rand.next_u64();
-            }
-            table
-        };
-        let  zturn: u64 = 0x123456789ABCDEF0;
-        
         let side = Player::R;
         
-        Mancala {pit, side, ztable, zturn}
+        Mancala {pit, side}
     }
     
 
@@ -294,12 +276,12 @@ impl GameState<Player,Pit> for Mancala {
                     false
                 }
             );
-            s ^= self.ztable[z];
+            s ^= zobrist::ZTABLE[z];
         }
         
         let t = match self.side {
             Player::L => 0,
-            Player::R => self.zturn,
+            Player::R => zobrist::ZTURN,
         };
 
         t ^ s

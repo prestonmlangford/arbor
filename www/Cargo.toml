@@ -12,3 +12,4 @@ gloo-timers = "0.2.4"
 instant = { version = "0.1", features = [ "wasm-bindgen" ] }
 arbor = { path = "../arbor" }
 tictactoe = { path = "../tictactoe" }
+mancala = { path = "../mancala" }

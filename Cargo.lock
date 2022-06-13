@@ -742,6 +742,7 @@ dependencies = [
  "gloo-console",
  "gloo-timers",
  "instant",
+ "mancala",
  "tictactoe",
  "yew",
 ]
