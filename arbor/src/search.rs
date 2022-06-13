@@ -13,59 +13,25 @@ impl GameResult {
     }
 }
 
-impl<P: Player, A: Action, S: GameState<P,A>> MCTS<P,A,S> {
+impl<P: Player, A: Action> MCTS<P,A> {
     ///Call this method to instantiate a new search with default parameters.
-    pub fn new(state: Rc<S>) -> Self {
-        let mut stack = Vec::new();
-        
-        let mut actions = Vec::new();
-        state.actions(&mut |a| actions.push(a));
-        
-        
-        stack.push(Node::Leaf(
-            false,
-            // This action is never used, so it doesn't matter what it is
-            *actions.first().expect("should have at least one action"),
-            state.player(),
-            0.5,
-            1
-        ));
-        
+    pub fn new() -> Self {
         let s = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
-        let mut result = Self {
+        Self {
             exploration: 2.0f32.sqrt(),
             expansion: 0,
             use_custom_evaluation: false,
             use_transposition: false,
             info: Info::default(),
-            stack: stack,
-            root: state,
+            stack: Vec::new(),
             actions: Vec::new(),
             rand: Rng::from_seed(s),
             map: HashMap::default(),
-        };
-        
-        result.info.leaf = 1;
-        
-        //Call go once with expansion set to zero to force the root to expand 
-        let root = result.root.clone();
-        result.go(&root,0);
-        result.expansion = 10;
-        result
-    }
-    
-    ///Call this method to search the given game state for a duration of time. Results are improved each time it is called. This behavior can be used to implement a user defined stopping criteria that monitors progress.
-    pub fn search(&mut self,n: usize, actions: &mut Vec<(A, f32, f32)>) {
-        let root = self.root.clone();
-        for _ in 0..n {
-            self.go(&root,0);
         }
+    }
 
-        actions.clear();
-        let player = self.root.player();
-        if let Node::Branch(_,_,_,w,n,c) = self.stack[0] {
-            self.info.q = w/(n as f32);
-            self.info.n = n;
+    pub fn ply<F>(&self, f: &mut F) where F: FnMut((A,f32,f32)) {
+        if let Node::Branch(_,_,player,_,_,c) = self.stack[0] {
             let mut sibling = Some(c);
             while let Some(u) = sibling {
                 match self.stack[u] {
@@ -75,16 +41,16 @@ impl<P: Player, A: Action, S: GameState<P,A>> MCTS<P,A,S> {
                         let w = w/n;
                         let w = if p == player {w} else {1.0 - w};
                         let e = 0.5/n + (w*(1.0 - w)/n).sqrt();
-                        actions.push((a,w,e));
+                        f((a,w,e));
                         sibling = s.then(||u+1);
                     },
                     Node::Terminal(s,a,p,w) => {
                         let w = if p == player {w} else {1.0 - w};
-                        actions.push((a,w,0.0));
+                        f((a,w,0.0));
                         sibling = s.then(||u+1);
                     },
                     Node::Unknown(s,a) => {
-                        actions.push((a,0.5,0.5));
+                        f((a,0.5,0.5));
                         sibling = s.then(||u+1);
                     },
                     Node::Transpose(_,_,_) => panic!("Transpositions should not be possible at root ply")
@@ -92,6 +58,37 @@ impl<P: Player, A: Action, S: GameState<P,A>> MCTS<P,A,S> {
             }
         } else {
             panic!("root node is not a branch");
+        }
+    }
+    
+    ///Call this method to search the given game state for a duration of time. Results are improved each time it is called. This behavior can be used to implement a user defined stopping criteria that monitors progress.
+    pub fn ponder<S: GameState<P,A>>(&mut self,root: &S, n: usize) {
+        if self.stack.len() == 0 {
+            let mut actions = Vec::new();
+            root.actions(&mut |a| actions.push(a));
+            
+            
+            self.stack.push(Node::Leaf(
+                false,
+                // This action is never used, so it doesn't matter what it is
+                *actions.first().expect("should have at least one action"),
+                root.player(),
+                0.5,
+                1
+            ));
+            
+            self.info.leaf = 1;
+            
+            //Call go once with expansion set to zero to force the root to expand 
+            let expansion = self.expansion;
+            self.expansion = 0;
+            self.go(root,0);
+            self.expansion = expansion;
+            self.ponder(root,n - 1);
+        } else {
+            for _ in 0..n {
+                self.go(root,0);
+            }
         }
     }
     
@@ -141,7 +138,7 @@ impl<P: Player, A: Action, S: GameState<P,A>> MCTS<P,A,S> {
         }
     }
     
-    fn rollout(&mut self,state: &S) -> f32 {
+    fn rollout<S: GameState<P,A>>(&mut self,state: &S) -> f32 {
         let mut sim;
         let mut s = state;
         let p = s.player();
@@ -173,7 +170,7 @@ impl<P: Player, A: Action, S: GameState<P,A>> MCTS<P,A,S> {
         }
     }
     
-    fn go(&mut self,state: &S, index: usize) -> f32 {
+    fn go<S: GameState<P,A>>(&mut self,state: &S, index: usize) -> f32 {
         match self.stack[index] {
             Node::Branch(s,a,player,w,n,c) => {
                 let mut selection = None;
@@ -193,7 +190,15 @@ impl<P: Player, A: Action, S: GameState<P,A>> MCTS<P,A,S> {
                 let v = self.go(&next,next_index);
 
                 let v = if next.player() == player {v} else {1.0 - v};
-                self.stack[index] = Node::Branch(s,a,player,w + v,n + 1,c);
+                let w = w + v;
+                let n = n + 1;
+                self.stack[index] = Node::Branch(s,a,player,w,n,c);
+                
+                if index == 0 {
+                    self.info.q = w/(n as f32);
+                    self.info.n = n;
+                }
+                
                 v
             },
             Node::Leaf(s,a,p,w,n) => {

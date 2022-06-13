@@ -1,4 +1,6 @@
 
+use rand_xorshift::XorShiftRng as Rand;
+use rand::{RngCore,SeedableRng};
 use std::fmt::Display;
 use std::fmt;
 
@@ -39,6 +41,8 @@ pub const PIT: [Pit; NP] = [
 pub struct Mancala {
     pub pit: [u8; NP],
     side: Player,
+    ztable: [u64;NP*NS],
+    zturn: u64,
 }
 
 impl Display for Mancala {
@@ -89,7 +93,23 @@ impl Mancala {
                 pit[p] = 4;
             }
         }
-        Mancala {pit, side: Player::R}
+        
+        let ztable = {
+            let mut table = [0;NP*NS];
+            let mut rand = Rand::from_seed(
+                [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+            );
+            //let mut rand = rand::thread_rng();
+            for entry in table.iter_mut() {
+                *entry = rand.next_u64();
+            }
+            table
+        };
+        let  zturn: u64 = 0x123456789ABCDEF0;
+        
+        let side = Player::R;
+        
+        Mancala {pit, side, ztable, zturn}
     }
     
 
@@ -263,22 +283,6 @@ impl GameState<Player,Pit> for Mancala {
     }
 
     fn hash(&self) -> u64 {
-        use rand_xorshift::XorShiftRng as Rand;
-        use rand::{RngCore,SeedableRng};
-
-        lazy_static!{
-            static ref ZTABLE: [u64;NP*NS] = {
-                let mut table = [0;NP*NS];
-                let mut rand = Rand::from_seed([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]);
-                //let mut rand = rand::thread_rng();
-                for entry in table.iter_mut() {
-                    *entry = rand.next_u64();
-                }
-                table
-            };
-        }
-        const ZTURN: u64 = 0x123456789ABCDEF0;
-        
         let mut s = 0;
         for p in 0..NP {
             let n = self.pit[p] as usize;
@@ -290,12 +294,12 @@ impl GameState<Player,Pit> for Mancala {
                     false
                 }
             );
-            s ^= ZTABLE[z];
+            s ^= self.ztable[z];
         }
         
         let t = match self.side {
             Player::L => 0,
-            Player::R => ZTURN,
+            Player::R => self.zturn,
         };
 
         t ^ s
@@ -309,28 +313,24 @@ impl GameState<Player,Pit> for Mancala {
 #[cfg(test)]
 mod test {
     use super::*;
-    use std::rc::Rc;
 
     fn best(moves: &[Pit]) -> Pit {
-        let game = Rc::new(Mancala::load(&moves));
-        let mut mcts = MCTS::new(game).with_transposition();
-        let mut actions = vec!();
         
-        mcts.search(10000,&mut actions);
+        let game = Mancala::load(&moves);
+        let mut mcts = MCTS::new().with_transposition();
         
-        let (action,_value,_error) = 
-            actions
-            .iter()
-            .max_by(|(_,w1,_),(_,w2,_)| {
-                if w1 > w2 {
-                    std::cmp::Ordering::Greater
-                } else {
-                    std::cmp::Ordering::Less
-                }
-            })
-            .expect("should have found a best move");
+        mcts.ponder(&game,10000);
         
-        *action
+        let mut best = None;
+        let mut max_w = 0.0;
+        mcts.ply(&mut |(a,w,_s)| {
+            if max_w <= w {
+                max_w = w;
+                best = Some(a);
+            }
+        });
+
+        best.expect("Should find a best action")
     }
 
     #[test]

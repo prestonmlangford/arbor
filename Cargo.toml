@@ -6,6 +6,7 @@ members = [
     "reversi",
     "connect4",
     "tictactoe",
+    "www",
 ]
 
 [profile.release]

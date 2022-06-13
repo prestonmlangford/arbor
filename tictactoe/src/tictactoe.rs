@@ -16,7 +16,7 @@ impl Display for Mark {
     }
 }
 
-#[derive(Copy,Clone,Debug, PartialEq)]
+#[derive(Copy,Clone,Debug,PartialEq)]
 pub enum Grid {
     TL,TM,TR,
     ML,MM,MR,
@@ -35,7 +35,7 @@ pub struct TicTacToe {
     pub space: [Mark;9],
     turn: usize,
     pub side: Mark,
-    hash: u64,
+    pub hash: u64,
 }
 
 
@@ -111,6 +111,12 @@ impl TicTacToe {
         }
         
         Mark::N
+    }
+}
+
+impl PartialEq for TicTacToe {
+    fn eq(&self, other: &TicTacToe) -> bool {
+        other.hash() == self.hash()
     }
 }
 

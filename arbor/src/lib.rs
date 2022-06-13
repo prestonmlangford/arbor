@@ -4,7 +4,6 @@ mod search;
 mod builder;
 use std::fmt::Debug;
 use std::fmt::Display;
-use std::rc::Rc;
 use serde::Serialize;
 
 type HashMap<K,V> = rustc_hash::FxHashMap<K,V>;
@@ -72,7 +71,7 @@ pub struct Info {
 //PMLFIXME add an API that does "pretraining". It should take a Vec<f32> and train on the random playout policy. This should be used "offline" by the developer.
 
 ///This struct is the main launch point for this crate. It holds the state of execution for the MCTS algorithm. Use it's associated methods to operate the search and tune performance.
-pub struct MCTS<P: Player, A: Action, S: GameState<P,A>> {
+pub struct MCTS<P: Player, A: Action> {
     exploration: f32,
     expansion: u32,
     use_custom_evaluation: bool,
@@ -81,7 +80,6 @@ pub struct MCTS<P: Player, A: Action, S: GameState<P,A>> {
     ///Provides metrics about the shape and size of the game tree. For informational purposes only.
     pub info: Info,
 
-    root: Rc<S>,
     stack: Vec<Node<P,A>>,
     actions: Vec<A>,
     rand: Rng,

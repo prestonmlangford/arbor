@@ -1,28 +1,23 @@
 use super::tictactoe::Grid::*;
 use super::tictactoe::*;
 use arbor::MCTS;
-use std::rc::Rc;
 
 fn best(moves: &[Grid]) -> Grid {
-    let game = Rc::new(TicTacToe::load(&moves));
-    let mut mcts = MCTS::new(game).with_transposition();
-    let mut actions = vec!();
+    let game = TicTacToe::load(&moves);
+    let mut mcts = MCTS::new().with_transposition();
     
-    mcts.search(10000,&mut actions);
+    mcts.ponder(&game,10000);
     
-    let (action,_value,_error) = 
-        actions
-        .iter()
-        .max_by(|(_,w1,_),(_,w2,_)| {
-            if w1 > w2 {
-                std::cmp::Ordering::Greater
-            } else {
-                std::cmp::Ordering::Less
-            }
-        })
-        .expect("should have found a best move");
-    
-    *action
+    let mut best = None;
+    let mut max_w = 0.0;
+    mcts.ply(&mut |(a,w,_s)| {
+        if max_w <= w {
+            max_w = w;
+            best = Some(a);
+        }
+    });
+
+    best.expect("Should find a best action")
 }
 
 #[test]

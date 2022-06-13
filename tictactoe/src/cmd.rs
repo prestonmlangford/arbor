@@ -1,6 +1,5 @@
 extern crate arbor;
 
-use std::rc::Rc;
 mod tictactoe;
 use std::io;
 use std::io::prelude::*;
@@ -13,7 +12,7 @@ fn main() {
     
     let game = [];
 
-    let mut gamestate = Rc::new(TicTacToe::load(&game));
+    let mut gamestate = TicTacToe::load(&game);
     println!("{}",gamestate);
 
     loop {
@@ -42,8 +41,7 @@ fn main() {
                     let space = gamestate.space[p-1];
                     //println!("{:?}",pit);
                     if space == Mark::N {
-                        let next = gamestate.make(ALLMOVES[p-1]);
-                        gamestate = Rc::new(next);
+                        gamestate = gamestate.make(ALLMOVES[p-1]);
                     } else {
                         println!("invalid move");
                     }
@@ -54,31 +52,28 @@ fn main() {
                 println!("parse failed");
             }
         } else {
-            let root = gamestate.clone();
-            let mut mcts = MCTS::new(root).with_transposition();
-            let mut actions = vec!();
+            let mut mcts = MCTS::new();
             let duration = std::time::Duration::new(1, 0);
             let start = Instant::now();
+            
             while (Instant::now() - start) < duration {
-                mcts.search(100,&mut actions);
+                mcts.ponder(&gamestate,100);
             }
             
-            let (action,_value,_error) = 
-                actions
-                .iter()
-                .max_by(|(_,w1,_),(_,w2,_)| {
-                    if w1 > w2 {
-                        std::cmp::Ordering::Greater
-                    } else {
-                        std::cmp::Ordering::Less
-                    }
-                })
-                .expect("should have found a best move");
-
+            let mut best = None;
+            let mut max_w = 0.0;
+            mcts.ply(&mut |(a,w,_)| {
+                if max_w <= w {
+                    max_w = w;
+                    best = Some(a);
+                }
+            });
+            
+            let action = best.expect("Should find a best action");
+            
             println!("{:?}",mcts.info);
             println!("{:?}",action);
-            let next = gamestate.make(*action);
-            gamestate = Rc::new(next);
+            gamestate = gamestate.make(action);
         }
         
         

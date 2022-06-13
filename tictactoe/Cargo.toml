@@ -32,14 +32,10 @@ instant = { version = "0.1", features = [ "wasm-bindgen" ] }
 #wee_alloc = { version = "0.4.5", optional = true }
 
 [lib]
-crate-type = ["cdylib", "rlib"]
+crate-type = ["rlib"]
 name = "tictactoe"
-path = "src/web.rs"
+path = "src/tictactoe.rs"
 
 [[bin]]
 name = "tictactoe"
 path = "src/cmd.rs"
-
-
-[dev-dependencies]
-wasm-bindgen-test = "0.3.13"
