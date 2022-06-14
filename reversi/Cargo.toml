@@ -23,6 +23,6 @@ name = "reversi"
 path = "src/main.rs"
 
 [lib]
-crate-type = ["cdylib", "rlib"]
+crate-type = ["rlib"]
 name = "reversi"
-path = "src/web.rs"
+path = "src/reversi.rs"

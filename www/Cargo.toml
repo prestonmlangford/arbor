@@ -13,3 +13,5 @@ instant = { version = "0.1", features = [ "wasm-bindgen" ] }
 arbor = { path = "../arbor" }
 tictactoe = { path = "../tictactoe" }
 mancala = { path = "../mancala" }
+reversi = { path = "../reversi" }
+connect4 = { path = "../connect4" }

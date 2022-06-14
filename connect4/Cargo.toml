@@ -26,6 +26,6 @@ path = "src/main.rs"
 
 
 [lib]
-crate-type = ["cdylib", "rlib"]
+crate-type = ["rlib"]
 name = "connect4"
-path = "src/web.rs"
+path = "src/mod.rs"

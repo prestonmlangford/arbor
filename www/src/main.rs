@@ -1,7 +1,10 @@
 use yew::prelude::*;
 mod util;
 mod components;
-use components::tictactoe::game::Game as TicTacToeUI;
+use components::tictactoe::game::Game as TicTacToe;
+use components::mancala::game::Game as Mancala;
+use components::reversi::game::Game as Reversi;
+use components::connect4::game::Game as Connect4;
 
 #[derive(Properties, Clone, PartialEq, Default)]
 struct Props;
@@ -11,17 +14,17 @@ fn app(_props: &Props) -> Html {
     html! {
         <div class="main-layout">
             <div class="main-layout-cell tictactoe">
-                <TicTacToeUI/>
+                <TicTacToe/>
             </div>
-            // <div class="main-layout-cell mancala">
-            //     <div id="mancala"></div>
-            // </div>
-            // <div class="main-layout-cell reversi">
-            //     <div id="reversi"></div>
-            // </div>
-            // <div class="main-layout-cell connect4">
-            //     <div id="connect4"></div>
-            // </div>
+            <div class="main-layout-cell mancala">
+                <Mancala/>
+            </div>
+            <div class="main-layout-cell reversi">
+                <Reversi/>
+            </div>
+            <div class="main-layout-cell connect4">
+                <Connect4/>
+            </div>
         </div>
         
     }

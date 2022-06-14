@@ -4,7 +4,7 @@ use super::square::Square;
 
 #[derive(Properties, Clone, PartialEq)]
 pub struct Props {
-    pub actions: Vec<(Grid,Option<f32>)>,
+    pub actions: Vec<(Grid,&'static str)>,
     pub marks: [Mark;9],
     pub make: Callback<Grid>
 }
@@ -17,10 +17,10 @@ pub fn board(props: &Props) -> Html {
     let mut squares = Vec::new();
     for (index,grid) in ALLMOVES.iter().enumerate() {
         let mark = marks[index];
-        let mut weight = None;
-        for (action,w) in actions.iter() {
-            if grid == action {
-                weight = *w;
+        let mut color = "neutral";
+        for (a,c) in actions.iter() {
+            if grid == a {
+                color = *c;
                 break;
             }
         }
@@ -28,7 +28,7 @@ pub fn board(props: &Props) -> Html {
         let make = make.clone();
         let make = Callback::from(move |()| make.emit(*grid));
         squares.push(html! {
-            <Square {mark} {make} {weight}/>
+            <Square {mark} {make} {color}/>
         });
     }
 

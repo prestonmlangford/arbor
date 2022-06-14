@@ -739,10 +739,12 @@ name = "www"
 version = "0.1.0"
 dependencies = [
  "arbor",
+ "connect4",
  "gloo-console",
  "gloo-timers",
  "instant",
  "mancala",
+ "reversi",
  "tictactoe",
  "yew",
 ]

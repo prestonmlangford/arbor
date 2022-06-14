@@ -179,20 +179,20 @@ body {
     grid-area: mancala;
 }
 
-.R1 { grid-area: R1;}
-.R2 { grid-area: R2;}
-.R3 { grid-area: R3;}
-.R4 { grid-area: R4;}
-.R5 { grid-area: R5;}
-.R6 { grid-area: R6;}
-.RB { grid-area: RB;}
-.L6 { grid-area: L6;}
-.L5 { grid-area: L5;}
-.L4 { grid-area: L4;}
-.L3 { grid-area: L3;}
-.L2 { grid-area: L2;}
-.L1 { grid-area: L1;}
-.LB { grid-area: LB;}
+.R1    { grid-area: R1;}
+.R2    { grid-area: R2;}
+.R3    { grid-area: R3;}
+.R4    { grid-area: R4;}
+.R5    { grid-area: R5;}
+.R6    { grid-area: R6;}
+.RBank { grid-area: RB;}
+.L6    { grid-area: L6;}
+.L5    { grid-area: L5;}
+.L4    { grid-area: L4;}
+.L3    { grid-area: L3;}
+.L2    { grid-area: L2;}
+.L1    { grid-area: L1;}
+.LBank { grid-area: LB;}
 
 .mancala-board {
     /* margin-top: 20%;
@@ -201,13 +201,12 @@ body {
     display: grid;
     gap: 10px;
     grid-template-areas:
-        "LB L1 L2 L3 L4 L5 L6 RB"
+        "LB L6 L5 L4 L3 L2 L1 RB"
         "LB R1 R2 R3 R4 R5 R6 RB";
 }
 
 .pit {
     width: 1fr;
-    background-color: #666;
     border-radius: 5px;
 }
 
@@ -254,7 +253,6 @@ body {
 }
 
 .reversi-square {
-    background-color: #666;
     border-radius: 5px;
 }
 
@@ -288,14 +286,5 @@ body {
 }
 
 .connect4-square {
-    background-color: #666;
     border-radius: 5px;
-}
-
-.yellow {
-    background-color: yellow;
-}
-
-.red {
-    background-color: red;
 }

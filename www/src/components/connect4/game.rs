@@ -1,24 +1,24 @@
 use yew::prelude::*;
-use tictactoe::*;
+use connect4::connect4::*;
 use arbor::*;
-use super::board::Board;
 use instant::Instant;
 use gloo_timers::callback::Timeout;
 use crate::util::colorize;
+use super::board::Board;
 
 pub struct Game {
-    game: TicTacToe,
-    mcts: Option<MCTS<Mark,Grid>>,
+    game: Connect4,
+    mcts: Option<MCTS<Disc,Column>>,
     ai_turn: bool,
     ai_start: Instant,
     ai_advantage: f32,
-    weighted_actions: Vec<(Grid,f32)>,
-    actions: Vec<(Grid,&'static str)>
+    weighted_actions: Vec<(Column,f32)>,
+    actions: Vec<(Column,&'static str)>,
 }
 
 impl Game {
     pub fn reset() -> Self {
-        let new = TicTacToe::new();
+        let new = Connect4::new();
         let mut actions = Vec::new();
         
         new.actions(&mut |a| actions.push((a,"neutral")));
@@ -46,9 +46,7 @@ impl Game {
             }
 
             self.actions.clear();
-            mcts.ply(&mut |(a,w,_s)| 
-                self.weighted_actions.push((a,w))
-            );
+            mcts.ply(&mut |(a,w,_s)| self.weighted_actions.push((a,w)));
             colorize(&self.weighted_actions, &mut self.actions);
             self.ai_advantage = mcts.info.q;
 
@@ -70,7 +68,7 @@ impl Game {
 
 pub enum Action {
     Ponder(u32),
-    Make(Grid),
+    Make(Column),
     Reset,
     None,
 }
@@ -92,14 +90,18 @@ impl Component for Game {
                 true
             },
 
-            Action::Make(grid) => {
+            Action::Make(m) => {
                 for (a,_) in &self.actions {
-                    if *a == grid {
-                        self.game = self.game.make(grid);
+                    if *a == m {
+                        self.game = self.game.make(m);
                         self.mcts = None;
                         self.actions.clear();
                         self.weighted_actions.clear();
-                        self.ai_turn = !self.ai_turn;
+                        self.ai_turn = match self.game.player() {
+                            Disc::Y => true,
+                            Disc::R => false,
+                            Disc::N => false,
+                        };
                         if self.game.gameover().is_none() {
                             self.game.actions(&mut |a| 
                                 self.actions.push((a,"neutral"))
@@ -135,8 +137,8 @@ impl Component for Game {
                             best = Some(*a);
                         }
                     }
-                    let grid = best.expect("Should find best action");
-                    ctx.link().send_message(Action::Make(grid));
+                    let a = best.expect("Should find best action");
+                    ctx.link().send_message(Action::Make(a));
                 }
                 true
             }
@@ -145,31 +147,31 @@ impl Component for Game {
     
     fn view(&self, ctx: &Context<Self>) -> Html {
         let ai_turn = self.ai_turn;
-        let make = ctx.link().callback(move |grid|
-            if ai_turn {Action::None} else {Action::Make(grid)}
+        let make = ctx.link().callback(move |pit|
+            if ai_turn {Action::None} else {Action::Make(pit)}
         );
         let reset = ctx.link().callback(|_| Action::Reset);
-        let marks = self.game.space;
+        let squares = self.game.space;
         let actions = self.actions.clone();
         let status = if let Some(result) = self.game.gameover() {
-            let other = match self.game.side {
-                Mark::X => Mark::O,
-                Mark::O => Mark::X,
-                Mark::N => Mark::N,
+            let other = match self.game.player() {
+                Disc::R => Disc::Y,
+                Disc::Y => Disc::R,
+                Disc::N => Disc::N,
             };
             match result {
                 GameResult::Draw => format!("Draw!"),
                 _ => format!("{:?} side wins!", other),
             }
         } else {
-            format!("{:?}'s turn", self.game.side)
+            format!("{:?}'s turn", self.game.player())
         };
         let ai_advantage = self.ai_advantage*100.0;
 
         html! {
             <div class="game-layout">
                 <div class="title">
-                    <div>{"Tic-Tac-Toe"}</div>
+                    <div>{"Reversi"}</div>
                 </div>
                 <div class="status">
                     <div>{status}</div>
@@ -182,7 +184,7 @@ impl Component for Game {
                     onclick={reset}>
                     {"reset"}
                 </div>
-                <Board {actions} {marks} {make}/>
+                <Board {actions} {squares} {make}/>
             </div>
         }
     }

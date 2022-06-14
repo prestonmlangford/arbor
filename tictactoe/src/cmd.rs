@@ -61,7 +61,7 @@ fn main() {
             }
             
             let mut best = None;
-            let mut max_w = 0.0;
+            let mut max_w = -0.1;
             mcts.ply(&mut |(a,w,_)| {
                 if max_w <= w {
                     max_w = w;

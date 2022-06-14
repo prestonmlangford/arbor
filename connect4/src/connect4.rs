@@ -4,8 +4,8 @@ use arbor::*;
 use rand_xorshift::XorShiftRng as Rand;
 use rand::{RngCore,SeedableRng};
 
-const W: usize = 7;
-const H: usize = 6;
+pub const W: usize = 7;
+pub const H: usize = 6;
 
 lazy_static!{
     static ref ZTABLE: [u64;2*W*H] = {
@@ -20,7 +20,7 @@ lazy_static!{
 }
 const ZTURN: u64 = 0x123456789ABCDEF0;
 
-#[derive(Debug,Copy,Clone)]
+#[derive(Debug,Copy,Clone,PartialEq)]
 pub enum Column {C1,C2,C3,C4,C5,C6,C7}
 use Column::*;
 pub const COL: [Column;7] = [C1,C2,C3,C4,C5,C6,C7];

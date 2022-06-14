@@ -2,7 +2,6 @@ use std::fmt::Display;
 use std::fmt;
 use arbor::*;
 
-
 const S: usize = 8;
 
 #[inline]
@@ -32,7 +31,7 @@ impl Display for Disc {
     }
 }
 
-#[derive(Debug,Copy,Clone)]
+#[derive(Debug,Copy,Clone,PartialEq)]
 pub enum Move {Pass,Capture(u64)}
 
 #[derive(Debug,Clone)]

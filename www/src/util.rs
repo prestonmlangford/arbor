@@ -5,25 +5,30 @@ macro_rules! log {
     ($($t:tt)*) => (gloo_console::log!(format!($($t)*)))
 }
 
-pub fn rescale<T>(actions: &mut Vec<(T,Option<f32>)>) {
+#[allow(unused_imports)]
+pub(crate) use log;
+
+pub fn colorize<T: Copy>(
+    weighted: &Vec<(T,f32)>,
+    classed: &mut Vec<(T,&'static str)>) {
+
     let mut min = 1.1;
     let mut max = -0.1;
     let mut avg = 0.0;
-    let mut cnt = 1.0;
+    let mut cnt = 0.0;
 
-    for (_,f) in actions.iter() {
-        if let Some(f) = *f {
-            if min > f {
-                min = f;
-            }
-            
-            if max < f {
-                max = f;
-            }
-            
-            avg += f;
-            cnt += 1.0;
+    for (_,w) in weighted.iter() {
+        let f = *w;
+        if min > f {
+            min = f;
         }
+        
+        if max < f {
+            max = f;
+        }
+        
+        avg += f;
+        cnt += 1.0;
     }
     
     avg /= cnt;
@@ -37,10 +42,30 @@ pub fn rescale<T>(actions: &mut Vec<(T,Option<f32>)>) {
         } else {
             min_scale
         };
+
+    classed.clear();
     
-    for (_,f) in actions.iter_mut() {
-        if let Some(fraction) = f {
-            *f = Some((*fraction - avg)/scale);
-        }
+    for (a,w) in weighted.iter() {
+        let w = *w;
+        let f = (w - avg)/scale;
+        let class = 
+            if f < -0.75 {
+                "neg-75p"
+            } else if f < -0.5 {
+                "neg-50p"
+            } else if f < -0.25 {
+                "neg-25p"
+            } else if f < 0.0 {
+                "neg-0p"
+            } else if f < 0.25 {
+                "pos-0p"
+            } else if f < 0.5 {
+                "pos-25p"
+            } else if f < 0.75 {
+                "pos-50p"
+            } else {
+                "pos-75p"
+            };
+        classed.push((*a,class));
     }
 }
