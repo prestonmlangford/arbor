@@ -1,0 +1,290 @@
+/*------------------------------------------------------------------------------ 
+ *                                  Main 
+ * ---------------------------------------------------------------------------*/
+
+body {
+    font: 16px "Courier", Futura, sans-serif;
+    margin: 100px;
+    background-color: rgb(0, 0, 0);
+}
+
+.main-layout {
+    display: grid;
+    grid-template-areas:
+        "tictactoe mancala"
+        "reversi   connect4";
+    gap: 100px;
+}
+
+.main-layout-cell {
+    background-color: rgb(67, 67, 67);
+    border-radius: 9px;
+}
+
+/*------------------------------------------------------------------------------ 
+ *                                  Common 
+ * ---------------------------------------------------------------------------*/
+ 
+.game-layout {
+    gap: 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+        "title  title"
+        "status reset"
+        "chance reset"
+        "board  board";
+}
+
+.reset {
+    grid-area: reset;
+    background-color: #4d4fd3;
+    color: white;
+    padding: 10%;
+    margin-right: 20px;
+    text-align: center;
+    font-size: 16px;
+    border-radius: 9px;
+    box-shadow: 0 9px #666;
+}
+
+.reset:hover {
+    background-color: #7577d2
+}
+
+.reset:active {
+  background-color: #7577d2;
+  box-shadow: 0 5px #666;
+  transform: translateY(4px);
+}
+
+.status {
+    grid-area: status;
+    margin: auto;
+    margin-left: 20px;
+    color: white;
+    width: 12em;
+}
+
+.chance {
+    grid-area: chance;
+    margin: auto;
+    margin-left: 20px;
+    color: white;
+    width: 12em;
+}
+
+.title {
+    grid-area: title;
+    margin: auto;
+    margin-top: 10px;
+    color: white;
+    text-decoration: underline;
+}
+
+.board-container-parent {
+    grid-area: board;
+    margin: auto;
+    height: 0;
+    width:100%;
+    padding-bottom:100%;
+    position: relative;
+}
+
+.board-container-child {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: 20px;
+}
+
+/*------------------------------------------------------------------------------ 
+ *                               AI color scheme
+ * ---------------------------------------------------------------------------*/
+
+.neg-75p {
+    background-color: rgb(255, 0, 0);
+}
+
+.neg-50p {
+    background-color: rgb(216, 25, 25);
+}
+
+.neg-25p {
+    background-color: rgb(178, 50, 50);
+}
+
+.neg-0p {
+    background-color: rgb(139, 75, 75);
+}
+
+.neutral {
+    background-color: rgb(100, 100, 100);
+}
+
+.pos-0p {
+    background-color: rgb(75, 139, 75);
+}
+
+.pos-25p {
+    background-color: rgb(50, 178, 50);
+}
+
+.pos-50p {
+    background-color: rgb(25, 216, 25);
+}
+
+.pos-75p {
+    background-color: rgb(0, 255, 0);
+}
+
+/*------------------------------------------------------------------------------ 
+ *                                  TicTacToe 
+ * ---------------------------------------------------------------------------*/
+
+.tictactoe {
+    grid-area: tictactoe;
+}
+
+.tictactoe-board {
+    display: grid;
+    grid-template-columns: repeat(3,1fr);
+    grid-auto-rows: 1fr;
+    gap: 10px;
+}
+
+.tictactoe-cell {
+    
+    color: white;
+    font-size: 50px;
+    font-weight: bold;
+    text-align: center;
+    border-radius: 5px;
+    
+    /* Center justify text*/
+    display: flex;
+    justify-content: center;
+    align-content: center;
+    flex-direction: column;
+}
+
+
+/*------------------------------------------------------------------------------ 
+ *                                  Mancala 
+ * ---------------------------------------------------------------------------*/
+
+.mancala {
+    grid-area: mancala;
+}
+
+.R1    { grid-area: R1;}
+.R2    { grid-area: R2;}
+.R3    { grid-area: R3;}
+.R4    { grid-area: R4;}
+.R5    { grid-area: R5;}
+.R6    { grid-area: R6;}
+.RBank { grid-area: RB;}
+.L6    { grid-area: L6;}
+.L5    { grid-area: L5;}
+.L4    { grid-area: L4;}
+.L3    { grid-area: L3;}
+.L2    { grid-area: L2;}
+.L1    { grid-area: L1;}
+.LBank { grid-area: LB;}
+
+.mancala-board {
+    /* margin-top: 20%;
+    margin-bottom: 20%; */
+    font: 16px "Courier", Futura, sans-serif;
+    display: grid;
+    gap: 10px;
+    grid-template-areas:
+        "LB L6 L5 L4 L3 L2 L1 RB"
+        "LB R1 R2 R3 R4 R5 R6 RB";
+}
+
+.pit {
+    width: 1fr;
+    border-radius: 5px;
+}
+
+.stone-container-parent {
+    height: 0;
+    width:100%;
+    padding-bottom:100%;
+    position: relative;
+}
+
+.stone-container {
+    position: absolute;
+    top: 5px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: repeat(24,1fr);
+    row-gap: 5px;
+}
+
+.stone {
+    margin: auto;
+    background-color: white;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+ 
+/*------------------------------------------------------------------------------ 
+ *                                  Reversi 
+ * ---------------------------------------------------------------------------*/
+
+.reversi {
+    grid-area: reversi;
+}
+
+.reversi-board {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 10px;
+}
+
+.reversi-square {
+    border-radius: 5px;
+}
+
+.white {
+    background-color: white;
+}
+
+.black {
+    background-color: black;
+}
+
+.grey {
+    background-color: #666;
+}
+
+ 
+/*------------------------------------------------------------------------------ 
+ *                                  Connect4 
+ * ---------------------------------------------------------------------------*/
+
+.connect4 {
+    grid-area: connect4;
+}
+
+.connect4-board {
+    position: absolute;
+    
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 10px;
+}
+
+.connect4-square {
+    border-radius: 5px;
+}
