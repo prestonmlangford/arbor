@@ -57,7 +57,7 @@ enum Node<P: Player, A: Action> {
 }
 
 ///This struct provides metrics for the types of nodes in the search tree.
-#[derive(Default,Debug,Serialize)]
+#[derive(Default,Debug,Serialize,Copy,Clone)]
 pub struct Info {
     pub q: f32,
     pub n: u32,
@@ -66,6 +66,7 @@ pub struct Info {
     pub terminal: u32,
     pub unknown: u32,
     pub transpose: u32,
+    pub bytes: usize,
 }
 
 //PMLFIXME add an API that does "pretraining". It should take a Vec<f32> and train on the random playout policy. This should be used "offline" by the developer.

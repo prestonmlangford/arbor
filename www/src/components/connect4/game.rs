@@ -3,15 +3,15 @@ use connect4::connect4::*;
 use arbor::*;
 use instant::Instant;
 use gloo_timers::callback::Timeout;
-use crate::util::colorize;
+use crate::util::*;
 use super::board::Board;
 
 pub struct Game {
     game: Connect4,
     mcts: Option<MCTS<Disc,Column>>,
+    info: Option<Info>,
     ai_turn: bool,
     ai_start: Instant,
-    ai_advantage: f32,
     weighted_actions: Vec<(Column,f32)>,
     actions: Vec<(Column,&'static str)>,
 }
@@ -26,9 +26,9 @@ impl Game {
         Self {
             game: new,
             mcts: None,
+            info: None,
             ai_turn: false,
             ai_start: Instant::now(),
-            ai_advantage: 0.5,
             weighted_actions: Vec::new(),
             actions: actions,
         }
@@ -48,7 +48,7 @@ impl Game {
             self.actions.clear();
             mcts.ply(&mut |(a,w,_s)| self.weighted_actions.push((a,w)));
             colorize(&self.weighted_actions, &mut self.actions);
-            self.ai_advantage = mcts.info.q;
+            self.info = Some(mcts.info);
 
         } else {
             self.mcts = Some(MCTS::new());
@@ -166,8 +166,9 @@ impl Component for Game {
         } else {
             format!("{:?}'s turn", self.game.player())
         };
-        let ai_advantage = self.ai_advantage*100.0;
 
+        let info = fmt_info(&self.info);
+        
         html! {
             <div class="game-layout">
                 <div class="title">
@@ -176,8 +177,8 @@ impl Component for Game {
                 <div class="status">
                     <div>{status}</div>
                 </div>
-                <div class="chance">
-                    {format!("AI advantage: {:.0}%",ai_advantage)}
+                <div class="info">
+                    {info}
                 </div>
                 <div
                     class="reset"

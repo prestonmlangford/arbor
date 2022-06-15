@@ -45,8 +45,8 @@ pub fn board(props: &Props) -> Html {
             let disc = squares[i];
             let (white, black) = 
                 match disc {
-                    Disc::Y => (true, false),
-                    Disc::R => (false, true),
+                    Disc::R => (true, false),
+                    Disc::Y => (false, true),
                     Disc::N => (false, false),
                 };
             let mut color = "neutral";

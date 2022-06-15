@@ -15,3 +15,9 @@ tictactoe = { path = "../tictactoe" }
 mancala = { path = "../mancala" }
 reversi = { path = "../reversi" }
 connect4 = { path = "../connect4" }
+
+[dependencies.web-sys]
+version = "0.3"
+features = [
+	"HtmlInputElement",
+]

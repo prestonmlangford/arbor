@@ -211,7 +211,7 @@ function makeMutClosure(arg0, arg1, dtor, f) {
     return real;
 }
 function __wbg_adapter_20(arg0, arg1) {
-    wasm._dyn_core__ops__function__FnMut_____Output___R_as_wasm_bindgen__closure__WasmClosure___describe__invoke__h5b16f82a058c68ed(arg0, arg1);
+    wasm._dyn_core__ops__function__FnMut_____Output___R_as_wasm_bindgen__closure__WasmClosure___describe__invoke__h8a62a77f71c2b3cf(arg0, arg1);
 }
 
 function makeClosure(arg0, arg1, dtor, f) {
@@ -300,7 +300,7 @@ async function load(module, imports) {
 
 async function init(input) {
     if (typeof input === 'undefined') {
-        input = new URL('index-256ad3b33908064d_bg.wasm', import.meta.url);
+        input = new URL('index-bbbffaf85b9a26bd_bg.wasm', import.meta.url);
     }
     const imports = {};
     imports.wbg = {};
@@ -464,6 +464,10 @@ async function init(input) {
     imports.wbg.__wbg_setvalue_2459f62386b6967f = function(arg0, arg1, arg2) {
         getObject(arg0).value = getStringFromWasm0(arg1, arg2);
     };
+    imports.wbg.__wbg_valueAsNumber_65128de36520acbc = function(arg0) {
+        var ret = getObject(arg0).valueAsNumber;
+        return ret;
+    };
     imports.wbg.__wbg_newnoargs_be86524d73f67598 = function(arg0, arg1) {
         var ret = new Function(getStringFromWasm0(arg0, arg1));
         return addHeapObject(ret);
@@ -522,12 +526,12 @@ async function init(input) {
     imports.wbg.__wbindgen_throw = function(arg0, arg1) {
         throw new Error(getStringFromWasm0(arg0, arg1));
     };
-    imports.wbg.__wbindgen_closure_wrapper5377 = function(arg0, arg1, arg2) {
-        var ret = makeMutClosure(arg0, arg1, 396, __wbg_adapter_20);
+    imports.wbg.__wbindgen_closure_wrapper1212 = function(arg0, arg1, arg2) {
+        var ret = makeMutClosure(arg0, arg1, 191, __wbg_adapter_20);
         return addHeapObject(ret);
     };
-    imports.wbg.__wbindgen_closure_wrapper7499 = function(arg0, arg1, arg2) {
-        var ret = makeClosure(arg0, arg1, 462, __wbg_adapter_23);
+    imports.wbg.__wbindgen_closure_wrapper8025 = function(arg0, arg1, arg2) {
+        var ret = makeClosure(arg0, arg1, 519, __wbg_adapter_23);
         return addHeapObject(ret);
     };
 

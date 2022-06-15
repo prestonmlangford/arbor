@@ -746,6 +746,7 @@ dependencies = [
  "mancala",
  "reversi",
  "tictactoe",
+ "web-sys",
  "yew",
 ]
 

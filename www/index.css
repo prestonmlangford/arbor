@@ -11,9 +11,13 @@ body {
 .main-layout {
     display: grid;
     grid-template-areas:
-        "tictactoe mancala"
-        "reversi   connect4";
+        "tictactoe"
+        "mancala"
+        "reversi"
+        "connect4";
+
     gap: 100px;
+    grid-auto-rows: 1fr;
 }
 
 .main-layout-cell {
@@ -24,16 +28,22 @@ body {
 /*------------------------------------------------------------------------------ 
  *                                  Common 
  * ---------------------------------------------------------------------------*/
- 
+
 .game-layout {
     gap: 20px;
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
+    /* grid-template-areas:
+        "title   title"
+        "reset   status"
+        "ai-time info"
+        "ai-eve  info"
+        "board   board"; */
     grid-template-areas:
-        "title  title"
-        "status reset"
-        "chance reset"
-        "board  board";
+        "title   title  title"
+        "reset   status board"
+        "ai-time info   board"
+        "ai-eve  info   board";
 }
 
 .reset {
@@ -41,7 +51,7 @@ body {
     background-color: #4d4fd3;
     color: white;
     padding: 10%;
-    margin-right: 20px;
+    margin-left: 20px;
     text-align: center;
     font-size: 16px;
     border-radius: 9px;
@@ -58,6 +68,45 @@ body {
   transform: translateY(4px);
 }
 
+.ai-time {
+    grid-area: ai-time;
+}
+
+.ai-eve {
+    grid-area: ai-eve;
+}
+
+.setting-label {
+    grid-area: label;
+    color: white;
+    text-align: center;
+    margin: 5px;
+}
+
+.setting-value {
+    grid-area: value;
+    width: 4em;
+    color: white;
+    text-align: center;
+    margin: 5px;
+}
+
+.setting-slider {
+    grid-area: slider;
+    margin: 5px;
+}
+
+.setting-parent {
+    background-color: #4d4fd3;
+    border-radius: 9px;
+    margin-left: 20px;
+    display: grid;
+    grid-template-columns: 4fr 1fr;
+    grid-template-areas:
+        "label  label"
+        "slider value";
+}
+
 .status {
     grid-area: status;
     margin: auto;
@@ -66,12 +115,16 @@ body {
     width: 12em;
 }
 
-.chance {
-    grid-area: chance;
+.info {
+    grid-area: info;
     margin: auto;
-    margin-left: 20px;
     color: white;
     width: 12em;
+    justify-items: right;
+    
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    grid-auto-rows: 1em;
 }
 
 .title {

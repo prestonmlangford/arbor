@@ -53,7 +53,8 @@ impl<P: Player, A: Action> MCTS<P,A> {
                         f((a,0.5,0.5));
                         sibling = s.then(||u+1);
                     },
-                    Node::Transpose(_,_,_) => panic!("Transpositions should not be possible at root ply")
+                    Node::Transpose(_,_,_) => 
+                        panic!("Transpositions should not be possible at root ply")
                 }
             }
         } else {
@@ -89,6 +90,8 @@ impl<P: Player, A: Action> MCTS<P,A> {
             for _ in 0..n {
                 self.go(root,0);
             }
+            
+            self.info.bytes = self.stack.len() * std::mem::size_of::<Node<P,A>>();
         }
     }
     
