@@ -71,24 +71,3 @@ pub fn colorize<T: Copy>(
         classed.push((*a,class));
     }
 }
-
-
-pub fn fmt_info(info: &Option<Info>) -> Html {
-    
-    html! {
-        if let Some(i) = info {
-            <div class="info">
-                <div>{"AI Advantage:"}</div> 
-                <div>{format!("{:.0}%",i.q * 100.0)}</div>
-                
-                <div>{"Memory:"}</div> 
-                <div>{format!("{}Kb",i.bytes / 1024)}</div>
-                
-                <div>{"Iterations:"}</div> 
-                <div>{format!("{}",i.n)}</div>
-            </div>
-        } else {
-            <div></div>
-        }
-    }
-}

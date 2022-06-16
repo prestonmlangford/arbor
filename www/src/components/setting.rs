@@ -18,7 +18,7 @@ impl SettingFormat {
 }
 
 impl PartialEq for SettingFormat {
-    fn eq(&self, other: &Self) -> bool {true}
+    fn eq(&self, _other: &Self) -> bool {true}
 }
 
 #[derive(Properties, Clone, PartialEq)]

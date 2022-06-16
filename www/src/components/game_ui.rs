@@ -1,6 +1,7 @@
 use yew::prelude::*;
 use arbor::*;
 use crate::components::setting::*;
+use crate::components::info::*;
 use instant::Instant;
 use std::time::Duration;
 use gloo_timers::callback::Timeout;
@@ -115,7 +116,11 @@ impl<P: GIPlayer, A: GIAction, I: GameInstance<P,A>> Component for GameUI<P,A,I>
             Msg::None => false,
 
             Msg::Reset => {
+                let ai_time = self.ai_duration;
+                let ai_eve  = self.ai_eve;
                 *self = GameUI::reset();
+                self.ai_duration = ai_time;
+                self.ai_eve = ai_eve;
                 true
             },
 
@@ -186,9 +191,10 @@ impl<P: GIPlayer, A: GIAction, I: GameInstance<P,A>> Component for GameUI<P,A,I>
         );
         let reset = ctx.link().callback(|_| Msg::Reset);
         let status = self.instance.status();
-        let info = fmt_info(&self.info);
+        let info = html_info(&self.info);
         let set_ai_time = ctx.link().callback(|u| Msg::SetAiTime(u));
         let set_ai_eve = ctx.link().callback(|u| Msg::SetAiEve(u));
+
         html! {
             <div class="game-layout">
                 <div class="title">
@@ -200,29 +206,32 @@ impl<P: GIPlayer, A: GIAction, I: GameInstance<P,A>> Component for GameUI<P,A,I>
                 <div class="info">
                     {info}
                 </div>
-                <div
-                    class="reset"
-                    onclick={reset}>
-                    {"reset"}
+                <div class="control-panel">
+                    <div
+                        class="reset"
+                        onclick={reset}>
+                        {"reset"}
+                    </div>
+                    <Setting
+                        class={"ai-time"}
+                        min={1}
+                        max={20}
+                        default={self.ai_duration}
+                        name={"AI time (seconds)"}
+                        input={set_ai_time}
+                        fmt={SettingFormat::set(fmt_ai_time)}
+                    />
+                    <Setting
+                        class={"ai-eve"}
+                        min={20}
+                        max={40}
+                        default={self.ai_eve}
+                        name={"Exploration"}
+                        input={set_ai_eve}
+                        fmt={SettingFormat::set(fmt_ai_eve)}
+                    />
                 </div>
-                <Setting
-                    class={"ai-time"}
-                    min={1}
-                    max={20}
-                    default={self.ai_duration}
-                    name={"AI time (seconds)"}
-                    input={set_ai_time}
-                    fmt={SettingFormat::set(fmt_ai_time)}
-                />
-                <Setting
-                    class={"ai-eve"}
-                    min={20}
-                    max={40}
-                    default={self.ai_eve}
-                    name={"Exploration"}
-                    input={set_ai_eve}
-                    fmt={SettingFormat::set(fmt_ai_eve)}
-                />
+                
                 {self.instance.view(make, self.actions.clone())}
             </div>
         }

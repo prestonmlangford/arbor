@@ -30,20 +30,13 @@ body {
  * ---------------------------------------------------------------------------*/
 
 .game-layout {
-    gap: 20px;
+    margin: 20px;
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    /* grid-template-areas:
-        "title   title"
-        "reset   status"
-        "ai-time info"
-        "ai-eve  info"
-        "board   board"; */
+    gap: 20px;
+    grid-template-columns: 1fr 2fr 1fr;
     grid-template-areas:
-        "title   title  title"
-        "reset   status board"
-        "ai-time info   board"
-        "ai-eve  info   board";
+        "title    board  status"
+        "controls board  info";
 }
 
 .reset {
@@ -51,11 +44,9 @@ body {
     background-color: #4d4fd3;
     color: white;
     padding: 10%;
-    margin-left: 20px;
     text-align: center;
     font-size: 16px;
     border-radius: 9px;
-    box-shadow: 0 9px #666;
 }
 
 .reset:hover {
@@ -64,7 +55,6 @@ body {
 
 .reset:active {
   background-color: #7577d2;
-  box-shadow: 0 5px #666;
   transform: translateY(4px);
 }
 
@@ -74,6 +64,17 @@ body {
 
 .ai-eve {
     grid-area: ai-eve;
+}
+
+.control-panel {
+    grid-area: controls;
+    
+    display: grid;
+    gap: 20px;
+    grid-template-areas:
+        "reset"
+        "ai-time"
+        "ai-eve";
 }
 
 .setting-label {
@@ -99,7 +100,6 @@ body {
 .setting-parent {
     background-color: #4d4fd3;
     border-radius: 9px;
-    margin-left: 20px;
     display: grid;
     grid-template-columns: 4fr 1fr;
     grid-template-areas:
@@ -110,7 +110,6 @@ body {
 .status {
     grid-area: status;
     margin: auto;
-    margin-left: 20px;
     color: white;
     width: 12em;
 }
@@ -130,7 +129,6 @@ body {
 .title {
     grid-area: title;
     margin: auto;
-    margin-top: 10px;
     color: white;
     text-decoration: underline;
 }
@@ -150,7 +148,6 @@ body {
     left: 0;
     right: 0;
     bottom: 0;
-    margin: 20px;
 }
 
 /*------------------------------------------------------------------------------ 
@@ -248,8 +245,6 @@ body {
 .LBank { grid-area: LB;}
 
 .mancala-board {
-    /* margin-top: 20%;
-    margin-bottom: 20%; */
     font: 16px "Courier", Futura, sans-serif;
     display: grid;
     gap: 10px;
