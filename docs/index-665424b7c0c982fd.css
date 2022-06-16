@@ -109,7 +109,8 @@ body {
 
 .status {
     grid-area: status;
-    margin: auto;
+    /* margin: auto; */
+    text-align: center;
     color: white;
     width: 12em;
 }
@@ -124,7 +125,6 @@ body {
 
 .info {
     grid-area: info;
-    margin: auto;
     color: white;
     width: 12em;
     justify-items: right;
