@@ -24,6 +24,7 @@ pub struct GameUI<P: GIPlayer, A: GIAction, I: GameInstance<P,A>> {
     ai_turn: bool,
     ai_start: Instant,
     ai_duration: u64,
+    ai_progress: u64,
     ai_eve: u64,
     weighted_actions: Vec<(A,f32)>,
     actions: Vec<(A,&'static str)>,
@@ -43,6 +44,7 @@ impl<P: GIPlayer, A: GIAction, I: GameInstance<P,A>> GameUI<P,A,I> {
             ai_turn: false,
             ai_start: Instant::now(),
             ai_duration: 1,
+            ai_progress: 0,
             ai_eve: 28,
             weighted_actions: Vec::new(),
             actions: actions,
@@ -153,8 +155,9 @@ impl<P: GIPlayer, A: GIAction, I: GameInstance<P,A>> Component for GameUI<P,A,I>
 
             Msg::Ponder(ms) => {
                 self.ponder(ms);
-                let duration = Duration::from_secs(self.ai_duration);
-                if (Instant::now() - self.ai_start) < duration {
+                let elapsed = (Instant::now() - self.ai_start).as_millis() as u64;
+                self.ai_progress = elapsed / (10*self.ai_duration);
+                if self.ai_progress < 100 {
                     self.trigger_ai(ctx);
                 } else {
                     let mut best = None;
@@ -202,6 +205,13 @@ impl<P: GIPlayer, A: GIAction, I: GameInstance<P,A>> Component for GameUI<P,A,I>
                 </div>
                 <div class="status">
                     <div>{status}</div>
+                    <progress
+                        class={if self.ai_turn {"visible"} else {"hidden"}}
+                        id="status" 
+                        max="100" 
+                        value={self.ai_progress.to_string()}>
+                    </progress>
+                    
                 </div>
                 <div class="info">
                     {info}

@@ -114,6 +114,14 @@ body {
     width: 12em;
 }
 
+.hidden {
+    visibility: hidden;
+}
+
+.visible {
+    visibility: visible;
+}
+
 .info {
     grid-area: info;
     margin: auto;
@@ -124,6 +132,7 @@ body {
     display: grid;
     grid-template-columns: 2fr 1fr;
     grid-auto-rows: 1em;
+    row-gap: 1em;
 }
 
 .title {
