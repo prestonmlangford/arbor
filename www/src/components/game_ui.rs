@@ -4,7 +4,6 @@ use crate::components::setting::*;
 use crate::components::info::*;
 use instant::Instant;
 use std::time::Duration;
-use std::rc::Rc;
 use gloo_timers::callback::Timeout;
 use crate::util::*;
 
@@ -72,7 +71,7 @@ impl<P: GIPlayer, A: GIAction, I: GameInstance<P,A>> GameUI<P,A,I> {
 
         } else {
             self.mcts = Some(
-                MCTS::new(Rc::new(self.instance))
+                MCTS::new(self.instance)
                 .with_exploration((self.ai_eve as f32)/20.0)
             );
             self.ponder(ms);

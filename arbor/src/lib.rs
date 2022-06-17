@@ -2,7 +2,6 @@
 
 mod search;
 mod builder;
-use std::rc::Rc;
 use std::fmt::Debug;
 use std::fmt::Display;
 use serde::Serialize;
@@ -21,7 +20,7 @@ pub trait Player: Copy + Clone + Debug + PartialEq {}
 pub enum GameResult {Win,Lose,Draw}
 
 ///This trait describes the current state of the game from which to begin searching for the best move.
-pub trait GameState<P: Player, A: Action>: Debug + Display {
+pub trait GameState<P: Player, A: Action>: Copy + Debug + Display {
 
     ///Iterate a list of legal actions for the current game state. Implementation should call "f" for each action.
     fn actions<F>(&self,f: &mut F) where F: FnMut(A);
@@ -84,7 +83,7 @@ pub struct MCTS<P: Player, A: Action, S: GameState<P,A>> {
     ///Provides metrics about the shape and size of the game tree. For informational purposes only.
     pub info: Info,
     
-    root: Rc<S>,
+    root: S,
     stack: Vec<Node<P,A>>,
     actions: Vec<A>,
     rand: Rng,

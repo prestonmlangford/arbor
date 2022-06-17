@@ -1,5 +1,4 @@
 use super::*;
-use std::rc::Rc;
 use rand::SeedableRng;
 use rand::RngCore;
 
@@ -16,7 +15,7 @@ impl GameResult {
 
 impl<P: Player, A: Action, S: GameState<P,A>> MCTS<P, A, S> {
     ///Call this method to instantiate a new search with default parameters.
-    pub fn new(root: Rc<S>) -> Self {
+    pub fn new(root: S) -> Self {
         let s = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
         Self {
             exploration: 2.0f32.sqrt(),
@@ -103,14 +102,16 @@ impl<P: Player, A: Action, S: GameState<P,A>> MCTS<P, A, S> {
             self.info.leaf = 1;
             
             //Call go once with expansion set to zero to force the root to expand 
+            let root = self.root;
             let expansion = self.expansion;
             self.expansion = 0;
-            self.go(&self.root.clone(), 0);
+            self.go(&root, 0);
             self.expansion = expansion;
             self.ponder(n - 1);
         } else {
+            let root = self.root;
             for _ in 0..n {
-                self.go(&self.root.clone(),0);
+                self.go(&root,0);
             }
             
             self.info.bytes = self.stack.len() * std::mem::size_of::<Node<P,A>>();

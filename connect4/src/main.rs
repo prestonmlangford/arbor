@@ -4,7 +4,6 @@ extern crate arbor;
 extern crate rand;
 
 mod connect4;
-use std::rc::Rc;
 use std::io;
 use std::io::prelude::*;
 use instant::Instant;
@@ -42,7 +41,7 @@ fn main() {
                 println!("parse failed");
             }
         } else {
-            let mut mcts = MCTS::new(Rc::new(gamestate));
+            let mut mcts = MCTS::new(gamestate);
             let duration = std::time::Duration::new(1, 0);
             let start = Instant::now();
             

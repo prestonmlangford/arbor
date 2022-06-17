@@ -1,7 +1,6 @@
 extern crate arbor;
 
 mod tictactoe;
-use std::rc::Rc;
 use std::io;
 use std::io::prelude::*;
 use self::tictactoe::*;
@@ -53,7 +52,7 @@ fn main() {
                 println!("parse failed");
             }
         } else {
-            let mut mcts = MCTS::new(Rc::new(gamestate));
+            let mut mcts = MCTS::new(gamestate);
             let duration = std::time::Duration::new(1, 0);
             let start = Instant::now();
             

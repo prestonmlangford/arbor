@@ -295,12 +295,11 @@ impl GameState<Player,Pit> for Mancala {
 #[cfg(test)]
 mod test {
     use super::*;
-    use std::rc::Rc;
 
     fn best(moves: &[Pit]) -> Pit {
         
         let game = Mancala::load(&moves);
-        let mut mcts = MCTS::new(Rc::new(game)).with_transposition();
+        let mut mcts = MCTS::new(game).with_transposition();
         mcts.ponder(10000);
         mcts.best().expect("Should find a best action")
     }
