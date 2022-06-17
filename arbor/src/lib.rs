@@ -15,14 +15,14 @@ pub trait Action: Copy + Clone + Debug {}
 ///This trait describes the players in the game. For now it should be a two-state like a boolean.
 pub trait Player: Copy + Clone + Debug + PartialEq {}
 
-///This enum describes the result of a game.
+///This enum describes the result of a game. The result should depict the outcome relative to the current player.
 #[derive(Debug)]
 pub enum GameResult {Win,Lose,Draw}
 
 ///This trait describes the current state of the game from which to begin searching for the best move.
 pub trait GameState<P: Player, A: Action>: Debug + Display {
 
-    ///Iterate a list of legal actions for the current game state. Call "f" for each action.
+    ///Iterate a list of legal actions for the current game state. Implementation should call "f" for each action.
     fn actions<F>(&self,f: &mut F) where F: FnMut(A);
 
     ///Provide the next game state for the given action.
@@ -35,6 +35,8 @@ pub trait GameState<P: Player, A: Action>: Debug + Display {
     fn player(&self) -> P;
     
     ///Optional: Provide a hash for the current game state. The hash is used to detect transpositions between game state when the "transposition" feature is activated. It must be sufficiently unique to avoid hash collisions with other game states. It is possible to have completely unique hashes for simple games like tic tac toe. An incremental hash may be a good approach in games with more complicated states like chess or checkers (see zobrist hashing).
+    /// 
+    /// Transposition is experimental. Care should be taken for games that prohibit move cycles like chess.
     fn hash(&self) -> u64 {0}
 
     ///Optional: Override this method to provide a custom method for evaluating leaf nodes. The default algorithm for evaluating leaf nodes performs a random playout of the current game state using the GameState trait methods. This is a good starting point, but it should be possible to make a more efficient random playout function using the internals of the type that implements GameState. 

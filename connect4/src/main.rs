@@ -49,16 +49,7 @@ fn main() {
                 mcts.ponder(&gamestate,100);
             }
             
-            let mut best = None;
-            let mut max_w = -0.1;
-            mcts.ply(&mut |(a,w,_)| {
-                if max_w <= w {
-                    max_w = w;
-                    best = Some(a);
-                }
-            });
-            
-            let action = best.expect("Should find a best action");
+            let action = mcts.best().expect("Should find a best action");
             
             println!("{:?}",mcts.info);
             println!("{:?}",action);

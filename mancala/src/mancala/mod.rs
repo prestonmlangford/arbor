@@ -300,19 +300,8 @@ mod test {
         
         let game = Mancala::load(&moves);
         let mut mcts = MCTS::new().with_transposition();
-        
         mcts.ponder(&game,10000);
-        
-        let mut best = None;
-        let mut max_w = 0.0;
-        mcts.ply(&mut |(a,w,_s)| {
-            if max_w <= w {
-                max_w = w;
-                best = Some(a);
-            }
-        });
-
-        best.expect("Should find a best action")
+        mcts.best().expect("Should find a best action")
     }
 
     #[test]

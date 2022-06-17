@@ -30,7 +30,27 @@ impl<P: Player, A: Action> MCTS<P,A> {
         }
     }
 
+    ///Pick the best move after some time has been spent pondering. Returns None if ponder has not yet been called.
+    pub fn best(&self) -> Option<A> {
+        let mut best = None;
+        let mut max = -0.1;
+        
+        self.ply(&mut |(a,w,_s)| {
+            if max < w {
+                max = w;
+                best = Some(a);
+            }
+        });
+        
+        return best;
+    }
+
+    ///Iterate through the actions in the first ply. The callback f is called for each action in the first ply with a tuple of (a, w, s) where a is the action, w is the expected value of the action, and s is the confidence the in the value of the action. s is similar to standard deviation with closer to zero being more confident.
     pub fn ply<F>(&self, f: &mut F) where F: FnMut((A,f32,f32)) {
+        if self.stack.len() == 0 {
+            return;
+        }
+
         if let Node::Branch(_,_,player,_,_,c) = self.stack[0] {
             let mut sibling = Some(c);
             while let Some(u) = sibling {
@@ -58,11 +78,11 @@ impl<P: Player, A: Action> MCTS<P,A> {
                 }
             }
         } else {
-            panic!("root node is not a branch");
+            debug_assert!(false,"root node should not be a branch");
         }
     }
     
-    ///Call this method to search the given game state for a duration of time. Results are improved each time it is called. This behavior can be used to implement a user defined stopping criteria that monitors progress.
+    ///Call this method to search the given game a give number of iterations. Results are improved each time it is called. This behavior can be used to implement a user defined stopping criteria that monitors progress. Only call 
     pub fn ponder<S: GameState<P,A>>(&mut self,root: &S, n: usize) {
         if self.stack.len() == 0 {
             let mut actions = Vec::new();
