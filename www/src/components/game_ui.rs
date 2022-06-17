@@ -4,13 +4,14 @@ use crate::components::setting::*;
 use crate::components::info::*;
 use instant::Instant;
 use std::time::Duration;
+use std::rc::Rc;
 use gloo_timers::callback::Timeout;
 use crate::util::*;
 
 pub trait GIAction: Action + PartialEq + 'static {}
 pub trait GIPlayer: Player + 'static {}
 
-pub trait GameInstance<P: GIPlayer, A: GIAction>: GameState<P,A> + 'static {
+pub trait GameInstance<P: GIPlayer, A: GIAction>: GameState<P,A> + Copy + 'static {
     fn new() -> Self;
     fn name() -> &'static str;
     fn status(&self) -> String;
@@ -19,7 +20,7 @@ pub trait GameInstance<P: GIPlayer, A: GIAction>: GameState<P,A> + 'static {
 
 pub struct GameUI<P: GIPlayer, A: GIAction, I: GameInstance<P,A>> {
     instance: I,
-    mcts: Option<MCTS<P,A>>,
+    mcts: Option<MCTS<P,A,I>>,
     info: Option<Info>,
     ai_turn: bool,
     ai_start: Instant,
@@ -59,7 +60,7 @@ impl<P: GIPlayer, A: GIAction, I: GameInstance<P,A>> GameUI<P,A,I> {
             let start = Instant::now();
 
             while (Instant::now() - start) < duration {
-                mcts.ponder(&self.instance,100);
+                mcts.ponder(100);
             }
 
             self.actions.clear();
@@ -71,7 +72,7 @@ impl<P: GIPlayer, A: GIAction, I: GameInstance<P,A>> GameUI<P,A,I> {
 
         } else {
             self.mcts = Some(
-                MCTS::new()
+                MCTS::new(Rc::new(self.instance))
                 .with_exploration((self.ai_eve as f32)/20.0)
             );
             self.ponder(ms);

@@ -1,4 +1,5 @@
 mod mancala;
+use std::rc::Rc;
 use std::io;
 use std::io::prelude::*;
 use self::mancala::*;
@@ -36,12 +37,12 @@ fn main() {
                 println!("parse failed");
             }
         } else {
-            let mut mcts = MCTS::new();
+            let mut mcts = MCTS::new(Rc::new(gamestate));
             let duration = std::time::Duration::new(1, 0);
             let start = Instant::now();
             
             while (Instant::now() - start) < duration {
-                mcts.ponder(&gamestate,100);
+                mcts.ponder(100);
             }
             
             let action = mcts.best().expect("Should find a best action");
@@ -51,9 +52,7 @@ fn main() {
             gamestate = gamestate.make(action);
         }
         
-        
         println!("{}",gamestate);
-        
         
         if let Some(result) = gamestate.gameover() {
             println!("gameover! {:?}",result);

@@ -34,7 +34,7 @@ impl Display for Disc {
 #[derive(Debug,Copy,Clone,PartialEq)]
 pub enum Move {Pass,Capture(u64)}
 
-#[derive(Debug,Clone)]
+#[derive(Debug,Clone,Copy)]
 pub struct Reversi {
     pub f: u64,
     pub e: u64,

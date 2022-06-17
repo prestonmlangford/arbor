@@ -1,4 +1,5 @@
 use super::*;
+use std::rc::Rc;
 use rand::SeedableRng;
 use rand::RngCore;
 
@@ -13,9 +14,9 @@ impl GameResult {
     }
 }
 
-impl<P: Player, A: Action> MCTS<P,A> {
+impl<P: Player, A: Action, S: GameState<P,A>> MCTS<P, A, S> {
     ///Call this method to instantiate a new search with default parameters.
-    pub fn new() -> Self {
+    pub fn new(root: Rc<S>) -> Self {
         let s = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
         Self {
             exploration: 2.0f32.sqrt(),
@@ -23,6 +24,7 @@ impl<P: Player, A: Action> MCTS<P,A> {
             use_custom_evaluation: false,
             use_transposition: false,
             info: Info::default(),
+            root: root,
             stack: Vec::new(),
             actions: Vec::new(),
             rand: Rng::from_seed(s),
@@ -83,17 +85,17 @@ impl<P: Player, A: Action> MCTS<P,A> {
     }
     
     ///Call this method to search the given game a give number of iterations. Results are improved each time it is called. This behavior can be used to implement a user defined stopping criteria that monitors progress. Only call 
-    pub fn ponder<S: GameState<P,A>>(&mut self,root: &S, n: usize) {
+    pub fn ponder(&mut self, n: usize) {
         if self.stack.len() == 0 {
             let mut actions = Vec::new();
-            root.actions(&mut |a| actions.push(a));
+            self.root.actions(&mut |a| actions.push(a));
             
             
             self.stack.push(Node::Leaf(
                 false,
                 // This action is never used, so it doesn't matter what it is
                 *actions.first().expect("should have at least one action"),
-                root.player(),
+                self.root.player(),
                 0.5,
                 1
             ));
@@ -103,12 +105,12 @@ impl<P: Player, A: Action> MCTS<P,A> {
             //Call go once with expansion set to zero to force the root to expand 
             let expansion = self.expansion;
             self.expansion = 0;
-            self.go(root,0);
+            self.go(&self.root.clone(), 0);
             self.expansion = expansion;
-            self.ponder(root,n - 1);
+            self.ponder(n - 1);
         } else {
             for _ in 0..n {
-                self.go(root,0);
+                self.go(&self.root.clone(),0);
             }
             
             self.info.bytes = self.stack.len() * std::mem::size_of::<Node<P,A>>();
@@ -161,7 +163,7 @@ impl<P: Player, A: Action> MCTS<P,A> {
         }
     }
     
-    fn rollout<S: GameState<P,A>>(&mut self,state: &S) -> f32 {
+    fn rollout(&mut self,state: &S) -> f32 {
         let mut sim;
         let mut s = state;
         let p = s.player();
@@ -193,7 +195,7 @@ impl<P: Player, A: Action> MCTS<P,A> {
         }
     }
     
-    fn go<S: GameState<P,A>>(&mut self,state: &S, index: usize) -> f32 {
+    fn go(&mut self,state: &S, index: usize) -> f32 {
         match self.stack[index] {
             Node::Branch(s,a,player,w,n,c) => {
                 let mut selection = None;
