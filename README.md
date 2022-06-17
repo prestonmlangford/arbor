@@ -1,13 +1,14 @@
 # arbor
 
-This crate provides a generic interface to the Monte Carlo Tree Search algorithm. It allows the user to implement an AI agent for a two player game without the need to describe heuristics or strategies specific to the game. 
+This crate provides a generic interface to the Monte Carlo Tree Search algorithm. It allows a developer to implement an AI agent for a two player game without the need to describe heuristics or strategies specific to the game. 
 
-Examples using arbor are provided on [github](https://github.com/prestonmlangford/arbor.git) including:
+Examples using arbor are provided on [GitHub](https://github.com/prestonmlangford/arbor.git) including:
 - Reversi
 - Connect 4
 - Mancala
-- Tic Tac Toe
+- Tic-Tac-Toe
 
+These examples are demonstrated graphically with Yew on the Arbor [GitHub.io](https://prestonmlangford.github.io/arbor/). 
 ## Documentation
 
 Documentation is provided on [Docs.rs](https://docs.rs/arbor).
@@ -18,14 +19,14 @@ Add `arbor` to the dependencies of your `Cargo.toml`:
 
 ```toml
 [dependencies]
-arbor = "0.1.0"
+arbor = "0.2.0"
 ```
 
 And then, in your rust file:
 ```rust
 use arbor::*;
 
-#[derive(Copy,Clone,Debug, PartialEq)]
+#[derive(Copy,Clone,Debug,PartialEq)]
 enum Grid {
     TL,TM,TR,
     ML,MM,MR,
@@ -38,8 +39,6 @@ struct TicTacToe {
     turn: usize,
     side: Mark,
 }
-
-
 
 impl Action for Grid {}
 impl Player for Mark {}
