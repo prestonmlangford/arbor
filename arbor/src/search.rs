@@ -83,7 +83,7 @@ impl<P: Player, A: Action, S: GameState<P,A>> MCTS<P, A, S> {
         }
     }
     
-    ///Call this method to search the given game a give number of iterations. Results are improved each time it is called. This behavior can be used to implement a user defined stopping criteria that monitors progress. Only call 
+    ///Call this method to search the given game a give number of iterations. Results are improved each time it is called. This function can be used to implement a user defined stopping criteria that monitors progress.
     pub fn ponder(&mut self, n: usize) {
         if self.stack.len() == 0 {
             let mut actions = Vec::new();
