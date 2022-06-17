@@ -14,7 +14,7 @@ impl GameResult {
 }
 
 impl<P: Player, A: Action, S: GameState<P,A>> MCTS<P, A, S> {
-    ///Call this method to instantiate a new search with default parameters.
+    ///Call this method to instantiate a new search with default parameters. The root game state from which to search is passed as a value to be owned by the MCTS struct.
     pub fn new(root: S) -> Self {
         let s = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
         Self {
@@ -31,7 +31,7 @@ impl<P: Player, A: Action, S: GameState<P,A>> MCTS<P, A, S> {
         }
     }
 
-    ///Pick the best move after some time has been spent pondering. Returns None if ponder has not yet been called.
+    ///Pick the best move after some time spent pondering. Returns None if ponder has not yet been called.
     pub fn best(&self) -> Option<A> {
         let mut best = None;
         let mut max = -0.1;
@@ -46,7 +46,7 @@ impl<P: Player, A: Action, S: GameState<P,A>> MCTS<P, A, S> {
         return best;
     }
 
-    ///Iterate through the actions in the first ply. The callback f is called for each action in the first ply with a tuple of (a, w, s) where a is the action, w is the expected value of the action, and s is the confidence the in the value of the action. s is similar to standard deviation with closer to zero being more confident.
+    ///Iterate through the actions in the first ply. The callback f is called for each action in the first ply with a tuple of (a, w, s) where a is the action, w is the expected value of the action, and s is the confidence in the value of the action. s is similar to standard deviation where closer to zero is more confident.
     pub fn ply<F>(&self, f: &mut F) where F: FnMut((A,f32,f32)) {
         if self.stack.len() == 0 {
             return;
@@ -83,7 +83,7 @@ impl<P: Player, A: Action, S: GameState<P,A>> MCTS<P, A, S> {
         }
     }
     
-    ///Call this method to search the given game a give number of iterations. Results are improved each time it is called. This function can be used to implement a user defined stopping criteria that monitors progress.
+    ///Call this method to search the root game state a given number of iterations. This method may be called any number of times to improve the search results. Call ply or best to get the current search results.
     pub fn ponder(&mut self, n: usize) {
         if self.stack.len() == 0 {
             let mut actions = Vec::new();
