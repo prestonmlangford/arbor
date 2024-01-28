@@ -28,6 +28,7 @@
  *----------------------------------------------------------------------------*/
 #include <math.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <assert.h>
 #include "arbor.h"
 #include "random.h"
@@ -189,7 +190,11 @@ static int arbor_go(Search* search, Node* node)
 {
     int result = ARBOR_NONE;
 
-    if (node->visits >= search->cfg.expansion)
+    if (node->side == ARBOR_NONE)
+    {
+        result = node->result;
+    }
+    else if (node->visits >= search->cfg.expansion)
     {
         result = arbor_branch(search, node);
     }

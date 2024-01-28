@@ -5,6 +5,14 @@
 
 #define NUM_PINS 16
 
+typedef struct Bad_Battleship_t
+{
+    uint16_t p1_pins;
+    uint16_t p2_pins;
+    int side;
+} BB;
+
+
 static int bitcount(uint16_t u)
 {
     int sum = 0;
@@ -35,7 +43,6 @@ void bb_make(Arbor_Game game, int action)
     uint16_t pin = 1U << action;
 
     assert(bb != NULL);
-    assert(bb->result == ARBOR_NONE);
     assert(bb->side   != ARBOR_NONE);
     assert(action < NUM_PINS);
 

@@ -4,20 +4,13 @@
 #include "arbor.h"
 #include "random.h"
 #include "bad_battleship.h"
+#include "dice.h"
 
-uint32_t entropy(void)
+#define KB  1024
+#define MB  KB * KB
+
+void bad_battleship(void)
 {
-    struct timespec ts = {};
-
-    clock_gettime(CLOCK_REALTIME, &ts);
-
-    return ts.tv_nsec;
-}
-
-int main (int argc, char* argv[])
-{
-    size_t KB = 1024;
-    size_t MB = KB * KB;
 
     Arbor_Game_Interface ifc = {
         .actions = bb_actions,
@@ -29,7 +22,6 @@ int main (int argc, char* argv[])
     };
 
     Arbor_Game game = bb_new();
-    BB* bb = game.p;
 
     rand_seed_realtime();
 
@@ -69,6 +61,66 @@ int main (int argc, char* argv[])
 
     printf("\nGame Over!\n");
     bb_free(game);
+}
+
+void dice(void)
+{
+
+    Arbor_Game_Interface ifc = {
+        .actions = dice_actions,
+        .copy = dice_copy,
+        .free = dice_free,
+        .make = dice_make,
+        .eval = dice_eval,
+        .side = dice_side
+    };
+
+    Arbor_Game game = dice_new();
+
+    rand_seed_realtime();
+
+    printf("Arbor - Dice 21\n");
+
+    while (dice_side(game) != ARBOR_NONE)
+    {
+        if (dice_side(game) == ARBOR_P1)
+        {
+            Arbor_Search_Config cfg = {
+                .expansion = 10,
+                .exploration = 2.0,
+                .size = 10U * MB,
+                .init = game,
+                .eval_policy = ARBOR_EVAL_CUSTOM
+            };
+
+            Arbor_Search search = arbor_search_new(&cfg, &ifc);
+            int i = 0;
+            int best = 0;
+
+            for (i = 0; i < 100000; i++)
+            {
+                arbor_search_ponder(search);
+            }
+
+            best = arbor_search_best(search);
+            printf("%d ",best);
+            fflush(stdout);
+            dice_make(game, best);
+        }
+        else
+        {
+            dice_make(game, 0);
+        }
+    }
+
+    printf("\nGame Over!\n");
+    dice_free(game);
+}
+
+int main (int argc, char* argv[])
+{
+    bad_battleship();
+    dice();
 
     return 0;
 }
