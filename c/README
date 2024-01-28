@@ -1,3 +1,1 @@
-to run:
-
-gcc -O3 main.c arbor.c random.c bad_battleship.c; ./a.out
+to run: "./go.sh"
