@@ -50,14 +50,96 @@ enum
     ARBOR_EVAL_CUSTOM,
 };
 
+/*------------------------------------------------------------------------------
+ * @fnptr Arbor_Copy
+ *
+ * @brief Allocate resources and deep copy the given game state. User can expect
+ *        Arbor to copy and free the game state for each call to ponder. It may 
+ *        copy more if multi-threading is used.
+ *
+ * @param [in]  game  The game state.
+ * 
+ * @return A new Arbor_Game.
+ *----------------------------------------------------------------------------*/
+typedef Arbor_Game (*Arbor_Copy)(Arbor_Game game);
+
+/*------------------------------------------------------------------------------
+ * @fnptr Arbor_Free
+ *
+ * @brief Deallocate any user resources used to copy the initial game state.
+ *
+ * @param [in]  game  The game state.
+ * 
+ * @return None.
+ *----------------------------------------------------------------------------*/
+typedef void (*Arbor_Free)(Arbor_Game game);
+
+/*------------------------------------------------------------------------------
+ * @fnptr Arbor_Make
+ *
+ * @brief Perform the action and advance the game state. The user game must
+ *        enumerate all actions in the same order.
+ *
+ * @param [in]  game  The game state.
+ * 
+ * @return None.
+ *----------------------------------------------------------------------------*/
+typedef void (*Arbor_Make)(Arbor_Game game, int action);
+
+/*------------------------------------------------------------------------------
+ * @fnptr Arbor_Actions
+ *
+ * @brief Indicate the number of actions available to the current player. The 
+ *        actions must be enumerated in a deterministic way by the game.
+ *
+ * @param [in]  game  The game state.
+ * 
+ * @return The number of actions available to the current player. Must be > 0
+ *         if the side to play is != ARBOR_NONE.
+ *----------------------------------------------------------------------------*/
+typedef int (*Arbor_Actions)(Arbor_Game game);
+
+/*------------------------------------------------------------------------------
+ * @fnptr Arbor_Side
+ *
+ * @brief Indicate side to play for the current game state.
+ *
+ * @param [in]  game  The game state.
+ * 
+ * @return One of the following:
+ *         ARBOR_NONE The game is in a terminal state.
+ *         ARBOR_P1   1st player won.
+ *         ARBOR_P2   2nd player won.
+ *----------------------------------------------------------------------------*/
+typedef int (*Arbor_Side)(Arbor_Game game);
+
+/*------------------------------------------------------------------------------
+ * @fnptr Arbor_Eval
+ *
+ * @brief Indicate result of game if in a terminal state, or pick a winner based
+ * on the probability one side might win vs. the other.
+ *
+ * @param [in]  game  The game state.
+ * 
+ * @return One of the following:
+ *         ARBOR_P1   1st player won.
+ *         ARBOR_P2   2nd player won.
+ *         ARBOR_DRAW neither player won.
+ *----------------------------------------------------------------------------*/
+typedef int (*Arbor_Eval)(Arbor_Game game);
+
+/*------------------------------------------------------------------------------
+ * Lib functions
+ *----------------------------------------------------------------------------*/
+
 typedef struct Arbor_Game_Interface_t
 {
-    Arbor_Game (*copy)(Arbor_Game game);
-    void (*free)(Arbor_Game game);
-    void (*make)(Arbor_Game game, int action);
-    int (*actions)(Arbor_Game game);
-    int (*side)(Arbor_Game game);
-    int (*eval)(Arbor_Game game);
+    Arbor_Copy      copy;
+    Arbor_Free      free;
+    Arbor_Make      make;
+    Arbor_Actions   actions;
+    Arbor_Side      side;
+    Arbor_Eval      eval;
 } Arbor_Game_Interface;
 
 typedef struct Arbor_Search_Config_t
@@ -68,25 +150,6 @@ typedef struct Arbor_Search_Config_t
     double exploration;
     int eval_policy;
 } Arbor_Search_Config;
-
-/*------------------------------------------------------------------------------
- * @fn arbor_game_result
- *
- * @brief Indicate result of game.
- * 
- * @param [in]  game  The game state.
- * 
- * @return One of the following:
- *         ARBOR_NONE game is in play.
- *         ARBOR_P1   1st player won.
- *         ARBOR_P2   2nd player won.
- *         ARBOR_DRAW neither player won.
- *----------------------------------------------------------------------------*/
-int arbor_game_result(Arbor_Game game);
-
-/*------------------------------------------------------------------------------
- * Lib functions
- *----------------------------------------------------------------------------*/
 
 /*------------------------------------------------------------------------------
  * @fn arbor_search_new

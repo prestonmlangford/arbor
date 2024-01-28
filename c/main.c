@@ -68,6 +68,7 @@ int main (int argc, char* argv[])
     }
 
     printf("\nGame Over!\n");
+    bb_free(game);
 
     return 0;
 }

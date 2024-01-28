@@ -113,8 +113,7 @@ int bb_eval(Arbor_Game game)
     {
         int p1 = 16 - bitcount(bb->p2_pins);
         int p2 = 16 - bitcount(bb->p1_pins);
-        int sum = p1 + p2;
-        int r = rand_range(0, sum);
+        int r = rand_range(0, p1 + p2);
 
         if (r < p1)
         {
