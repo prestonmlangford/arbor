@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include "arbor.h"
 #include "random.h"
+#include "profile.h"
 #include "bad_battleship.h"
 #include "dice.h"
 
@@ -119,8 +120,8 @@ void dice(void)
 
 int main (int argc, char* argv[])
 {
-    bad_battleship();
-    dice();
+    profile(bad_battleship);
+    profile(dice);
 
     return 0;
 }
