@@ -35,6 +35,14 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+#ifndef ARBOR_FREE
+#define ARBOR_FREE free
+#endif //ARBOR_FREE
+
+#ifndef ARBOR_MALLOC
+#define ARBOR_MALLOC malloc
+#endif //ARBOR_MALLOC
+
 #define OPAQUE_TYPE_DECL(name) typedef struct name##_t {void* p;} name;
 
 OPAQUE_TYPE_DECL(Arbor_Search);
@@ -64,7 +72,7 @@ enum
 typedef Arbor_Game (*Arbor_Copy)(Arbor_Game game);
 
 /*------------------------------------------------------------------------------
- * @fnptr Arbor_Free
+ * @fnptr Arbor_Delete
  *
  * @brief Deallocate any user resources used to copy the initial game state.
  *
@@ -72,7 +80,7 @@ typedef Arbor_Game (*Arbor_Copy)(Arbor_Game game);
  * 
  * @return None.
  *----------------------------------------------------------------------------*/
-typedef void (*Arbor_Free)(Arbor_Game game);
+typedef void (*Arbor_Delete)(Arbor_Game game);
 
 /*------------------------------------------------------------------------------
  * @fnptr Arbor_Make
@@ -135,7 +143,7 @@ typedef int (*Arbor_Eval)(Arbor_Game game);
 typedef struct Arbor_Game_Interface_t
 {
     Arbor_Copy      copy;
-    Arbor_Free      free;
+    Arbor_Delete    delete;
     Arbor_Make      make;
     Arbor_Actions   actions;
     Arbor_Side      side;
@@ -165,13 +173,13 @@ Arbor_Search arbor_search_new(Arbor_Search_Config* cfg,
                               Arbor_Game_Interface* ifc);
 
 /*------------------------------------------------------------------------------
- * @fn arbor_search_free
+ * @fn arbor_search_delete
  *
  * @brief Deallocates resources used by the search.
  * 
  * @param [in] search  Handle for the search to free.
  *----------------------------------------------------------------------------*/
-void arbor_search_free(Arbor_Search search);
+void arbor_search_delete(Arbor_Search search);
 
 /*------------------------------------------------------------------------------
  * @fn arbor_search_best

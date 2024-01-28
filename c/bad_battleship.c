@@ -78,7 +78,7 @@ Arbor_Game bb_copy(Arbor_Game game)
     return (Arbor_Game){p};
 }
 
-void bb_free(Arbor_Game game)
+void bb_delete(Arbor_Game game)
 {
     free(game.p);
 }

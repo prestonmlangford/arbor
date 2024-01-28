@@ -5,7 +5,7 @@
 #include "arbor.h"
 
 Arbor_Game bb_copy(Arbor_Game game);
-void bb_free(Arbor_Game game);
+void bb_delete(Arbor_Game game);
 void bb_make(Arbor_Game game, int action);
 int bb_actions(Arbor_Game game);
 int bb_side(Arbor_Game game);

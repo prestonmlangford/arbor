@@ -13,7 +13,7 @@ void bad_battleship(void)
     Arbor_Game_Interface ifc = {
         .actions = bb_actions,
         .copy = bb_copy,
-        .free = bb_free,
+        .delete = bb_delete,
         .make = bb_make,
         .eval = bb_eval,
         .side = bb_side
@@ -46,7 +46,7 @@ void bad_battleship(void)
             }
 
             best = arbor_search_best(search);
-            arbor_search_free(search);
+            arbor_search_delete(search);
 
             printf("%d ",best);
             fflush(stdout);
@@ -59,7 +59,7 @@ void bad_battleship(void)
     }
 
     printf("\nGame Over!\n");
-    bb_free(game);
+    bb_delete(game);
 }
 
 void dice(void)
@@ -68,7 +68,7 @@ void dice(void)
     Arbor_Game_Interface ifc = {
         .actions = dice_actions,
         .copy = dice_copy,
-        .free = dice_free,
+        .delete = dice_delete,
         .make = dice_make,
         .eval = dice_eval,
         .side = dice_side
@@ -101,7 +101,7 @@ void dice(void)
             }
 
             best = arbor_search_best(search);
-            arbor_search_free(search);
+            arbor_search_delete(search);
 
             printf("%d ",best);
             fflush(stdout);
@@ -114,7 +114,7 @@ void dice(void)
     }
 
     printf("\nGame Over!\n");
-    dice_free(game);
+    dice_delete(game);
 }
 
 int main (int argc, char* argv[])

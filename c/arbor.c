@@ -76,7 +76,7 @@ static int arbor_go(Search* search, Node* node);
 
 static Node* arbor_new_node(Search* search, Arbor_Game game, int action)
 {
-    Node* node = malloc(sizeof(Node));
+    Node* node = ARBOR_MALLOC(sizeof(Node));
 
     node->free_list = search->free_list;
     search->free_list = node;
@@ -223,8 +223,8 @@ Arbor_Search arbor_search_new(Arbor_Search_Config* cfg,
                               Arbor_Game_Interface* ifc)
 {
     Arbor_Search result = {};
-    Search* search = malloc(sizeof(Search));
-    Node* root = malloc(sizeof(Node));
+    Search* search = ARBOR_MALLOC(sizeof(Search));
+    Node* root = ARBOR_MALLOC(sizeof(Node));
 
     search->cfg = *cfg;
     search->ifc = *ifc;
@@ -235,7 +235,7 @@ Arbor_Search arbor_search_new(Arbor_Search_Config* cfg,
     return result;
 }
 
-void arbor_search_free(Arbor_Search search)
+void arbor_search_delete(Arbor_Search search)
 {
     Search* s = search.p;
 
@@ -245,11 +245,11 @@ void arbor_search_free(Arbor_Search search)
         while (list)
         {
             Node* tmp = list->free_list;
-            s->ifc.free(list->game);
-            free(list);
+            s->ifc.delete(list->game);
+            ARBOR_FREE(list);
             list = tmp;
         }
-        free(s);
+        ARBOR_FREE(s);
     }
 }
 
@@ -302,5 +302,5 @@ void arbor_search_ponder(Arbor_Search search)
 
     arbor_go(s, s->root);
 
-    s->ifc.free(s->sim);
+    s->ifc.delete(s->sim);
 }

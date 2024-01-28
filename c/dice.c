@@ -75,7 +75,7 @@ Arbor_Game dice_copy(Arbor_Game game)
     return copy;
 }
 
-void dice_free(Arbor_Game game)
+void dice_delete(Arbor_Game game)
 {
     free(game.p);
 }
