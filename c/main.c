@@ -7,9 +7,6 @@
 #include "bad_battleship.h"
 #include "dice.h"
 
-#define KB  1024
-#define MB  KB * KB
-
 void bad_battleship(void)
 {
 
@@ -35,7 +32,6 @@ void bad_battleship(void)
             Arbor_Search_Config cfg = {
                 .expansion = 10,
                 .exploration = 2.0,
-                .size = 10U * MB,
                 .init = game,
                 .eval_policy = ARBOR_EVAL_CUSTOM
             };
@@ -50,6 +46,8 @@ void bad_battleship(void)
             }
 
             best = arbor_search_best(search);
+            arbor_search_free(search);
+
             printf("%d ",best);
             fflush(stdout);
             bb_make(game, best);
@@ -89,7 +87,6 @@ void dice(void)
             Arbor_Search_Config cfg = {
                 .expansion = 10,
                 .exploration = 2.0,
-                .size = 10U * MB,
                 .init = game,
                 .eval_policy = ARBOR_EVAL_CUSTOM
             };
@@ -104,6 +101,8 @@ void dice(void)
             }
 
             best = arbor_search_best(search);
+            arbor_search_free(search);
+
             printf("%d ",best);
             fflush(stdout);
             dice_make(game, best);

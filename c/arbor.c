@@ -54,6 +54,8 @@ typedef struct Node_t
     int visits;
     struct Node_t* sibling;
     struct Node_t* child;
+    struct Node_t* free_list;
+    Arbor_Game game;
 } Node;
 
 typedef struct Search_t
@@ -62,9 +64,8 @@ typedef struct Search_t
     Arbor_Game_Interface ifc;
 
     Arbor_Game sim;
-    Node* pool;
-    size_t pool_count;
-    size_t pool_size;
+    Node* root;
+    Node* free_list;
 } Search;
 
 static int arbor_go(Search* search, Node* node);
@@ -73,20 +74,13 @@ static int arbor_go(Search* search, Node* node);
  * Private functions
  *----------------------------------------------------------------------------*/
 
-static Node* arbor_pool_bump(Search* search)
-{
-    size_t top = search->pool_count;
-    if (top < search->pool_size)
-    {
-        search->pool_count += 1;
-        return &(search->pool[top]);
-    }
-    return NULL;
-}
-
 static Node* arbor_new_node(Search* search, Arbor_Game game, int action)
 {
-    Node* node = arbor_pool_bump(search);
+    Node* node = malloc(sizeof(Node));
+
+    node->free_list = search->free_list;
+    search->free_list = node;
+
     node->side = search->ifc.side(game);
 
     if (node->side == ARBOR_NONE)
@@ -230,15 +224,11 @@ Arbor_Search arbor_search_new(Arbor_Search_Config* cfg,
 {
     Arbor_Search result = {};
     Search* search = malloc(sizeof(Search));
-    Node* root = malloc(cfg->size);
+    Node* root = malloc(sizeof(Node));
 
     search->cfg = *cfg;
     search->ifc = *ifc;
-    search->pool = root;
-    search->pool_size = cfg->size / sizeof(Node);
-    search->pool_count = 0;
-
-    (void) arbor_new_node(search, search->cfg.init, 0);
+    search->root = arbor_new_node(search, search->cfg.init, 0);
 
     result.p = search;
 
@@ -251,7 +241,14 @@ void arbor_search_free(Arbor_Search search)
 
     if (s)
     {
-        free(s->pool);
+        Node* list = s->free_list;
+        while (list)
+        {
+            Node* tmp = list->free_list;
+            s->ifc.free(list->game);
+            free(list);
+            list = tmp;
+        }
         free(s);
     }
 }
@@ -259,7 +256,7 @@ void arbor_search_free(Arbor_Search search)
 int arbor_search_best(Arbor_Search search)
 {
     Search* s = search.p;
-    Node* root = s->pool;
+    Node* root = s->root;
     Node* child = root->child;
     int best = child->action;
     double best_score = 0.0;
@@ -300,11 +297,10 @@ int arbor_search_best(Arbor_Search search)
 void arbor_search_ponder(Arbor_Search search)
 {
     Search* s = search.p;
-    Node* root = s->pool;
 
     s->sim = s->ifc.copy(s->cfg.init);
 
-    arbor_go(s, root);
+    arbor_go(s, s->root);
 
     s->ifc.free(s->sim);
 }
