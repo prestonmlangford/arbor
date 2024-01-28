@@ -37,82 +37,52 @@
 
 #define OPAQUE_TYPE_DECL(name) typedef struct name##_t {void* p;} name;
 
-/*------------------------------------------------------------------------------
- * User types
- *----------------------------------------------------------------------------*/
-OPAQUE_TYPE_DECL(Arbor_Game);
-typedef enum Arbor_Game_Result_t
-{
-    ARBOR_GAME_RESULT_NONE,
-    ARBOR_GAME_RESULT_WIN,
-    ARBOR_GAME_RESULT_LOSE,
-    ARBOR_GAME_RESULT_DRAW
-} Arbor_Game_Result;
-
-/*------------------------------------------------------------------------------
- * Lib types
- *----------------------------------------------------------------------------*/
 OPAQUE_TYPE_DECL(Arbor_Search);
+OPAQUE_TYPE_DECL(Arbor_Game);
+
+enum
+{
+    ARBOR_NONE,
+    ARBOR_P1,
+    ARBOR_P2,
+    ARBOR_DRAW,
+    ARBOR_EVAL_ROLLOUT,
+    ARBOR_EVAL_CUSTOM,
+};
+
+typedef struct Arbor_Game_Interface_t
+{
+    Arbor_Game (*copy)(Arbor_Game game);
+    void (*free)(Arbor_Game game);
+    void (*make)(Arbor_Game game, int action);
+    int (*actions)(Arbor_Game game);
+    int (*side)(Arbor_Game game);
+    int (*eval)(Arbor_Game game);
+} Arbor_Game_Interface;
+
+typedef struct Arbor_Search_Config_t
+{
+    Arbor_Game init;
+    size_t size;
+    int expansion;
+    double exploration;
+    int eval_policy;
+} Arbor_Search_Config;
 
 /*------------------------------------------------------------------------------
- * User functions
- *----------------------------------------------------------------------------*/
-
-/*------------------------------------------------------------------------------
- * @fn arbor_game_actions
+ * @fn arbor_game_result
  *
- * @brief Indicate the number of actions for the given game state. The game 
- *        state implementation must always generate the same number of moves in
- *        the same order. 
- * 
- * @param [in]  game    The game state to iterate.
- * 
- * @return Number of actions possible for game state.
- *         Zero when there are no actions.
- *----------------------------------------------------------------------------*/
-int arbor_game_actions(Arbor_Game game);
-
-/*------------------------------------------------------------------------------
- * @fn arbor_game_make
- *
- * @brief  Advance the game state with the given action index. All game state
- *         actions must be generated in a consistent order each time for the
- *         index to work correctly.
- * 
- * @param [in]  game    The game state.
- * @param [in]  action  index of action to make.
- * 
- * @return true when the action successfully advances the game state.
- *         false otherwise.
- *----------------------------------------------------------------------------*/
-bool arbor_game_make(Arbor_Game game, int action);
-
-/*------------------------------------------------------------------------------
- * @fn arbor_game_side
- *
- * @brief Indicate side to play.
+ * @brief Indicate result of game.
  * 
  * @param [in]  game  The game state.
  * 
- * @return true when it is the first players turn.
- *         false otherwise.
+ * @return One of the following:
+ *         ARBOR_NONE game is in play.
+ *         ARBOR_P1   1st player won.
+ *         ARBOR_P2   2nd player won.
+ *         ARBOR_DRAW neither player won.
  *----------------------------------------------------------------------------*/
-bool arbor_game_side(Arbor_Game game);
-
-/*------------------------------------------------------------------------------
- * @fn arbor_game_over
- *
- * @brief Indicate the state of the game.
- * 
- * @param [in]  game  The game state.
- * 
- * @return One of the following Arbor_Game_Result variants:
- *         ARBOR_GAME_RESULT_NONE game is still in play.
- *         ARBOR_GAME_RESULT_WIN  current player has won.
- *         ARBOR_GAME_RESULT_LOSE current player has lost.
- *         ARBOR_GAME_RESULT_DRAW neither play has won.
- *----------------------------------------------------------------------------*/
-Arbor_Game_Result arbor_game_over(Arbor_Game game);
+int arbor_game_result(Arbor_Game game);
 
 /*------------------------------------------------------------------------------
  * Lib functions
@@ -128,7 +98,8 @@ Arbor_Game_Result arbor_game_over(Arbor_Game game);
  * 
  * @return A new Arbor_Search search object.
  *----------------------------------------------------------------------------*/
-Arbor_Search arbor_search_new(Arbor_Game game, size_t size);
+Arbor_Search arbor_search_new(Arbor_Search_Config* cfg,
+                              Arbor_Game_Interface* ifc);
 
 /*------------------------------------------------------------------------------
  * @fn arbor_search_free
