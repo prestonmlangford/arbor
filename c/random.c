@@ -4,53 +4,44 @@
 
 #define DEFAULT_STATE_V 0x12345678U
 
-uint32_t state_u = 0U;
-uint32_t state_v = DEFAULT_STATE_V;
+uint32_t random_state = DEFAULT_STATE_V;
 
 #define ROR(u,s) (((u) >> (s)) | ((u) << (32 - (s))))
 #define ROL(u,s) (((u) << (s)) | ((u) >> (32 - (s))))
 
-static uint32_t xorshift(void)
+static uint32_t xorshift(uint32_t u)
 {
-    uint32_t v = state_v;
+    u ^= u << 13;
+    u ^= u >> 17;
+    u ^= u << 5;
 
-    v ^= v << 13;
-    v ^= v >> 17;
-    v ^= v << 5;
-
-    state_v = v;
-
-    return v;
+    return u;
 }
 
 static uint32_t nextpow2(uint32_t u)
 {
-    uint32_t v = u;
+    u |= u >> 1;
+    u |= u >> 2;
+    u |= u >> 4;
+    u |= u >> 8;
+    u |= u >> 16;
 
-    v |= v >> 1;
-    v |= v >> 2;
-    v |= v >> 4;
-    v |= v >> 8;
-    v |= v >> 16;
-
-    return v;
+    return u;
 }
 
 void rand_seed(int seed)
 {
-    state_u = 0U;
-
     if (seed > 0)
     {
-        state_v = (uint32_t) seed;
+        random_state = (uint32_t) seed;
     }
     else if (seed < 0)
     {
-        state_v = (uint32_t) (-seed);
+        random_state = (uint32_t) (-seed);
     }
     else
     {
-        state_v = DEFAULT_STATE_V;
+        random_state = DEFAULT_STATE_V;
     }
 }
 
@@ -71,8 +62,8 @@ int rand_range(int lower, int upper)
 
     do
     {
-        uint32_t u = xorshift();
-        r = (int) (u & mask);
+        random_state = xorshift(random_state);
+        r = (int) (random_state & mask);
     } while (r >= range);
 
     return r + lower;

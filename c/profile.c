@@ -24,7 +24,7 @@ void profile(void (*func)(void))
 
     printf("----------------------------\n");
     printf("profile:\n");
-    printf("clock gcd = %d\n", gcd);
+    // printf("clock gcd = %d\n", gcd);
 
     t0 = clock();
     func();

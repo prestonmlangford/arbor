@@ -4,7 +4,7 @@
 #include "random.h"
 
 #define ABS(i) (((i) < 0) ? -(i) : (i))
-#define DICE_LIMIT 21
+#define NUM_TURNS 10
 
 typedef struct Dice_t
 {
@@ -12,6 +12,7 @@ typedef struct Dice_t
     int p2;
     int side;
     int result;
+    int turn;
 } Dice;
 
 Arbor_Game dice_new(void)
@@ -37,31 +38,33 @@ void dice_make(Arbor_Game game, int action)
     if (dice->side == ARBOR_P1)
     {
         dice->p1 += score;
-
-        if (dice->p1 >= DICE_LIMIT)
-        {
-            dice->side = ARBOR_NONE;
-            dice->result = ARBOR_P2;
-        }
-        else
-        {
-            dice->side = ARBOR_P2;
-        }
+        dice->side = ARBOR_P2;
     }
     else
     {
         dice->p2 += score;
+        dice->side = ARBOR_P1;
+    }
 
-        if (dice->p2 >= DICE_LIMIT)
+    if (dice->turn >= NUM_TURNS)
+    {
+        if (dice->p1 == dice->p2)
         {
-            dice->side = ARBOR_NONE;
-            dice->result = ARBOR_P1;
+            dice->result = ARBOR_DRAW;
+        }
+        if (dice->p1 > dice->p2)
+        {
+            dice->result = ARBOR_P2;
         }
         else
         {
-            dice->side = ARBOR_P1;
+            dice->result = ARBOR_P1;
         }
+
+        dice->side = ARBOR_NONE;
     }
+
+    dice->turn += 1;
 }
 
 Arbor_Game dice_copy(Arbor_Game game)
@@ -102,18 +105,20 @@ int dice_eval(Arbor_Game game)
     }
     else
     {
-        int p1 = DICE_LIMIT - dice->p2;
-        int p2 = DICE_LIMIT - dice->p1;
-        int r = rand_range(0, p1 + p2);
-
-        if (r < p1)
-        {
-            return ARBOR_P2;
-        }
-        else
-        {
-            return ARBOR_P1;
-        }
+        return ARBOR_DRAW;
     }
 }
 
+/*
+ 2: 1-1
+ 3: 1-2, 2-1,
+ 4: 1-3, 2-2, 3-1
+ 5: 1-4, 2-3, 3-2, 4-1
+ 6: 1-5, 2-4, 3-3, 4-2, 5-1
+ 7: 1-6, 2-5, 3-4, 4-3, 5-2, 6-1
+ 8: 2-6, 3-5, 4-4, 5-3, 6-2
+ 9: 3-6, 4-5, 5-4, 6-3
+10: 4-6, 5-5, 6-4
+11: 5-6, 6-5
+12: 6-6
+*/
