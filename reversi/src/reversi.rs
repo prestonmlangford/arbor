@@ -202,7 +202,7 @@ impl Display for Reversi {
 }
 
 impl Reversi {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Reversi {
             f: (1 << 0o43) | (1 << 0o34),
             e: (1 << 0o33) | (1 << 0o44),
@@ -215,7 +215,7 @@ impl Reversi {
     pub fn load(moves: &[Move]) -> Reversi {
         let mut g = Self::new();
         for m in moves {
-            println!("{}",g);
+            // println!("{}",g);
             g = g.make(*m);
         }
         println!("{}",g);

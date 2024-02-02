@@ -2,12 +2,13 @@ extern crate arbor;
 mod reversi;
 use self::reversi::*;
 use std::io;
+use std::env;
 use std::io::prelude::*;
 use arbor::*;
 use instant::Instant;
 
-
-fn main() {
+#[allow(dead_code)]
+fn user_loop() {
     println!("Reversi!");
 
     let game = [];
@@ -69,4 +70,58 @@ fn main() {
             break;
         }
     }
+}
+
+fn main() {
+    let mut gamestate = Reversi::new();
+    for arg in env::args().skip(1) {
+        let action = 
+            if arg == "show" {
+                println!("{}",gamestate);
+                return;
+            }
+            else if arg == "pass" {
+                Move::Pass
+            }
+            else if let Ok(u) = u64::from_str_radix(arg.as_str().trim(),8){
+                Move::Capture(u)
+            } else {
+                panic!("invalid arg {}", arg);
+            };
+
+        gamestate = gamestate.make(action);
+        
+        if let Some(result) = gamestate.gameover() {
+            let (side, other) = 
+                match gamestate.player() {
+                    Disc::W => ("white", "black"),
+                    Disc::B => ("black", "white"),
+                }; 
+
+            match result {
+                GameResult::Draw => println!("draw"),
+                GameResult::Win => println!("{}",side),
+                GameResult::Lose => println!("{}",other)
+            }
+
+            return;
+        }
+    }
+
+    let mut mcts = MCTS::new(gamestate);
+    let duration = std::time::Duration::new(1, 0);
+    let start = Instant::now();
+
+    while (Instant::now() - start) < duration {
+        mcts.ponder(100);
+    }
+    
+    let action = mcts.best().expect("Should find a best action");
+
+    // println!("{:?}",mcts.info);
+    match action {
+        Move::Capture(u) => println!("{:o}",u),
+        Move::Pass => println!("pass"),
+    }
+    // println!("{:?}",action);
 }
