@@ -50,6 +50,23 @@ typedef struct Reversi_t
     int result;
 } Reversi;
 
+inline static int popcount(uint64_t u)
+{
+#if USE_BUILTINS
+    return __builtin_popcountll(u);
+#else
+    int sum = 0;
+
+    while (u > 0)
+    {
+        sum += 1;
+        u &= u - 1;
+    }
+
+    return sum;
+#endif
+}
+
 // 0 1 2 3 4 5 6 7
 // - - W B B - - -
 // 0 0 0 1 0 0 0 0
@@ -71,24 +88,8 @@ typedef struct Reversi_t
 // 0 1 1 1 1 1 1 0
 // 0 0 0 0 0 0 0 1
 
-inline static int popcount(uint64_t u)
-{
-#if USE_BUILTINS
-    return __builtin_popcountll(u);
-#else
-    int sum = 0;
+// https://www.gamedev.net/forums/topic/646988-generating-moves-in-reversi/
 
-    while (u > 0)
-    {
-        sum += 1;
-        u &= u - 1;
-    }
-
-    return sum;
-#endif
-}
-
-//https://www.gamedev.net/forums/topic/646988-generating-moves-in-reversi/
 inline static uint64_t generate_moves(uint64_t f, uint64_t e)
 {
     uint64_t u = 0;
@@ -105,21 +106,20 @@ inline static uint64_t generate_moves(uint64_t f, uint64_t e)
     return u;
 }
 
-//https://www.gamedev.net/forums/topic/646988-generating-moves-in-reversi/
-inline static uint64_t make_capture(uint64_t f, uint64_t e, uint64_t u)
+inline static uint64_t make_capture(uint64_t f, uint64_t e, uint64_t c)
 {
-    uint64_t c = 0;
+    uint64_t u = 0;
 
-    c |= CAPTURE(u,f,e,NORTH);
-    c |= CAPTURE(u,f,e,SOUTH);
-    c |= CAPTURE(u,f,e,EAST);
-    c |= CAPTURE(u,f,e,WEST);
-    c |= CAPTURE(u,f,e,NORTHEAST);
-    c |= CAPTURE(u,f,e,NORTHWEST);
-    c |= CAPTURE(u,f,e,SOUTHEAST);
-    c |= CAPTURE(u,f,e,SOUTHWEST);
+    u |= CAPTURE(c,f,e,NORTH);
+    u |= CAPTURE(c,f,e,SOUTH);
+    u |= CAPTURE(c,f,e,EAST);
+    u |= CAPTURE(c,f,e,WEST);
+    u |= CAPTURE(c,f,e,NORTHEAST);
+    u |= CAPTURE(c,f,e,NORTHWEST);
+    u |= CAPTURE(c,f,e,SOUTHEAST);
+    u |= CAPTURE(c,f,e,SOUTHWEST);
 
-    return c;
+    return u;
 }
 
 Arbor_Game reversi_new(void)
@@ -274,7 +274,7 @@ void reversi_show(Arbor_Game game)
     Reversi* rev = game.p;
     const char* colnum = "    0   1   2   3   4   5   6   7\n";
     const char* rowsep = "  ---------------------------------\n";
-    uint64_t moves = generate_moves(rev->f, rev->e);
+    uint64_t moves = rev->a;
     uint64_t white = 0;
     uint64_t black = 0;
     int row = 0;
@@ -327,72 +327,4 @@ void reversi_show(Arbor_Game game)
         printf("|\n%s",rowsep);
     }
     printf("%s\n",colnum);
-}
-
-void bin(uint64_t u)
-{
-    int i;
-    for (i = 63; i >= 0; i--)
-    {
-        printf("%d",(int)((u >> i) & 1));
-    }
-    printf("\n");
-}
-
-int reversi_convert_xy(Arbor_Game game, int xy)
-{
-    Reversi* rev = game.p;
-    int action;
-    uint64_t a,u,v,p;
-
-    u = generate_moves(rev->f, rev->e);
-    action = 0;
-    p = 1;
-    p <<= xy;
-
-    while (u > 0)
-    {
-        v = u - 1;
-        a = u & ~v;
-        u = u & v;
-
-        if (a == p)
-        {
-            break;
-        }
-
-        action++;
-    }
-
-    return action;   
-}
-
-int reversi_convert_action(Arbor_Game game, int action)
-{
-    Reversi* rev = game.p;
-    uint64_t a,u,v,p;
-    int i = 0;
-
-    u = generate_moves(rev->f, rev->e);
-
-    if (u == 0)
-    {
-        return -1;
-    }
-
-    while (u > 0)
-    {
-        v = u - 1;
-        a = u & ~v;
-        u = u & v;
-
-        if (i == action)
-        {
-            break;
-        }
-
-        i++;
-    }
-
-    return popcount(a - 1);   
 }

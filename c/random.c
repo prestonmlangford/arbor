@@ -9,6 +9,7 @@ uint32_t random_state = DEFAULT_STATE_V;
 #define ROR(u,s) (((u) >> (s)) | ((u) << (32 - (s))))
 #define ROL(u,s) (((u) << (s)) | ((u) >> (32 - (s))))
 
+// marsaglia xorshift prng
 inline static uint32_t xorshift(uint32_t u)
 {
     u ^= u << 13;
@@ -20,9 +21,6 @@ inline static uint32_t xorshift(uint32_t u)
 
 inline static uint32_t nextpow2(uint32_t u)
 {
-#if 0
-    return UINT32_C(1) << (32 - __builtin_clz (u - UINT32_C(1)));
-#else
     u |= u >> 1;
     u |= u >> 2;
     u |= u >> 4;
@@ -30,7 +28,6 @@ inline static uint32_t nextpow2(uint32_t u)
     u |= u >> 16;
 
     return u;
-#endif
 }
 
 void rand_seed(int seed)
