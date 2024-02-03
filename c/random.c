@@ -60,15 +60,15 @@ void rand_seed_realtime(void)
 
 int rand_range(int lower, int upper)
 {
-    int range = upper - lower;
-    uint32_t mask = nextpow2(range);
+    int max = upper - lower - 1;
+    uint32_t mask = nextpow2(max);
     int r = 0;
 
     do
     {
         random_state = xorshift(random_state);
         r = (int) (random_state & mask);
-    } while (r >= range);
+    } while (r > max);
 
     return r + lower;
 }
