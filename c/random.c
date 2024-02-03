@@ -60,6 +60,7 @@ void rand_seed_realtime(void)
 
 int rand_range(int lower, int upper)
 {
+#ifdef USE_REJECTION_SAMPLING
     int max = upper - lower - 1;
     uint32_t mask = nextpow2(max);
     int r = 0;
@@ -71,4 +72,16 @@ int rand_range(int lower, int upper)
     } while (r > max);
 
     return r + lower;
+#else
+    uint32_t range = (uint32_t) (upper - lower);
+    int r = 0;
+
+    random_state = xorshift(random_state);
+
+    // the use case for arbor has insignificant
+    // modulo bias since random state >> range
+    r = (int) (random_state % range);
+
+    return r + lower;
+#endif
 }
