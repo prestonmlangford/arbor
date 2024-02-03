@@ -18,7 +18,7 @@ inline static uint32_t xorshift(uint32_t u)
     return u;
 }
 
-static uint32_t nextpow2(uint32_t u)
+inline static uint32_t nextpow2(uint32_t u)
 {
 #if 0
     return UINT32_C(1) << (32 - __builtin_clz (u - UINT32_C(1)));
@@ -84,4 +84,13 @@ int rand_range(int lower, int upper)
 
     return r + lower;
 #endif
+}
+
+int rand_bound(int bound)
+{
+    random_state = xorshift(random_state);
+
+    // the use case for arbor has insignificant
+    // modulo bias since random state >> range
+    return random_state % bound;
 }

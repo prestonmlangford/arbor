@@ -171,7 +171,7 @@ static int arbor_leaf(Search* search, Node* node)
         while (search->ifc.side(search->sim) != ARBOR_NONE)
         {
             int count = search->ifc.actions(search->sim);
-            int action = rand_range(0, count);
+            int action = rand_bound(count);
 
             search->ifc.make(search->sim, action);
         }
