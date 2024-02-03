@@ -252,6 +252,10 @@ int cli(Arbor_Game game, Arbor_Game_Interface* ifc, int argc, char* argv[])
                 printf("none\n");
             }
         }
+        else if (strcmp(arg, "actions") == 0)
+        {
+            printf("%d\n", ifc->actions(game));
+        }
         else if (strcmp(arg, "result") == 0)
         {
             if (side == ARBOR_NONE)
