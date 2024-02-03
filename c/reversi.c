@@ -44,6 +44,7 @@ typedef struct Reversi_t
 {
     uint64_t f;
     uint64_t e;
+    uint64_t a;
     int side;
     bool pass;
     int result;
@@ -70,8 +71,11 @@ typedef struct Reversi_t
 // 0 1 1 1 1 1 1 0
 // 0 0 0 0 0 0 0 1
 
-static int popcount(uint64_t u)
+inline static int popcount(uint64_t u)
 {
+#if USE_BUILTINS
+    return __builtin_popcountll(u);
+#else
     int sum = 0;
 
     while (u > 0)
@@ -81,10 +85,11 @@ static int popcount(uint64_t u)
     }
 
     return sum;
+#endif
 }
 
 //https://www.gamedev.net/forums/topic/646988-generating-moves-in-reversi/
-static uint64_t parallel_capture(uint64_t f, uint64_t e)
+inline static uint64_t generate_moves(uint64_t f, uint64_t e)
 {
     uint64_t u = 0;
 
@@ -100,6 +105,23 @@ static uint64_t parallel_capture(uint64_t f, uint64_t e)
     return u;
 }
 
+//https://www.gamedev.net/forums/topic/646988-generating-moves-in-reversi/
+inline static uint64_t make_capture(uint64_t f, uint64_t e, uint64_t u)
+{
+    uint64_t c = 0;
+
+    c |= CAPTURE(u,f,e,NORTH);
+    c |= CAPTURE(u,f,e,SOUTH);
+    c |= CAPTURE(u,f,e,EAST);
+    c |= CAPTURE(u,f,e,WEST);
+    c |= CAPTURE(u,f,e,NORTHEAST);
+    c |= CAPTURE(u,f,e,NORTHWEST);
+    c |= CAPTURE(u,f,e,SOUTHEAST);
+    c |= CAPTURE(u,f,e,SOUTHWEST);
+
+    return c;
+}
+
 Arbor_Game reversi_new(void)
 {
     Reversi* rev = malloc(sizeof(Reversi));
@@ -112,6 +134,8 @@ Arbor_Game reversi_new(void)
         .result = ARBOR_NONE
     };
 
+    rev->a = generate_moves(rev->f, rev->e);
+
     return (Arbor_Game) {rev};
 }
 
@@ -120,7 +144,7 @@ void reversi_make(Arbor_Game game, int action)
     Reversi* rev = game.p;
     uint64_t f = rev->f;
     uint64_t e = rev->e;
-    uint64_t u = parallel_capture(f, e);
+    uint64_t u = rev->a;
     bool gameover = false;
 
     if (u > 0)
@@ -135,14 +159,7 @@ void reversi_make(Arbor_Game game, int action)
         }
         u &= ~(u - 1);
 
-        c |= CAPTURE(u,f,e,NORTH);
-        c |= CAPTURE(u,f,e,SOUTH);
-        c |= CAPTURE(u,f,e,EAST);
-        c |= CAPTURE(u,f,e,WEST);
-        c |= CAPTURE(u,f,e,NORTHEAST);
-        c |= CAPTURE(u,f,e,NORTHWEST);
-        c |= CAPTURE(u,f,e,SOUTHEAST);
-        c |= CAPTURE(u,f,e,SOUTHWEST);
+        c = make_capture(f, e, u);
 
         e &= ~c;
         f |=  c;
@@ -196,13 +213,18 @@ void reversi_make(Arbor_Game game, int action)
 
         rev->side = ARBOR_NONE;
     }
-    else if (rev->side == ARBOR_P1)
-    {
-        rev->side = ARBOR_P2;
-    }
     else
     {
-        rev->side = ARBOR_P1;
+        rev->a = generate_moves(rev->f, rev->e);
+        
+        if (rev->side == ARBOR_P1)
+        {
+            rev->side = ARBOR_P2;
+        }
+        else
+        {
+            rev->side = ARBOR_P1;
+        }
     }
 }
 
@@ -225,8 +247,7 @@ void reversi_delete(Arbor_Game game)
 int reversi_actions(Arbor_Game game)
 {
     Reversi* rev = game.p;
-    uint64_t u = parallel_capture(rev->f, rev->e);
-    int sum = popcount(u);
+    int sum = popcount(rev->a);
 
     // add one for pass if no other option
     sum += (sum == 0);
@@ -253,7 +274,7 @@ void reversi_show(Arbor_Game game)
     Reversi* rev = game.p;
     const char* colnum = "    0   1   2   3   4   5   6   7\n";
     const char* rowsep = "  ---------------------------------\n";
-    uint64_t moves = parallel_capture(rev->f, rev->e);
+    uint64_t moves = generate_moves(rev->f, rev->e);
     uint64_t white = 0;
     uint64_t black = 0;
     int row = 0;
@@ -263,17 +284,17 @@ void reversi_show(Arbor_Game game)
     {
         white = rev->f;
         black = rev->e;
-        printf("White");
+        printf("O");
     }
     else
     {
         white = rev->e;
         black = rev->f;
-        printf("Black");
+        printf("X");
     }
 
     printf(" Turn\n");
-    printf("White: %d, Black: %d\n%s", popcount(white), popcount(black), rowsep);
+    printf("O: %2d, X: %2d\n%s", popcount(white), popcount(black), rowsep);
 
     for (row = 7; row >= 0; row--)
     {
@@ -287,15 +308,15 @@ void reversi_show(Arbor_Game game)
             
             if (white & space)
             {
-                p = 'W';
+                p = 'O';
             }
             else if (black & space)
             {
-                p = 'B';
+                p = 'X';
             }
             else if (moves & space)
             {
-                p = 'x';
+                p = '-';
             }
             else
             {
@@ -324,7 +345,7 @@ int reversi_convert_xy(Arbor_Game game, int xy)
     int action;
     uint64_t a,u,v,p;
 
-    u = parallel_capture(rev->f, rev->e);
+    u = generate_moves(rev->f, rev->e);
     action = 0;
     p = 1;
     p <<= xy;
@@ -352,7 +373,7 @@ int reversi_convert_action(Arbor_Game game, int action)
     uint64_t a,u,v,p;
     int i = 0;
 
-    u = parallel_capture(rev->f, rev->e);
+    u = generate_moves(rev->f, rev->e);
 
     if (u == 0)
     {

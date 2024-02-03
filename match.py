@@ -1,39 +1,28 @@
 import subprocess
 
+SEARCH_TIME_MS = 1000
 AI_C = 'c/a.out'
 AI_R = 'target/release/reversi'
 
-def show(history):
-    result = subprocess.check_output([AI_C] + history + ["show"])
-    print(result.decode('utf-8'))
+def run(bin,game,cmd):
+    result = subprocess.run([bin] + game + [cmd], capture_output=True)
+    print(result.stderr.decode('utf-8'))
+    return result.stdout.decode('utf-8').strip()
 
-def ai(path, history):
-    result = subprocess.check_output([path] + history)
-    return result.decode('utf-8').strip()
+def show(game):       return run(AI_C,   game, "show") + '\n'
+def ai(game, player): return run(player, game, f"mcts:{SEARCH_TIME_MS}")
+def side(game):       return run(AI_C,   game, "side")
+def result(game):     return run(AI_C,   game, "result")
 
-h = []
-pair = AI_C, AI_R
-
-show(h)
-
+game = []
 while True:
-    x,y = pair
-    a = ai(x,h)
-    pair = y,x
+    print(show(game))
 
-    try:
-        a = ai(x,h)
-    except:
-        # print(a)
-        exit(-1)
+    if side(game) == "p1":
+        player = AI_R
+    elif side(game) == "p2":
+        player = AI_C
+    else:
+        break
 
-    h.append(a)
-    print(h)
-    show(h)
-
-    if a == 'white':
-        break
-    elif a == 'black':
-        break
-    elif a == 'draw':
-        break
+    game.append(ai(game,player))

@@ -74,54 +74,95 @@ fn user_loop() {
 
 fn main() {
     let mut gamestate = Reversi::new();
+
     for arg in env::args().skip(1) {
-        let action = 
-            if arg == "show" {
-                println!("{}",gamestate);
-                return;
-            }
-            else if arg == "pass" {
-                Move::Pass
-            }
-            else if let Ok(u) = u64::from_str_radix(arg.as_str().trim(),8){
-                Move::Capture(u)
-            } else {
-                panic!("invalid arg {}", arg);
-            };
-
-        gamestate = gamestate.make(action);
         
-        if let Some(result) = gamestate.gameover() {
-            let (side, other) = 
+        if arg == "show" {
+            println!("{}",gamestate);
+        } else if arg == "side" {
+            if let Some(_) = gamestate.gameover() {
+                println!("none");
+            } else {
                 match gamestate.player() {
-                    Disc::W => ("white", "black"),
-                    Disc::B => ("black", "white"),
-                }; 
-
-            match result {
-                GameResult::Draw => println!("draw"),
-                GameResult::Win => println!("{}",side),
-                GameResult::Lose => println!("{}",other)
+                    Disc::B => println!("p2"),
+                    Disc::W => println!("p1")
+                }
             }
+        } else if arg == "result" {
+            if let Some(result) = gamestate.gameover() {
+                let (side, other) = 
+                    match gamestate.player() {
+                        Disc::W => ("p1", "p2"),
+                        Disc::B => ("p2", "p1"),
+                    }; 
 
-            return;
+                match result {
+                    GameResult::Draw => println!("draw"),
+                    GameResult::Win => println!("{}",side),
+                    GameResult::Lose => println!("{}",other)
+                }
+
+                return;
+            } else {
+                println!("none");
+            }
+        } else if arg.starts_with("mcts") {
+            let s = arg.split(':').last().expect("no time for mcts");
+            let ms = u32::from_str_radix(s,10).expect("mcts time not an integer");
+            let ns = 1000_000 * ms;
+
+            let mut mcts = MCTS::new(gamestate);
+            let duration = std::time::Duration::new(0, ns);
+            let start = Instant::now();
+            let mut count = 0;
+
+            while (Instant::now() - start) < duration {
+                mcts.ponder(1);
+                count += 1;
+            }
+            eprintln!("rust iterations {}",count);
+
+            match mcts.best().expect("Should find a best action") {
+                Move::Capture(u) => {
+                    let mut i = 0;
+                    let mut action_index = 0;
+
+                    gamestate.actions(&mut |a|{
+                        match a {
+                            Move::Pass => {},
+                            Move::Capture(_u) => {
+                                if _u == u {
+                                    action_index = i;
+                                }
+                                i += 1;
+                            }
+                        }
+                    });
+                    println!("{}",action_index);
+                },
+                Move::Pass => println!("0"),
+            }
+        } else if let Ok(u) = u64::from_str_radix(arg.as_str().trim(),10) {
+            if let Some(_) = gamestate.gameover() {
+                panic!("error - game over");
+            } else {
+                let mut action = Move::Pass;
+                let mut i = 0;
+                gamestate.actions(&mut |a|{
+                    match a {
+                        Move::Pass => {},
+                        Move::Capture(_) => {
+                            if i == u {
+                                action = a;
+                            }
+                            i += 1;
+                        }
+                    }
+                });
+                gamestate = gamestate.make(action);
+            }
+        } else {
+            panic!("invalid arg {}", arg);
         }
     }
-
-    let mut mcts = MCTS::new(gamestate);
-    let duration = std::time::Duration::new(1, 0);
-    let start = Instant::now();
-
-    while (Instant::now() - start) < duration {
-        mcts.ponder(100);
-    }
-    
-    let action = mcts.best().expect("Should find a best action");
-
-    // println!("{:?}",mcts.info);
-    match action {
-        Move::Capture(u) => println!("{:o}",u),
-        Move::Pass => println!("pass"),
-    }
-    // println!("{:?}",action);
 }

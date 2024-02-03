@@ -4,3 +4,4 @@
 *.DS_Store
 c/a.out
 c/a.out.dSYM/*
+c/xcode/*

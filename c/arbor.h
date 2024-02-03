@@ -137,6 +137,17 @@ typedef int (*Arbor_Side)(Arbor_Game game);
 typedef int (*Arbor_Eval)(Arbor_Game game);
 
 /*------------------------------------------------------------------------------
+ * @fnptr Arbor_Show
+ *
+ * @brief emit a representation of the game to stdout.
+ *
+ * @param [in]  game  The game state.
+ * 
+ * @return None.
+ *----------------------------------------------------------------------------*/
+typedef void (*Arbor_Show)(Arbor_Game game);
+
+/*------------------------------------------------------------------------------
  * Lib functions
  *----------------------------------------------------------------------------*/
 
@@ -148,6 +159,7 @@ typedef struct Arbor_Game_Interface_t
     Arbor_Actions   actions;
     Arbor_Side      side;
     Arbor_Eval      eval;
+    Arbor_Show      show;
 } Arbor_Game_Interface;
 
 typedef struct Arbor_Search_Config_t

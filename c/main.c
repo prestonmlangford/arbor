@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <errno.h>
 #include "arbor.h"
 #include "random.h"
 #include "profile.h"
@@ -177,16 +178,8 @@ void rps(void)
     dice_delete(game);
 }
 
-int reversi_ai(Arbor_Game game, int ms)
+int mcts(Arbor_Game game, Arbor_Game_Interface* ifc, int ms)
 {
-    Arbor_Game_Interface ifc = {
-        .actions = reversi_actions,
-        .copy = reversi_copy,
-        .delete = reversi_delete,
-        .make = reversi_make,
-        .eval = reversi_eval,
-        .side = reversi_side
-    };
     Arbor_Search_Config cfg = {
         .expansion = 10,
         .exploration = 2.0,
@@ -194,8 +187,9 @@ int reversi_ai(Arbor_Game game, int ms)
         .eval_policy = ARBOR_EVAL_ROLLOUT
     };
 
-    Arbor_Search search = arbor_search_new(&cfg, &ifc);
+    Arbor_Search search = arbor_search_new(&cfg, ifc);
     clock_t now, future;
+    int count = 0;
     int action = 0;
 
     now = clock();
@@ -205,8 +199,10 @@ int reversi_ai(Arbor_Game game, int ms)
     {
         arbor_search_ponder(search);
         now = clock();
+        count++;
     }
 
+    fprintf(stderr, "c iterations %d\n", count);
     action = arbor_search_best(search);
 
     arbor_search_delete(search);
@@ -214,68 +210,111 @@ int reversi_ai(Arbor_Game game, int ms)
     return action;
 }
 
-int reversi_cli(Arbor_Game game)
+int cli(Arbor_Game game, Arbor_Game_Interface* ifc, int argc, char* argv[])
 {
-    int xy;
+    int i, ms, result, action, side;
 
-    printf(">> ");
-    scanf("%o",&xy);
-    printf("\n");
-
-    return reversi_convert_xy(game, xy);
-}
-
-void reversi_manual(void)
-{
-    Arbor_Game game = reversi_new();
-
-    for (;;)
+    for (i = 1; i < argc; i++)
     {
-        int action, side;
+        const char* arg = argv[i];
 
-        reversi_show(game);
-        side = reversi_side(game);
+        side = ifc->side(game);
 
-        if (side == ARBOR_NONE)
+        if (strcmp(arg, "show") == 0)
         {
-            break;
+            ifc->show(game);
+        }
+        else if (sscanf(arg,"mcts:%d",&ms) == 1)
+        {
+            if (side == ARBOR_NONE)
+            {
+                fprintf(stderr, "error - game over\n");
+                return -1;
+            }
+            else
+            {
+                action = mcts(game, ifc, ms);
+                printf("%d\n", action);
+            }
+        }
+        else if (strcmp(arg, "side") == 0)
+        {
+            if (side == ARBOR_P1)
+            {
+                printf("p1\n");
+            }
+            else if (side == ARBOR_P2)
+            {
+                printf("p2\n");
+            }
+            else
+            {
+                printf("none\n");
+            }
+        }
+        else if (strcmp(arg, "result") == 0)
+        {
+            if (side == ARBOR_NONE)
+            {
+                printf("none\n");
+            }
+            else
+            {
+                result = ifc->eval(game);
+
+                if (result == ARBOR_P1)
+                {
+                    printf("p1\n");
+                }
+                else if (result == ARBOR_P2)
+                {
+                    printf("p2\n");
+                }
+                else
+                {
+                    printf("draw\n");
+                }
+            }
+        }
+        else if (sscanf(arg, "%d", &action) == 1)
+        {
+            if (side == ARBOR_NONE)
+            {
+                fprintf(stderr, "error - game over\n");
+                return -1;
+            }
+            else
+            {
+                ifc->make(game, action);
+            }
         }
         else
         {
-            action = reversi_cli(game);
+            fprintf(stderr, "error - arg %d -> %s\n", i, arg);
+            return -1;
         }
-
-        reversi_make(game, action);
     }
+
+    return 0;
 }
 
-void reversi_match(void)
+int reversi_cli(int argc, char* argv[])
 {
+    Arbor_Game_Interface ifc = {
+        .actions = reversi_actions,
+        .copy = reversi_copy,
+        .delete = reversi_delete,
+        .make = reversi_make,
+        .eval = reversi_eval,
+        .side = reversi_side,
+        .show = reversi_show
+    };
     Arbor_Game game = reversi_new();
+    int result = cli(game, &ifc, argc, argv);
 
-    for (;;)
-    {
-        int action, side;
+    reversi_delete(game);
 
-        reversi_show(game);
-        side = reversi_side(game);
-
-        if (side == ARBOR_P1)
-        {
-            action = reversi_cli(game);
-        }
-        else if (side == ARBOR_P2)
-        {
-            action = reversi_ai(game, 500);
-        }
-        else
-        {
-            break;
-        }
-
-        reversi_make(game, action);
-
-    }
+    return result;
 }
 
 int main (int argc, char* argv[])
@@ -283,68 +322,8 @@ int main (int argc, char* argv[])
     // profile(bad_battleship);
     // profile(dice);
     // profile(rps);
-
-    int i, xy, action, side;
-    Arbor_Game game = reversi_new();
-
     // reversi_match();
     // reversi_manual();
-
-    for (i = 1; i < argc; i++)
-    {
-        const char* arg = argv[i];
-        // printf("%s\n",arg);
-
-        if (strcmp(arg, "show") == 0)
-        {
-            reversi_show(game);
-            return 0;
-        }
-        else if (strcmp(arg, "pass") == 0)
-        {
-            action = 0;
-        }
-        else
-        {
-            sscanf(arg, "%o",&xy);
-            action = reversi_convert_xy(game, xy);
-        }
-
-        reversi_make(game, action);
-        side = reversi_side(game);
-
-        if (side == ARBOR_NONE)
-        {
-            int result = reversi_eval(game);
-
-            if (result == ARBOR_P1)
-            {
-                printf("white\n");
-            }
-            else if (result == ARBOR_P2)
-            {
-                printf("black\n");
-            }
-            else
-            {
-                printf("draw\n");
-            }
-
-            return 0;
-        }
-    }
-
-    action = reversi_ai(game, 1000);
-    xy = reversi_convert_action(game, action);
-
-    if (xy >= 0)
-    {
-        printf("%02o\n", xy);
-    }
-    else
-    {
-        printf("pass\n");
-    }
-
-    return 0;
+    // return 0;
+    return reversi_cli(argc, argv);
 }
