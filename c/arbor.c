@@ -139,12 +139,12 @@ static int arbor_branch(Search* search, Node* node)
             if (node->side == child->side)
             {
                 double wins = (double) child->wins;
-                exploitation = wins / visits;
+                exploitation = 0.5 * wins / visits;
             }
             else
             {
                 double losses = (double) child->losses;
-                exploitation = losses / visits;
+                exploitation = 0.5 * losses / visits;
             }
 
             uct = exploitation + exploration;
@@ -201,14 +201,16 @@ static int arbor_go(Search* search, Node* node)
     if (result == ARBOR_DRAW)
     {
         /* do nothing */
+        node->wins += 1;
+        node->losses += 1;
     }
     else if (result == node->side)
     {
-        node->wins += 1;
+        node->wins += 2;
     }
     else
     {
-        node->losses += 1;
+        node->losses += 2;
     }
 
     node->visits += 1;
@@ -274,12 +276,12 @@ int arbor_search_best(Arbor_Search search)
         if (root->side == child->side)
         {
             double wins = (double) child->wins;
-            score = wins/visits;
+            score = 0.5 * wins/visits;
         }
         else
         {
             double losses = (double) child->losses;
-            score = losses/visits;
+            score = 0.5 * losses/visits;
         }
 
         if (best_score < score)

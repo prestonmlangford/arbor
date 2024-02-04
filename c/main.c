@@ -178,7 +178,7 @@ void rps(void)
     dice_delete(game);
 }
 
-int mcts(Arbor_Game game, Arbor_Game_Interface* ifc, int ms)
+int timed_ai(Arbor_Game game, Arbor_Game_Interface* ifc, int ms)
 {
     Arbor_Search_Config cfg = {
         .expansion = 10,
@@ -209,10 +209,36 @@ int mcts(Arbor_Game game, Arbor_Game_Interface* ifc, int ms)
 
     return action;
 }
+int bounded_ai(Arbor_Game game, Arbor_Game_Interface* ifc, int iter)
+{
+    Arbor_Search_Config cfg = {
+        .expansion = 10,
+        .exploration = 2.0,
+        .init = game,
+        .eval_policy = ARBOR_EVAL_ROLLOUT
+    };
+
+    Arbor_Search search = arbor_search_new(&cfg, ifc);
+    int count = 0;
+    int action = 0;
+
+    while (count < iter)
+    {
+        arbor_search_ponder(search);
+        count++;
+    }
+
+    fprintf(stderr, "c iterations %d\n", count);
+    action = arbor_search_best(search);
+
+    arbor_search_delete(search);
+
+    return action;
+}
 
 int cli(Arbor_Game game, Arbor_Game_Interface* ifc, int argc, char* argv[])
 {
-    int i, ms, result, action, side;
+    int i, ms, iter, result, action, side;
 
     for (i = 1; i < argc; i++)
     {
@@ -224,7 +250,7 @@ int cli(Arbor_Game game, Arbor_Game_Interface* ifc, int argc, char* argv[])
         {
             ifc->show(game);
         }
-        else if (sscanf(arg,"mcts:%d",&ms) == 1)
+        else if (sscanf(arg,"mcts:time:%d",&ms) == 1)
         {
             if (side == ARBOR_NONE)
             {
@@ -233,7 +259,20 @@ int cli(Arbor_Game game, Arbor_Game_Interface* ifc, int argc, char* argv[])
             }
             else
             {
-                action = mcts(game, ifc, ms);
+                action = timed_ai(game, ifc, ms);
+                printf("%d\n", action);
+            }
+        }
+        else if (sscanf(arg,"mcts:iter:%d",&iter) == 1)
+        {
+            if (side == ARBOR_NONE)
+            {
+                fprintf(stderr, "error - game over\n");
+                return -1;
+            }
+            else
+            {
+                action = bounded_ai(game, ifc, iter);
                 printf("%d\n", action);
             }
         }
@@ -260,10 +299,6 @@ int cli(Arbor_Game game, Arbor_Game_Interface* ifc, int argc, char* argv[])
         {
             if (side == ARBOR_NONE)
             {
-                printf("none\n");
-            }
-            else
-            {
                 result = ifc->eval(game);
 
                 if (result == ARBOR_P1)
@@ -278,6 +313,10 @@ int cli(Arbor_Game game, Arbor_Game_Interface* ifc, int argc, char* argv[])
                 {
                     printf("draw\n");
                 }
+            }
+            else
+            {
+                printf("none\n");
             }
         }
         else if (sscanf(arg, "%d", &action) == 1)

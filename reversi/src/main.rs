@@ -106,7 +106,7 @@ fn main() {
             } else {
                 println!("none");
             }
-        } else if arg.starts_with("mcts") {
+        } else if arg.starts_with("mcts:time") {
             let s = arg.split(':').last().expect("no time for mcts");
             let ms = u32::from_str_radix(s,10).expect("mcts time not an integer");
             let ns = 1000_000 * ms;
@@ -121,6 +121,38 @@ fn main() {
                 count += 1;
             }
             eprintln!("rust iterations {}",count);
+
+            match mcts.best().expect("Should find a best action") {
+                Move::Capture(u) => {
+                    let mut i = 0;
+                    let mut action_index = 0;
+
+                    gamestate.actions(&mut |a|{
+                        match a {
+                            Move::Pass => {},
+                            Move::Capture(_u) => {
+                                if _u == u {
+                                    action_index = i;
+                                }
+                                i += 1;
+                            }
+                        }
+                    });
+                    println!("{}",action_index);
+                },
+                Move::Pass => println!("0"),
+            }
+        } else if arg.starts_with("mcts:iter") {
+            let s = arg.split(':').last().expect("no iterations for mcts");
+            let iter = u32::from_str_radix(s,10).expect("mcts iterations not an integer");
+
+            let mut mcts = MCTS::new(gamestate);
+            let mut count = 0;
+
+            while count < iter{
+                mcts.ponder(1);
+                count += 1;
+            }
 
             match mcts.best().expect("Should find a best action") {
                 Move::Capture(u) => {
