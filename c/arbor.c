@@ -102,15 +102,15 @@ static Node* arbor_new_node(Search* search, Arbor_Game game, int action)
     return node;
 }
 
-static int arbor_branch(Search* search, Node* node)
+static int arbor_branch(Search* search, Node* parent)
 {
-    Node** list = &(node->child);
+    Node** list = &(parent->child);
     Node* best = *list;
-    double logN = log(node->visits);
+    double logN = log(parent->visits);
     double best_uct = 0.0;
     int i = 0;
 
-    for (i = 0; i < node->actions; i++)
+    for (i = 0; i < parent->actions; i++)
     {
         Node* child = *list;
 
@@ -124,9 +124,12 @@ static int arbor_branch(Search* search, Node* node)
 
             return arbor_go(search, child);
         }
-        else if (child->result == node->side)
+        else if (child->side == ARBOR_NONE) // terminal condition
         {
-            return child->result;
+            if (parent->side == child->result)
+            {
+                return child->result;
+            }
         }
         else
         {
@@ -136,7 +139,7 @@ static int arbor_branch(Search* search, Node* node)
             double uct = 0.0;
             double exploitation = 0.0;
 
-            if (node->side == child->side)
+            if (parent->side == child->side)
             {
                 double wins = (double) child->wins;
                 exploitation = 0.5 * wins / visits;
@@ -188,7 +191,7 @@ static int arbor_go(Search* search, Node* node)
     {
         result = node->result;
     }
-    else if (node->visits >= search->cfg.expansion)
+    else if (node->visits > search->cfg.expansion)
     {
         result = arbor_branch(search, node);
     }

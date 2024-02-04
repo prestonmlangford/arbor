@@ -209,10 +209,11 @@ int timed_ai(Arbor_Game game, Arbor_Game_Interface* ifc, int ms)
 
     return action;
 }
+
 int bounded_ai(Arbor_Game game, Arbor_Game_Interface* ifc, int iter)
 {
     Arbor_Search_Config cfg = {
-        .expansion = 10,
+        .expansion = 0,
         .exploration = 2.0,
         .init = game,
         .eval_policy = ARBOR_EVAL_ROLLOUT
@@ -228,7 +229,7 @@ int bounded_ai(Arbor_Game game, Arbor_Game_Interface* ifc, int iter)
         count++;
     }
 
-    fprintf(stderr, "c iterations %d\n", count);
+    // fprintf(stderr, "c iterations %d\n", count);
     action = arbor_search_best(search);
 
     arbor_search_delete(search);
