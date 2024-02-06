@@ -181,7 +181,7 @@ void rps(void)
 int timed_ai(Arbor_Game game, Arbor_Game_Interface* ifc, int ms)
 {
     Arbor_Search_Config cfg = {
-        .expansion = 10,
+        .expansion = 0,
         .exploration = 2.0,
         .init = game,
         .eval_policy = ARBOR_EVAL_ROLLOUT

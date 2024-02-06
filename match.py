@@ -16,7 +16,7 @@ def show(game):
 def choose(game, player):
     path = player["path"]
     time = player["time"]
-    return run(path, game, f"mcts:iter:{time}")
+    return run(path, game, f"mcts:time:{time}")
 
 def side(game):
     return run(AI_C, game, "side")
@@ -63,7 +63,7 @@ def play_match(game,p1,p2):
     else:
         winner = "draw"
     
-    # print(winner)
+    print(winner)
 
     return winner
 
@@ -112,14 +112,22 @@ if __name__ == '__main__':
     p1 = {
         "name" : "andy",
         "path" : AI_R,
-        "time" : 100000
+        "time" : 1000
     }
 
     p2 = {
         "name" : "fred",
         "path" : AI_C,
-        "time" : 100000
+        "time" : 1000
     }
+
+    # results: with fred expansion 10, andy expansion 0
+    # fred 74
+    # andy 109
+
+    # results: with fred expansion 0, andy expansion 0
+    # fred 88
+    # andy 92
 
     andy = 0
     fred = 0
