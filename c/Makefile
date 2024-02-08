@@ -1,3 +1,9 @@
+ifdef cfg
+include cfg/$(cfg).mk
+else
+include cfg/release.mk
+endif
+
 SHELL 			:= bash
 CC 				:= clang
 
@@ -6,6 +12,8 @@ OUT 			:= arbor-cli
 ROOT 			:= $(PWD)
 SRC 			:= $(ROOT)/src
 BLD 			:= $(ROOT)/build
+BIN				:= $(BLD)/$(CFG)/bin
+OBJ 			:= $(BLD)/$(CFG)/obj
 
 ARBOR 			:= $(SRC)/arbor
 UTIL 			:= $(SRC)/util
@@ -16,14 +24,6 @@ REVERSI 		:= $(GAMES)/reversi
 BAD_BATTLESHIP 	:= $(GAMES)/bad_battleship
 DICE 			:= $(GAMES)/dice
 RPS 			:= $(GAMES)/rps
-
-CFLAGS			:=
-
-ifdef cfg
-include cfg/$(cfg).mk
-else
-include cfg/release.mk
-endif
 
 # removes duplicates in a list
 set=$(if $1,$(firstword $1) $(call set,$(filter-out $(firstword $1),$1)))
@@ -36,17 +36,28 @@ rwildcard=$(foreach d,$(wildcard $(1:=/*)),$(call rwildcard,$d,$2) $(filter $(su
 objs=$(subst $(SRC),$1,$(patsubst %.c,%.o,$(wildcard $2/*.c)))
 
 # takes a list of directories and returns all corresponding object files
-modules=$(foreach dir,$1,$(call objs,$(BLD)/$(CFG),$(dir)))
+modules=$(foreach dir,$1,$(call objs,$(OBJ),$(dir)))
 
 # a list of all subdirectories in SRC so the compiler has access to all header files
 INC := $(addprefix -I,$(call set,$(dir $(call rwildcard,$(SRC),*.h))))
 
 ALL := $(ARBOR) $(UTIL) $(CLI) $(REVERSI) $(BAD_BATTLESHIP) $(DICE) $(RPS)
 
-$(OUT): $(call modules,$(ALL))
-	@$(CC) -o $(BLD)/$(CFG)/$(OUT) $+
+link-objects = mkdir -p $(BIN); $(CC) -o $(BIN)/$@ $+
 
-$(BLD)/$(CFG)/%.o: $(SRC)/%.c
+dice: $(call modules,$(ARBOR) $(DICE) $(UTIL))
+	@$(link-objects)
+
+rps: $(call modules,$(ARBOR) $(RPS) $(UTIL))
+	@$(link-objects)
+
+bad_battleship: $(call modules,$(ARBOR) $(BAD_BATTLESHIP) $(UTIL))
+	@$(link-objects)
+
+reversi: $(call modules,$(ARBOR) $(CLI) $(REVERSI) $(UTIL))
+	@$(link-objects)
+
+$(OBJ)/%.o: $(SRC)/%.c
 	@mkdir -p $(dir $@)
 	@$(CC) $(INC) -c -o $@ $< $(CFLAGS)
 
