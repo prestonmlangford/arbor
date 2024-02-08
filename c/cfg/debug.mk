@@ -1,0 +1,2 @@
+CFG := debug
+CFLAGS += -g

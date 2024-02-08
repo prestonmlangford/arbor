@@ -229,7 +229,6 @@ Arbor_Search arbor_search_new(Arbor_Search_Config* cfg,
 {
     Arbor_Search result = {};
     Search* search = ARBOR_MALLOC(sizeof(Search));
-    Node* root = ARBOR_MALLOC(sizeof(Node));
 
     search->cfg = *cfg;
     search->ifc = *ifc;

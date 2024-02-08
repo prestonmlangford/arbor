@@ -19,6 +19,7 @@ inline static uint32_t xorshift(uint32_t u)
     return u;
 }
 
+#ifdef USE_REJECTION_SAMPLING
 inline static uint32_t nextpow2(uint32_t u)
 {
     u |= u >> 1;
@@ -29,6 +30,7 @@ inline static uint32_t nextpow2(uint32_t u)
 
     return u;
 }
+#endif
 
 void rand_seed(int seed)
 {
