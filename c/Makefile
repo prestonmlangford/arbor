@@ -1,13 +1,8 @@
 ifdef cfg
 include cfg/$(cfg).mk
 else
-include cfg/release.mk
+$(error no cfg specified)
 endif
-
-SHELL 			:= bash
-CC 				:= clang
-
-OUT 			:= arbor-cli
 
 ROOT 			:= $(PWD)
 SRC 			:= $(ROOT)/src
@@ -43,7 +38,7 @@ INC := $(addprefix -I,$(call set,$(dir $(call rwildcard,$(SRC),*.h))))
 
 ALL := $(ARBOR) $(UTIL) $(CLI) $(REVERSI) $(BAD_BATTLESHIP) $(DICE) $(RPS)
 
-link-objects = mkdir -p $(BIN); $(CC) -o $(BIN)/$@ $+
+link-objects = mkdir -p $(BIN); $(CC) -o $(BIN)/$@ $+ $(LDFLAGS)
 
 dice: $(call modules,$(ARBOR) $(DICE) $(UTIL))
 	@$(link-objects)
