@@ -5,6 +5,25 @@
 #include "random.h"
 #include "profile.h"
 
+static int rollout(Arbor_Game game, Arbor_Game_Interface* ifc)
+{
+    Arbor_Game sim = ifc->copy(game);
+    int result = ARBOR_NONE;
+
+    while (ifc->side(sim) != ARBOR_NONE)
+    {
+        int count = ifc->actions(sim);
+        int action = rand_bound(count);
+
+        ifc->make(sim, action);
+    }
+
+    result = ifc->eval(sim);
+    ifc->delete(sim);
+
+    return result;
+}
+
 static int timed_ai(Arbor_Game game, Arbor_Game_Interface* ifc, int ms)
 {
     Arbor_Search_Config cfg = {
@@ -78,7 +97,7 @@ int cli(Arbor_Game game, Arbor_Game_Interface* ifc, int argc, char* argv[])
         {
             ifc->show(game);
         }
-        else if (sscanf(arg,"mcts:time:%d",&ms) == 1)
+                else if (sscanf(arg,"mcts:time:%d",&ms) == 1)
         {
             if (side == ARBOR_NONE)
             {
@@ -102,6 +121,37 @@ int cli(Arbor_Game game, Arbor_Game_Interface* ifc, int argc, char* argv[])
             {
                 action = bounded_ai(game, ifc, iter);
                 printf("%d\n", action);
+            }
+        }
+        else if (sscanf(arg,"rollout:%d",&iter) == 1)
+        {
+            if (side == ARBOR_NONE)
+            {
+                fprintf(stderr, "error - game over\n");
+                return -1;
+            }
+            else
+            {
+                int p1 = 0;
+                int p2 = 0;
+
+                rand_seed_realtime();
+
+                while (iter > 0)
+                {
+                    result = rollout(game, ifc);
+                    if (result == ARBOR_P1)
+                    {
+                        p1++;
+                    }
+                    else if (result == ARBOR_P2)
+                    {
+                        p2++;
+                    }
+                    iter--;
+                }
+
+                printf("%d,%d\n", p1, p2);
             }
         }
         else if (strcmp(arg, "side") == 0)
