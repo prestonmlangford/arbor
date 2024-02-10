@@ -1,87 +1,22 @@
-import random
 import multiprocessing
-from bindings import *
-
-AI_C = 'c/a.out'
-AI_R = 'target/release/reversi'
-
-def run(bin,game,cmd):
-    result = subprocess.run([bin] + game + [cmd], capture_output=True)
-    # print(result.stderr.decode('utf-8'))
-    return result.stdout.decode('utf-8').strip()
-
-def show(game):
-    return run(AI_C, game, "show")
-
-def choose(game, player):
-    path = player["path"]
-    time = player["time"]
-    return run(path, game, f"mcts:time:{time}")
-
-def side(game):
-    return run(AI_C, game, "side")
-
-def actions(game):
-    return run(AI_C, game, "actions")
-
-def outcome(game):
-    return run(AI_C, game, "result")
-
-def random_start(depth):
-    game = []
-    for _ in range(depth):
-        count = actions(game)
-        a = random.randint(0, int(count) - 1)
-        game.append(str(a))
-
-    # try again if it gets a game over
-    if side(game) == "none":
-        return random_start(depth)
-    else:
-        return game
-
-def play_match(game,p1,p2):
-    while True:
-        # print(show(game) + '\n')
-
-        if side(game) == "p1":
-            p = p1
-        elif side(game) == "p2":
-            p = p2
-        else:
-            break
-
-        game.append(choose(game,p))
-        # print(".",end='', flush=True)
-
-    result = outcome(game)
-    
-    if result == "p1":
-        winner = p1["name"]
-    elif result == "p2":
-        winner = p2["name"]
-    else:
-        winner = "draw"
-    
-    print(winner)
-
-    return winner
+from game import Game
 
 def pair_match(info):
-    p1,p2,start = info
+    p1,p2,depth = info
 
-    game = random_start(start)
-    round_1 = play_match(game, p1, p2)
+    game = Game(p1,p2)
 
-    game = game[:start]
-    round_2 = play_match(game, p2, p1)
+    game.random_start(depth)
+    round_1 = game.play_match()
+
+    game.revert(depth)
+    round_2 = game.play_match()
 
     return round_1, round_2
 
 def tournament(p1,p2,start,rounds):
     for _ in range(rounds):
-        result = pair_match((p1,p2,start))
-        print(result)
+        yield pair_match((p1,p2,start))
 
 def mp_tournament(p1,p2,start,rounds):
     match_info = [(p1,p2,start)]*rounds
@@ -109,15 +44,15 @@ def mp_tournament(p1,p2,start,rounds):
 # 16 20301186039128
 
 if __name__ == '__main__':
-    p1 = {
+    p2 = {
         "name" : "andy",
-        "path" : AI_R,
+        "path" : "target/release/reversi",
         "time" : 1000
     }
 
-    p2 = {
+    p1 = {
         "name" : "fred",
-        "path" : AI_C,
+        "path" : "c/build/release/bin/reversi",
         "time" : 1000
     }
 
@@ -131,7 +66,7 @@ if __name__ == '__main__':
 
     andy = 0
     fred = 0
-    for result in mp_tournament(p1,p2,5,100):
+    for result in mp_tournament(p1,p2,5,2):
         p1, p2 = result
         if p1 == "andy":
             andy += 1
