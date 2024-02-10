@@ -9,16 +9,23 @@ BACKEND = {"path" : "c/build/release/bin/reversi"}
 
 
 def worker(depth):
-    pid = os.getpid()
     game = Game(BACKEND,BACKEND)
     game.random_start(depth)
     result = game.rollout(ITERATIONS)
-    print(f"{pid} rollout depth {depth} -> {game.dump()} ({result})")
-    # sleep(0.333*(MAX_GAME_LEN - depth)/MAX_GAME_LEN)
+    return f"{game.dump()} -> ({result})\n"
 
 if __name__ == '__main__':
-    
-
     with Pool() as pool:
-        for i in range(200):
-            pool.map(worker,range(MAX_GAME_LEN))
+        batch = 1
+        while True:
+            with open("summary.log",'w') as f:
+                f.write(f"cpu count: {os.cpu_count()}\n")
+                f.write(f"batch: {batch}\n")
+
+            results = pool.map(worker,range(MAX_GAME_LEN))
+
+            with open("rollout.log",'a') as f:
+                for result in results:
+                    f.write(result)
+            
+            batch += 1
