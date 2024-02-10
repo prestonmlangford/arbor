@@ -1,6 +1,6 @@
-import subprocess
 import random
 import multiprocessing
+from bindings import *
 
 AI_C = 'c/a.out'
 AI_R = 'target/release/reversi'
