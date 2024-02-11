@@ -1,8 +1,25 @@
+PRESET := cfg/preset.cfg
+CFGS := $(notdir $(basename $(wildcard cfg/*.mk)))
+
+config-list: 
+	@$(info config options:)
+	@$(foreach c, $(CFGS), $(info  $c))
+	@:
+
+config:
+	@echo $(preset) > $(PRESET)
+
 ifdef cfg
-include cfg/$(cfg).mk
+CFG = $(cfg)
 else
-$(error no cfg specified)
+CFG := $(shell test -e $(PRESET) && cat $(PRESET))
 endif
+
+ifeq ($(filter $(CFG),$(CFGS)),)
+# $(warning No configuration specified)
+else
+
+include cfg/$(CFG).mk
 
 ROOT 			:= $(PWD)
 SRC 			:= $(ROOT)/src
@@ -60,3 +77,5 @@ clean:
 	@rm -rf $(BLD)
 
 .PHONY: all clean
+
+endif # CFG in CFGS
