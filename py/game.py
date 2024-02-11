@@ -1,8 +1,10 @@
 import subprocess
 import random
 
+BACKEND = {"path" : "c/build/osx/bin/reversi"}
+
 class Game:
-    def __init__(self,p1,p2) -> None:
+    def __init__(self,p1=BACKEND,p2=BACKEND) -> None:
         self.p1 = p1
         self.p2 = p2
         self.history = []
