@@ -63,8 +63,12 @@ def mp_worker(item):
 
 def mp_features(data):
     with Pool() as pool:
+        it = pool.imap_unordered(mp_worker, data)
+
         # tqdm will display a progress bar while this work is being done
-        return unzip(tqdm(pool.imap_unordered(mp_worker, data), total=len(data)))
+        result = tqdm(it, total=len(data))
+
+        return unzip(result)
 
 def train(x,y):
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.30, random_state=1)
