@@ -1,5 +1,5 @@
 from time import sleep
-from multiprocessing import Pool, Queue
+from multiprocessing import Pool
 from game import Game
 import os
 
