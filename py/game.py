@@ -24,6 +24,9 @@ class Game:
     def show(self):
         return self.run("show")
 
+    def vector(self):
+        return self.run("vector")
+
     def choose(self, player):
         time = player["time"]
         return self.run(f"mcts:time:{time}", player)
