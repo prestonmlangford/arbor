@@ -1,4 +1,5 @@
 from multiprocessing import Pool
+import sys
 import math
 import re
 from tqdm import tqdm
@@ -78,6 +79,6 @@ def train(x,y):
     print(reg.coef_)
 
 if __name__ == '__main__':
-    dataset = get_data("data/set20.log")
+    dataset = get_data(sys.argv[1])
     x_data, y_data = mp_features(dataset)
     train(x_data,y_data)
