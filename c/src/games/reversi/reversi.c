@@ -263,7 +263,6 @@ inline static uint64_t make_capture(uint64_t f, uint64_t e, uint64_t c)
 inline static uint64_t mobility(uint64_t f, uint64_t e)
 {
     uint64_t u = 0;
-    uint64_t a = ~(f | e);
 
     u |= NORTH(e);
     u |= SOUTH(e);
@@ -484,33 +483,36 @@ void reversi_show(Arbor_Game game)
     printf("%s\n",colnum);
 }
 
-void reversi_heuristics(Arbor_Game game)
+#define PARITY(f,e)\
+({\
+    float _f = (float) popcount(f);\
+    float _e = (float) popcount(e);\
+    0.5*(1.0 + (_f - _e)/(_f + _e + __FLT_EPSILON__));\
+})
+
+void reversi_vector(Arbor_Game game)
 {
     Reversi* rev = game.p;
-    uint64_t bb_features[] = {
-        rev->f,
-        rev->e,
-        rev->a,
-        generate_moves(rev->e, rev->f),
-        mobility(rev->f, rev->e),
-        mobility(rev->e, rev->f),
-        rev->f & Q5,
-        rev->f & Q4,
-        rev->f & Q3,
-        rev->f & Q2,
-        rev->f & Q1,
-        rev->e & Q5,
-        rev->e & Q4,
-        rev->e & Q3,
-        rev->e & Q2,
-        rev->e & Q1,
+
+    float features[] =
+    {
+        PARITY(rev->f, rev->e), 
+        PARITY(rev->a, generate_moves(rev->e, rev->f)),
+        PARITY(mobility(rev->f, rev->e), mobility(rev->e, rev->f)),
+        PARITY(rev->f & Q5, rev->e & Q5),
+        PARITY(rev->f & Q4, rev->e & Q4),
+        PARITY(rev->f & Q3, rev->e & Q3),
+        PARITY(rev->f & Q2, rev->e & Q2),
+        PARITY(rev->f & Q1, rev->e & Q1),
+        PARITY(rev->f & Q0, rev->e & Q0)
     };
-    size_t num_features = sizeof(bb_features)/sizeof(uint64_t);
+    size_t num_features = sizeof(features)/sizeof(float);
+    size_t last_feature = num_features - 1;
     size_t i = 0;
 
     for (i = 0; i < num_features; i++)
     {
-        int f = popcount(bb_features[i]);
-        printf("%d,", f);
+        char sep = (i == last_feature) ? '\n' : ',';
+        printf("%f%c", features[i], sep);
     }
 }

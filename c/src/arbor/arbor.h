@@ -148,6 +148,17 @@ typedef int (*Arbor_Eval)(Arbor_Game game);
 typedef void (*Arbor_Show)(Arbor_Game game);
 
 /*------------------------------------------------------------------------------
+ * @fnptr Arbor_Vector
+ *
+ * @brief emit a vector of features for training.
+ *
+ * @param [in]  game  The game state.
+ * 
+ * @return None.
+ *----------------------------------------------------------------------------*/
+typedef void (*Arbor_Vector)(Arbor_Game game);
+
+/*------------------------------------------------------------------------------
  * Lib functions
  *----------------------------------------------------------------------------*/
 
@@ -160,6 +171,7 @@ typedef struct Arbor_Game_Interface_t
     Arbor_Side      side;
     Arbor_Eval      eval;
     Arbor_Show      show;
+    Arbor_Vector    vector;
 } Arbor_Game_Interface;
 
 typedef struct Arbor_Search_Config_t

@@ -97,7 +97,11 @@ int cli(Arbor_Game game, Arbor_Game_Interface* ifc, int argc, char* argv[])
         {
             ifc->show(game);
         }
-                else if (sscanf(arg,"mcts:time:%d",&ms) == 1)
+        else if (strcmp(arg, "vector") == 0)
+        {
+            ifc->vector(game);
+        }
+        else if (sscanf(arg,"mcts:time:%d",&ms) == 1)
         {
             if (side == ARBOR_NONE)
             {

@@ -6,6 +6,7 @@
 
 Arbor_Game reversi_new(void);
 void reversi_show(Arbor_Game game);
+void reversi_vector(Arbor_Game game);
 Arbor_Game reversi_copy(Arbor_Game game);
 void reversi_delete(Arbor_Game game);
 
