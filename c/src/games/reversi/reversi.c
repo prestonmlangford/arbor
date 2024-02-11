@@ -178,6 +178,13 @@ Q0
     MASK(op(x) & f) & x;\
 })
 
+#define PARITY(f,e)\
+({\
+    float _f = (float) popcount(f);\
+    float _e = (float) popcount(e);\
+    0.5*(1.0 + (_f - _e)/(_f + _e + __FLT_EPSILON__));\
+})
+
 typedef struct Reversi_t
 {
     uint64_t f;
@@ -482,13 +489,6 @@ void reversi_show(Arbor_Game game)
     }
     printf("%s\n",colnum);
 }
-
-#define PARITY(f,e)\
-({\
-    float _f = (float) popcount(f);\
-    float _e = (float) popcount(e);\
-    0.5*(1.0 + (_f - _e)/(_f + _e + __FLT_EPSILON__));\
-})
 
 void reversi_vector(Arbor_Game game)
 {
