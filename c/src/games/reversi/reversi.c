@@ -493,18 +493,19 @@ void reversi_show(Arbor_Game game)
 void reversi_vector(Arbor_Game game)
 {
     Reversi* rev = game.p;
-
+    uint64_t p1 = (rev->side == ARBOR_P1) ? rev->f : rev->e;
+    uint64_t p2 = (rev->side == ARBOR_P2) ? rev->f : rev->e;
     float features[] =
     {
-        PARITY(rev->f, rev->e), 
-        PARITY(rev->a, generate_moves(rev->e, rev->f)),
-        PARITY(mobility(rev->f, rev->e), mobility(rev->e, rev->f)),
-        PARITY(rev->f & Q5, rev->e & Q5),
-        PARITY(rev->f & Q4, rev->e & Q4),
-        PARITY(rev->f & Q3, rev->e & Q3),
-        PARITY(rev->f & Q2, rev->e & Q2),
-        PARITY(rev->f & Q1, rev->e & Q1),
-        PARITY(rev->f & Q0, rev->e & Q0)
+        PARITY(p1, p2), 
+        PARITY(generate_moves(p1, p2), generate_moves(p2, p1)),
+        PARITY(mobility(p1, p2), mobility(p2, p1)),
+        PARITY(p1 & Q5, p2 & Q5),
+        PARITY(p1 & Q4, p2 & Q4),
+        PARITY(p1 & Q3, p2 & Q3),
+        PARITY(p1 & Q2, p2 & Q2),
+        PARITY(p1 & Q1, p2 & Q1),
+        PARITY(p1 & Q0, p2 & Q0)
     };
     size_t num_features = sizeof(features)/sizeof(float);
     size_t last_feature = num_features - 1;
