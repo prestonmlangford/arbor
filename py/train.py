@@ -1,82 +1,65 @@
-from multiprocessing import Pool
-import sys
-import re
-from tqdm import tqdm
-from game import Game
+import json
+import glob
+import pandas
+import numpy as np
+from pathlib import Path
 from sklearn import linear_model
 from sklearn.model_selection import train_test_split 
 from sklearn import metrics
+import math
 
-def get_data(path):
-    data = []
+def sigmoid(x):
+  return 1 / (1 + math.exp(-x))
 
-    with open(path, 'r') as f:
-        for line in f:
-            m = re.match(r"\[(.*?)\]\s*->\s*\((.*?)\)",line)
+def train(path):
+    df = pandas.read_csv(path, header=None)
+    arr = df.to_numpy()
+    y = arr[:,0]
+    x = arr[:,[1,4,5,6,7,8]]
 
-            if m:
-                data.append((m.group(1),m.group(2)))
-
-            else:
-                print(f"error matching {line}")
-    
-    return data
-
-def unzip(lst):
-    a = []
-    b = []
-    for x,y in lst:
-        a.append(x)
-        b.append(y)
-    return (a,b)
-
-def mp_worker(item):
-    history, results = item
-    actions = history.split(',')
-    p1, p2 = results.split(',')
-
-    p1 = int(p1)
-    p2 = int(p2)
-
-    game = Game()
-    for action in actions:
-        game.make(action)
-
-    if game.side() == "p1":
-        y = p1 > p2
-    else:
-        y = p2 > p1
-
-    x = [float(v) for v in game.vector().split(',')]
-
-    return (x, y)
-
-def mp_features(data):
-    with Pool() as pool:
-        it = pool.imap_unordered(mp_worker, data)
-
-        # tqdm will display a progress bar while this work is being done
-        result = tqdm(it, total=len(data))
-
-        return unzip(result)
-
-def train(x,y):
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.30, random_state=1)
     reg = linear_model.LogisticRegression()
     reg.fit(x_train, y_train)
+    
     y_pred = reg.predict(x_test)
-    f1 = metrics.f1_score(y_test, y_pred)
-
     count = 0
     for pred,test in zip(y_pred,y_test):
         if pred == test:
             count += 1
+    print(metrics.f1_score(y_test, y_pred))
+    print(count/len(y_test))
+    
+    # count = 0
+    # w = reg.coef_
+    # for x,y in zip(x_test,y_test):
+    #     t = np.dot(w,x) + reg.intercept_
+    #     if (t > 0) == y:
+    #         count += 1
 
-    print(f"f1 = {f1}")
-    print(f"{count/len(y_test)}")
-    print(reg.coef_)
+    # print(count/len(y_test))
+    # print(reg.coef_)
+    print()
+
+    # return {
+    #     "f1_score" : metrics.f1_score(y_test, y_pred),
+    #     "test_accuracy" : count/len(y_test),
+    #     "coefficients" : reg.coef_.tolist(),
+    #     "samples" : len(y)
+    # }
+
+
+def update_file(set,result):
+    with open("data/logistic.json",'r') as f:
+        j = json.load(f)
+    
+    j[set] = result
+
+    with open("data/logistic.json",'w') as f:
+        json.dump(j,f,indent=4)
 
 if __name__ == '__main__':
-    dataset = get_data(sys.argv[1])
-    x_data, y_data = mp_features(dataset)
-    train(x_data,y_data)
+    for s in glob.glob("data/trial_1/*.csv"):
+        path = Path(s)
+        train(path)
+        # print(result)
+        # update_file(path.stem,result)
