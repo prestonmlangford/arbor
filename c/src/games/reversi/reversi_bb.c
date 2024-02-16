@@ -1,8 +1,5 @@
 #include <stdio.h>
 #include "reversi_bb.h"
-#include "reversi_f1.h"
-#include "reversi_f2.h"
-
 
 /*
   ---------------------------------
@@ -194,14 +191,6 @@
     x |= op(x) & f;\
     x;\
 })
-
-#if defined(USE_FEATURE_SET_1)
-#define FEATURE_SET(f,e) FEATURE_SET_1(f,e)
-#elif defined(USE_FEATURE_SET_2)
-#define FEATURE_SET(f,e) FEATURE_SET_2(f,e)
-#else
-#error "No feature set selected"
-#endif
 
 int bb_popcount(bb u)
 {
