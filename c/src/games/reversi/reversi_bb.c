@@ -159,7 +159,8 @@
 #define SOUTHWEST(x) ((x >> 9) & EASTBOUND)
 #define MASK(x) (((x) == UINT64_C(0)) - UINT64_C(1))
 
-#define CHECK(f,e,op)({\
+#define CHECK(f,e,op)\
+({\
     bb x = 0;\
     x |= op(f) & e;\
     x |= op(x) & e;\
@@ -170,7 +171,8 @@
     op(x) & ~(f | e);\
 })
 
-#define CAPTURE(p,f,e,op)({\
+#define CAPTURE(p,f,e,op)\
+({\
     bb x = p;\
     x |= op(x) & e;\
     x |= op(x) & e;\
@@ -181,7 +183,8 @@
     MASK(op(x) & f) & x;\
 })
 
-#define CONTROL(q,f,op)({\
+#define CONTROL(q,f,op)\
+({\
     bb x = q;\
     x |= op(x) & f;\
     x |= op(x) & f;\
