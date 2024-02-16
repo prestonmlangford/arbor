@@ -3,299 +3,33 @@
 #include <assert.h>
 #include "arbor.h"
 #include "reversi.h"
+#include "reversi_bb.h"
 #include "random.h"
-
-/*
-Q5
-  ---------------------------------
-7 | x |   |   |   |   |   |   | x |
-  ---------------------------------
-6 |   |   |   |   |   |   |   |   |
-  ---------------------------------
-5 |   |   |   |   |   |   |   |   |
-  ---------------------------------
-4 |   |   |   |   |   |   |   |   |
-  ---------------------------------
-3 |   |   |   |   |   |   |   |   |
-  ---------------------------------
-2 |   |   |   |   |   |   |   |   |
-  ---------------------------------
-1 |   |   |   |   |   |   |   |   |
-  ---------------------------------
-0 | x |   |   |   |   |   |   | x |
-  ---------------------------------
-    0   1   2   3   4   5   6   7
-*/
-#define Q5 UINT64_C(0x8100000000000081)
-
-/*
-Q4
-  ---------------------------------
-7 |   | x |   |   |   |   | x |   |
-  ---------------------------------
-6 | x |   |   |   |   |   |   | x |
-  ---------------------------------
-5 |   |   |   |   |   |   |   |   |
-  ---------------------------------
-4 |   |   |   |   |   |   |   |   |
-  ---------------------------------
-3 |   |   |   |   |   |   |   |   |
-  ---------------------------------
-2 |   |   |   |   |   |   |   |   |
-  ---------------------------------
-1 | x |   |   |   |   |   |   | x |
-  ---------------------------------
-0 |   | x |   |   |   |   | x |   |
-  ---------------------------------
-    0   1   2   3   4   5   6   7
-*/
-#define Q4 UINT64_C(0x4281000000008142)
-
-/*
-Q3
-  ---------------------------------
-7 |   |   |   |   |   |   |   |   |
-  ---------------------------------
-6 |   | x |   |   |   |   | x |   |
-  ---------------------------------
-5 |   |   |   |   |   |   |   |   |
-  ---------------------------------
-4 |   |   |   |   |   |   |   |   |
-  ---------------------------------
-3 |   |   |   |   |   |   |   |   |
-  ---------------------------------
-2 |   |   |   |   |   |   |   |   |
-  ---------------------------------
-1 |   | x |   |   |   |   | x |   |
-  ---------------------------------
-0 |   |   |   |   |   |   |   |   |
-  ---------------------------------
-    0   1   2   3   4   5   6   7
-*/
-#define Q3 UINT64_C(0x0042000000004200)
-
-/*
-Q2
-  ---------------------------------
-7 |   |   | x | x | x | x |   |   |
-  ---------------------------------
-6 |   |   |   |   |   |   |   |   |
-  ---------------------------------
-5 | x |   |   |   |   |   |   | x |
-  ---------------------------------
-4 | x |   |   |   |   |   |   | x |
-  ---------------------------------
-3 | x |   |   |   |   |   |   | x |
-  ---------------------------------
-2 | x |   |   |   |   |   |   | x |
-  ---------------------------------
-1 |   |   |   |   |   |   |   |   |
-  ---------------------------------
-0 |   |   | x | x | x | x |   |   |
-  ---------------------------------
-    0   1   2   3   4   5   6   7
-*/
-#define Q2 UINT64_C(0x3C8181818181813C)
-
-/*
-Q1
-  ---------------------------------
-7 |   |   |   |   |   |   |   |   |
-  ---------------------------------
-6 |   |   | x | x | x | x |   |   |
-  ---------------------------------
-5 |   | x |   |   |   |   | x |   |
-  ---------------------------------
-4 |   | x |   |   |   |   | x |   |
-  ---------------------------------
-3 |   | x |   |   |   |   | x |   |
-  ---------------------------------
-2 |   | x |   |   |   |   | x |   |
-  ---------------------------------
-1 |   |   | x | x | x | x |   |   |
-  ---------------------------------
-0 |   |   |   |   |   |   |   |   |
-  ---------------------------------
-    0   1   2   3   4   5   6   7
-*/
-#define Q1 UINT64_C(0x003C424242423C00)
-
-/*
-Q0
-  ---------------------------------
-7 |   |   |   |   |   |   |   |   |
-  ---------------------------------
-6 |   |   |   |   |   |   |   |   |
-  ---------------------------------
-5 |   |   | x |   |   | x |   |   |
-  ---------------------------------
-4 |   |   |   | x | x |   |   |   |
-  ---------------------------------
-3 |   |   |   | x | x |   |   |   |
-  ---------------------------------
-2 |   |   | x |   |   | x |   |   |
-  ---------------------------------
-1 |   |   |   |   |   |   |   |   |
-  ---------------------------------
-0 |   |   |   |   |   |   |   |   |
-  ---------------------------------
-    0   1   2   3   4   5   6   7
-*/
-#define Q0 UINT64_C(0x0000241818240000)
-
-#define FULLBOARD UINT64_C(0xFFFFFFFFFFFFFFFF)
-#define EASTBOUND UINT64_C(0x7F7F7F7F7F7F7F7F)
-#define WESTBOUND UINT64_C(0xFEFEFEFEFEFEFEFE)
-#define NORTH(x)     (x << 8)
-#define SOUTH(x)     (x >> 8)
-#define EAST(x)      ((x << 1) & WESTBOUND)
-#define WEST(x)      ((x >> 1) & EASTBOUND)
-#define NORTHEAST(x) ((x << 9) & WESTBOUND)
-#define NORTHWEST(x) ((x << 7) & EASTBOUND)
-#define SOUTHEAST(x) ((x >> 7) & WESTBOUND)
-#define SOUTHWEST(x) ((x >> 9) & EASTBOUND)
-#define MASK(x) (((x) == UINT64_C(0)) - UINT64_C(1))
-
-#define CHECK(f,e,op)({\
-    uint64_t x = 0;\
-    x |= op(f) & e;\
-    x |= op(x) & e;\
-    x |= op(x) & e;\
-    x |= op(x) & e;\
-    x |= op(x) & e;\
-    x |= op(x) & e;\
-    op(x) & ~(f | e);\
-})
-
-#define CAPTURE(p,f,e,op)({\
-    uint64_t x = p;\
-    x |= op(x) & e;\
-    x |= op(x) & e;\
-    x |= op(x) & e;\
-    x |= op(x) & e;\
-    x |= op(x) & e;\
-    x |= op(x) & e;\
-    MASK(op(x) & f) & x;\
-})
-
-#define PARITY(f,e)\
-({\
-    float _f = (float) popcount(f);\
-    float _e = (float) popcount(e);\
-    0.5*(1.0 + (_f - _e)/(_f + _e + __FLT_EPSILON__));\
-})
 
 typedef struct Reversi_t
 {
-    uint64_t f;
-    uint64_t e;
-    uint64_t a;
+    bb f;
+    bb e;
+    bb a;
     int side;
     bool pass;
     int result;
 } Reversi;
 
-inline static int popcount(uint64_t u)
-{
-#if USE_BUILTINS
-    return __builtin_popcountll(u);
-#else
-    int sum = 0;
-
-    while (u > 0)
-    {
-        sum += 1;
-        u &= u - 1;
-    }
-
-    return sum;
-#endif
-}
-
-// 0 1 2 3 4 5 6 7
-// - - W B B - - -
-// 0 0 0 1 0 0 0 0
-// 0 0 0 1 1 0 0 0
-// 0 0 0 1 1 0 0 0
-// 0 0 0 1 1 0 0 0
-// 0 0 0 1 1 0 0 0
-// 0 0 0 1 1 0 0 0
-// 0 0 0 0 0 1 0 0
-
-
-// 0 1 2 3 4 5 6 7
-// W B B B B B B -
-// 0 1 0 0 0 0 0 0
-// 0 1 1 0 0 0 0 0
-// 0 1 1 1 0 0 0 0
-// 0 1 1 1 1 0 0 0
-// 0 1 1 1 1 1 0 0
-// 0 1 1 1 1 1 1 0
-// 0 0 0 0 0 0 0 1
-
-// https://www.gamedev.net/forums/topic/646988-generating-moves-in-reversi/
-
-inline static uint64_t generate_moves(uint64_t f, uint64_t e)
-{
-    uint64_t u = 0;
-
-    u |= CHECK(f,e,NORTH);
-    u |= CHECK(f,e,SOUTH);
-    u |= CHECK(f,e,EAST);
-    u |= CHECK(f,e,WEST);
-    u |= CHECK(f,e,NORTHEAST);
-    u |= CHECK(f,e,NORTHWEST);
-    u |= CHECK(f,e,SOUTHEAST);
-    u |= CHECK(f,e,SOUTHWEST);
-
-    return u;
-}
-
-inline static uint64_t make_capture(uint64_t f, uint64_t e, uint64_t c)
-{
-    uint64_t u = 0;
-
-    u |= CAPTURE(c,f,e,NORTH);
-    u |= CAPTURE(c,f,e,SOUTH);
-    u |= CAPTURE(c,f,e,EAST);
-    u |= CAPTURE(c,f,e,WEST);
-    u |= CAPTURE(c,f,e,NORTHEAST);
-    u |= CAPTURE(c,f,e,NORTHWEST);
-    u |= CAPTURE(c,f,e,SOUTHEAST);
-    u |= CAPTURE(c,f,e,SOUTHWEST);
-
-    return u;
-}
-
-inline static uint64_t mobility(uint64_t f, uint64_t e)
-{
-    uint64_t u = 0;
-
-    u |= NORTH(e);
-    u |= SOUTH(e);
-    u |= EAST(e);
-    u |= WEST(e);
-    u |= NORTHEAST(e);
-    u |= NORTHWEST(e);
-    u |= SOUTHEAST(e);
-    u |= SOUTHWEST(e);
-
-    return u & ~(f | e);
-}
 
 Arbor_Game reversi_new(void)
 {
     Reversi* rev = malloc(sizeof(Reversi));
 
     *rev = (Reversi) {
-        .f = (UINT64_C(1) << 043) | (UINT64_C(1) << 034),
-        .e = (UINT64_C(1) << 033) | (UINT64_C(1) << 044),
+        .f = BB(4,3) | BB(3,4),
+        .e = BB(3,3) | BB(4,4),
         .side = ARBOR_P1,
         .pass = false,
         .result = ARBOR_NONE
     };
 
-    rev->a = generate_moves(rev->f, rev->e);
+    rev->a = bb_generate_moves(rev->f, rev->e);
 
     return (Arbor_Game) {rev};
 }
@@ -303,14 +37,14 @@ Arbor_Game reversi_new(void)
 void reversi_make(Arbor_Game game, int action)
 {
     Reversi* rev = game.p;
-    uint64_t f = rev->f;
-    uint64_t e = rev->e;
-    uint64_t u = rev->a;
+    bb f = rev->f;
+    bb e = rev->e;
+    bb u = rev->a;
     bool gameover = false;
 
     if (u > 0)
     {
-        uint64_t c = 0;
+        bb c = 0;
         int i = 0;
 
         while (i < action)
@@ -320,7 +54,7 @@ void reversi_make(Arbor_Game game, int action)
         }
         u &= ~(u - 1);
 
-        c = make_capture(f, e, u);
+        c = bb_make_capture(f, e, u);
 
         e &= ~c;
         f |=  c;
@@ -331,13 +65,13 @@ void reversi_make(Arbor_Game game, int action)
     {
         gameover = true;
     }
-    else if ((f | e) == FULLBOARD)
+    else if (~(f | e))
     {
-        gameover = true;
+        rev->pass = true;
     }
     else
     {
-        rev->pass = true;
+        gameover = true;
     }
 
     rev->f = e;
@@ -350,13 +84,13 @@ void reversi_make(Arbor_Game game, int action)
 
         if (rev->side == ARBOR_P1)
         {
-            sum_p1 = popcount(f);
-            sum_p2 = popcount(e);
+            sum_p1 = bb_popcount(f);
+            sum_p2 = bb_popcount(e);
         }
         else
         {
-            sum_p1 = popcount(e);
-            sum_p2 = popcount(f);
+            sum_p1 = bb_popcount(e);
+            sum_p2 = bb_popcount(f);
         }
 
         if (sum_p1 > sum_p2)
@@ -376,7 +110,7 @@ void reversi_make(Arbor_Game game, int action)
     }
     else
     {
-        rev->a = generate_moves(rev->f, rev->e);
+        rev->a = bb_generate_moves(rev->f, rev->e);
         
         if (rev->side == ARBOR_P1)
         {
@@ -408,7 +142,7 @@ void reversi_delete(Arbor_Game game)
 int reversi_actions(Arbor_Game game)
 {
     Reversi* rev = game.p;
-    int sum = popcount(rev->a);
+    int sum = bb_popcount(rev->a);
 
     // add one for pass if no other option
     sum += (sum == 0);
@@ -435,9 +169,9 @@ void reversi_show(Arbor_Game game)
     Reversi* rev = game.p;
     const char* colnum = "    0   1   2   3   4   5   6   7\n";
     const char* rowsep = "  ---------------------------------\n";
-    uint64_t moves = rev->a;
-    uint64_t white = 0;
-    uint64_t black = 0;
+    bb moves = rev->a;
+    bb white = 0;
+    bb black = 0;
     int row = 0;
     int col = 0;
 
@@ -455,7 +189,7 @@ void reversi_show(Arbor_Game game)
     }
 
     printf(" Turn\n");
-    printf("O: %2d, X: %2d\n%s", popcount(white), popcount(black), rowsep);
+    printf("O: %2d, X: %2d\n%s", bb_popcount(white), bb_popcount(black), rowsep);
 
     for (row = 7; row >= 0; row--)
     {
@@ -463,9 +197,7 @@ void reversi_show(Arbor_Game game)
         for (col = 0; col < 8; col++)
         {
             char p = ' ';
-            uint64_t space = 1;
-
-            space <<= (row << 3) | col;
+            bb space = BB(row,col);
             
             if (white & space)
             {
@@ -493,27 +225,8 @@ void reversi_show(Arbor_Game game)
 void reversi_vector(Arbor_Game game)
 {
     Reversi* rev = game.p;
-    uint64_t p1 = (rev->side == ARBOR_P1) ? rev->f : rev->e;
-    uint64_t p2 = (rev->side == ARBOR_P2) ? rev->f : rev->e;
-    float features[] =
-    {
-        PARITY(p1, p2), 
-        PARITY(generate_moves(p1, p2), generate_moves(p2, p1)),
-        PARITY(mobility(p1, p2), mobility(p2, p1)),
-        PARITY(p1 & Q5, p2 & Q5),
-        PARITY(p1 & Q4, p2 & Q4),
-        PARITY(p1 & Q3, p2 & Q3),
-        PARITY(p1 & Q2, p2 & Q2),
-        PARITY(p1 & Q1, p2 & Q1),
-        PARITY(p1 & Q0, p2 & Q0)
-    };
-    size_t num_features = sizeof(features)/sizeof(float);
-    size_t last_feature = num_features - 1;
-    size_t i = 0;
+    bb p1 = (rev->side == ARBOR_P1) ? rev->f : rev->e;
+    bb p2 = (rev->side == ARBOR_P2) ? rev->f : rev->e;
 
-    for (i = 0; i < num_features; i++)
-    {
-        char sep = (i == last_feature) ? '\n' : ',';
-        printf("%f%c", features[i], sep);
-    }
+    bb_vector(p1, p2);
 }
