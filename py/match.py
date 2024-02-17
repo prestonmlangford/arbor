@@ -72,7 +72,7 @@ if __name__ == '__main__':
 
     andy = 0
     fred = 0
-    for result in mp_tournament(p1,p2,5,16):
+    for result in mp_tournament(p1,p2,5,8*10):
         p1, p2 = result
         if p1 == "andy":
             andy += 1
