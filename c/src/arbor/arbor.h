@@ -159,6 +159,17 @@ typedef void (*Arbor_Show)(Arbor_Game game);
 typedef void (*Arbor_Vector)(Arbor_Game game);
 
 /*------------------------------------------------------------------------------
+ * @fnptr Arbor_Prob
+ *
+ * @brief emit win probability from heuristic.
+ *
+ * @param [in]  game  The game state.
+ * 
+ * @return None.
+ *----------------------------------------------------------------------------*/
+typedef void (*Arbor_Prob)(Arbor_Game game);
+
+/*------------------------------------------------------------------------------
  * Lib functions
  *----------------------------------------------------------------------------*/
 
@@ -172,6 +183,7 @@ typedef struct Arbor_Game_Interface_t
     Arbor_Eval      eval;
     Arbor_Show      show;
     Arbor_Vector    vector;
+    Arbor_Prob      prob;
 } Arbor_Game_Interface;
 
 typedef struct Arbor_Search_Config_t

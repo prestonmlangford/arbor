@@ -12,7 +12,8 @@ int main (int argc, char* argv[])
         .eval       = reversi_eval,
         .side       = reversi_side,
         .show       = reversi_show,
-        .vector     = reversi_vector
+        .vector     = reversi_vector,
+        .prob       = reversi_prob
     };
     Arbor_Game game = reversi_new();
     int result = cli(game, &ifc, argc, argv);

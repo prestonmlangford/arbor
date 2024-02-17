@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <assert.h>
+#include <math.h>
 #include "arbor.h"
 #include "reversi.h"
 #include "reversi_bb.h"
@@ -181,7 +182,7 @@ int reversi_eval(Arbor_Game game)
         {
             sum += feat[i] * coef[i];
         }
-
+        
         if (sum > 0.0)
         {
             return ARBOR_P1;
@@ -236,4 +237,28 @@ void reversi_vector(Arbor_Game game)
         char sep = (i == last_feature) ? '\n' : ',';
         printf("%f%c", features[i], sep);
     }
+}
+
+void reversi_prob(Arbor_Game game)
+{
+    Reversi* rev = game.p;
+    bb p1 = (rev->side == ARBOR_P1) ? rev->f : rev->e;
+    bb p2 = (rev->side == ARBOR_P2) ? rev->f : rev->e;
+    int i = 0;
+    float sum = 0.0;
+    float feat[NUM_FEAT] = {};
+    float* coef = reversi_heuristic_coef[rev->turn];
+    float p = 0.5;
+
+    bb_vector(p1, p2, feat);
+
+    for (i = 0; i < NUM_FEAT; i++)
+    {
+        sum += feat[i] * coef[i];
+    }
+    sum += coef[i];
+
+    p = 1.0 / (1.0 + exp(-sum));
+
+    printf("%f\n",p);
 }
