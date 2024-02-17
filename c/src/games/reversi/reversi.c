@@ -167,59 +167,27 @@ int reversi_eval(Arbor_Game game)
 void reversi_show(Arbor_Game game)
 {
     Reversi* rev = game.p;
-    const char* colnum = "    0   1   2   3   4   5   6   7\n";
-    const char* rowsep = "  ---------------------------------\n";
     bb moves = rev->a;
-    bb white = 0;
-    bb black = 0;
-    int row = 0;
-    int col = 0;
+    bb X = 0;
+    bb O = 0;
 
     if (rev->side == ARBOR_P1)
     {
-        white = rev->f;
-        black = rev->e;
+        O = rev->f;
+        X = rev->e;
         printf("O");
     }
     else
     {
-        white = rev->e;
-        black = rev->f;
+        O = rev->e;
+        X = rev->f;
         printf("X");
     }
 
     printf(" Turn\n");
-    printf("O: %2d, X: %2d\n%s", bb_popcount(white), bb_popcount(black), rowsep);
+    printf("O: %2d, X: %2d\n", bb_popcount(O), bb_popcount(X));
 
-    for (row = 7; row >= 0; row--)
-    {
-        printf("%d ", row);
-        for (col = 0; col < 8; col++)
-        {
-            char p = ' ';
-            bb space = BB(row,col);
-            
-            if (white & space)
-            {
-                p = 'O';
-            }
-            else if (black & space)
-            {
-                p = 'X';
-            }
-            else if (moves & space)
-            {
-                p = '-';
-            }
-            else
-            {
-                p = ' ';
-            }
-            printf("| %c ", p);
-        }
-        printf("|\n%s",rowsep);
-    }
-    printf("%s\n",colnum);
+    bb_show(X, O, moves);
 }
 
 void reversi_vector(Arbor_Game game)

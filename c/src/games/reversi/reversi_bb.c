@@ -441,3 +441,43 @@ void bb_vector(bb f, bb e)
         printf("%f%c", features[i], sep);
     }
 }
+
+void bb_show(bb x, bb o, bb d)
+{
+    const char* colnum = "    0   1   2   3   4   5   6   7\n";
+    const char* rowsep = "  ---------------------------------\n";
+    int row = 0;
+    int col = 0;
+
+    printf("%s", rowsep);
+
+    for (row = 7; row >= 0; row--)
+    {
+        printf("%d ", row);
+        for (col = 0; col < 8; col++)
+        {
+            char p = ' ';
+            bb space = BB(row,col);
+            
+            if (o & space)
+            {
+                p = 'O';
+            }
+            else if (x & space)
+            {
+                p = 'X';
+            }
+            else if (d & space)
+            {
+                p = '-';
+            }
+            else
+            {
+                p = ' ';
+            }
+            printf("| %c ", p);
+        }
+        printf("|\n%s",rowsep);
+    }
+    printf("%s\n",colnum);
+}
