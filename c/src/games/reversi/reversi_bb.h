@@ -6,7 +6,7 @@
 
 typedef uint64_t bb;
 
-#define BB(x,y) (UINT64_C(1) << (((y) << 3) | (x)))
+#define BB(y,x) (UINT64_C(1) << (((y) << 3) | (x)))
 
 int bb_popcount(bb u);
 bb bb_generate_moves(bb f, bb e);
