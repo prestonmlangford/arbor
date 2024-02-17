@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "reversi_bb.h"
+#include <stdbool.h>
 
 /*
   ---------------------------------
@@ -133,6 +134,7 @@
     BB(4,3) | BB(4,4) | BB(3,3) | BB(3,4) \
 )
 
+#define NUM_FEATURES 3
 #define PARITY(f,e)\
 ({\
     float _f = (float) bb_popcount(f);\
@@ -419,17 +421,17 @@ void bb_vector(bb f, bb e)
 {
     float features[] = 
     {
-        PARITY_MASK(f, e, FULLBOARD),
-        PARITY_MASK(f, e, CORNERS),
-        PARITY_MASK(f, e, CORNERS_ADJACENT),
-        PARITY_MASK(f, e, OUTSIDES),
-        PARITY_MASK(f, e, INSIDES),
-        PARITY_MASK(f, e, DIAGONALS),
-        PARITY(bb_generate_moves(f, e),     bb_generate_moves(e, f)),
+        // PARITY_MASK(f, e, FULLBOARD),
+        // PARITY_MASK(f, e, CORNERS),
+        // PARITY_MASK(f, e, CORNERS_ADJACENT),
+        // PARITY_MASK(f, e, OUTSIDES),
+        // PARITY_MASK(f, e, INSIDES),
+        // PARITY_MASK(f, e, DIAGONALS),
+        // PARITY(bb_generate_moves(f, e),     bb_generate_moves(e, f)),
         PARITY(bb_mobility(f, e),           bb_mobility(e, f)),
         PARITY(bb_corner_stability(f),      bb_corner_stability(e)),
         PARITY(bb_corner_vulnerability(f),  bb_corner_vulnerability(e)),
-        PARITY(bb_side_vulnerability(f),    bb_side_vulnerability(e)),
+        // PARITY(bb_side_vulnerability(f),    bb_side_vulnerability(e)),
     };
     int num_features = sizeof(features)/sizeof(float);
     int last_feature = num_features - 1;
@@ -440,6 +442,19 @@ void bb_vector(bb f, bb e)
         char sep = (i == last_feature) ? '\n' : ',';
         printf("%f%c", features[i], sep);
     }
+}
+
+bool bb_predict(float* restrict feat, float* restrict coef)
+{
+    int i = 0;
+    float sum = 0.0;
+
+    for (i = 0; i < NUM_FEATURES; i++)
+    {
+        sum += feat[i] * coef[i];
+    }
+
+    return sum >= 0.0;
 }
 
 void bb_show(bb x, bb o, bb d)
