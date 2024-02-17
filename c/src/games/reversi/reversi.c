@@ -14,8 +14,8 @@ typedef struct Reversi_t
     int side;
     bool pass;
     int result;
+    int turn;
 } Reversi;
-
 
 Arbor_Game reversi_new(void)
 {
@@ -76,6 +76,7 @@ void reversi_make(Arbor_Game game, int action)
 
     rev->f = e;
     rev->e = f;
+    rev->turn += 1;
 
     if (gameover)
     {
@@ -159,9 +160,37 @@ int reversi_side(Arbor_Game game)
 
 int reversi_eval(Arbor_Game game)
 {
-    Reversi* reversi = game.p;
+    Reversi* rev = game.p;
 
-    return reversi->result;
+    if (rev->side == ARBOR_NONE)
+    {
+        return rev->result;
+    }
+    else
+    {
+        bb p1 = (rev->side == ARBOR_P1) ? rev->f : rev->e;
+        bb p2 = (rev->side == ARBOR_P2) ? rev->f : rev->e;
+        int i = 0;
+        float sum = 0.0;
+        float feat[NUM_FEAT] = {};
+        float* coef = reversi_heuristic_coef[rev->turn];
+
+        bb_vector(p1, p2, feat);
+
+        for (i = 0; i < NUM_FEAT; i++)
+        {
+            sum += feat[i] * coef[i];
+        }
+
+        if (sum > 0.0)
+        {
+            return ARBOR_P1;
+        }
+        else
+        {
+            return ARBOR_P2;
+        }
+    }
 }
 
 void reversi_show(Arbor_Game game)
@@ -196,5 +225,15 @@ void reversi_vector(Arbor_Game game)
     bb p1 = (rev->side == ARBOR_P1) ? rev->f : rev->e;
     bb p2 = (rev->side == ARBOR_P2) ? rev->f : rev->e;
 
-    bb_vector(p1, p2);
+    float features[NUM_FEAT] = {};
+    int last_feature = NUM_FEAT - 1;
+    int i = 0;
+
+    bb_vector(p1, p2, features);
+
+    for (i = 0; i < NUM_FEAT; i++)
+    {
+        char sep = (i == last_feature) ? '\n' : ',';
+        printf("%f%c", features[i], sep);
+    }
 }

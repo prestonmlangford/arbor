@@ -3,6 +3,7 @@
 #define REVERSI_BB_H
 
 #include <stdint.h>
+#include "reversi_coef.h"
 
 typedef uint64_t bb;
 
@@ -12,7 +13,7 @@ int bb_popcount(bb u);
 bb bb_generate_moves(bb f, bb e);
 bb bb_make_capture(bb f, bb e, bb c);
 bb bb_mobility(bb f, bb e);
-void bb_vector(bb f, bb e);
+void bb_vector(bb f, bb e, float v[NUM_FEAT]);
 void bb_show(bb x, bb o, bb d);
 
 #endif // REVERSI_BB_H
