@@ -5,6 +5,9 @@
 #include "random.h"
 #include "profile.h"
 
+#define NS_PER_SEC UINT64_C(1000000000)
+#define NS_PER_MS UINT64_C(1000000)
+
 static int rollout(Arbor_Game game, Arbor_Game_Interface* ifc)
 {
     Arbor_Game sim = ifc->copy(game);
@@ -24,27 +27,41 @@ static int rollout(Arbor_Game game, Arbor_Game_Interface* ifc)
     return result;
 }
 
+static uint64_t time_ns(void)
+{
+	struct timespec ts;
+    uint64_t ns = 0;
+
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+
+    ns = ts.tv_sec;
+    ns *= NS_PER_SEC;
+    ns += ts.tv_nsec;
+
+    return ns;
+}
+
 static int timed_ai(Arbor_Game game, Arbor_Game_Interface* ifc, int ms)
 {
     Arbor_Search_Config cfg = {
         .expansion = 0,
         .exploration = 2.0,
         .init = game,
-        .eval_policy = ARBOR_EVAL_CUSTOM
+        .eval_policy = ARBOR_EVAL_ROLLOUT
     };
 
     Arbor_Search search = arbor_search_new(&cfg, ifc);
-    clock_t now, future;
+	uint64_t now, future;
     int count = 0;
     int action = 0;
 
-    now = clock();
-    future = now + ((ms * CLOCKS_PER_SEC) / 1000);
+    now = time_ns();
+    future = now + (ms * NS_PER_MS);
 
     while (now < future)
     {
         arbor_search_ponder(search);
-        now = clock();
+        now = time_ns();
         count++;
     }
 
