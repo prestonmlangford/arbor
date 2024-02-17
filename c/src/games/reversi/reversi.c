@@ -203,6 +203,7 @@
     x;\
 })
 
+typedef uint64_t bb;
 typedef struct Reversi_t
 {
     bb f;
@@ -213,9 +214,6 @@ typedef struct Reversi_t
     int result;
     int turn;
 } Reversi;
-
-typedef uint64_t bb;
-
 
 inline static int bb_popcount(bb u)
 {
