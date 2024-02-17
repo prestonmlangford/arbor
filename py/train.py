@@ -15,7 +15,9 @@ def train(path):
     df = pandas.read_csv(path, header=None)
     arr = df.to_numpy()
     y = arr[:,0]
-    x = arr[:,[1,4,5,6,7,8]]
+    # x = arr[:,[1,2,3,4,5,6,7,8,9,10,11]]
+    # x = arr[:,[1,2,3,4,5,6]]
+    x = arr[:,[8,9,10]]
 
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.30, random_state=1)
     reg = linear_model.LogisticRegression()
@@ -37,7 +39,9 @@ def train(path):
     #         count += 1
 
     # print(count/len(y_test))
-    # print(reg.coef_)
+    # print(reg.coef_[0])
+    for i,c in enumerate(reg.coef_[0].tolist()):
+        print(i,c)
     print()
 
     # return {
@@ -58,7 +62,7 @@ def update_file(set,result):
         json.dump(j,f,indent=4)
 
 if __name__ == '__main__':
-    for s in glob.glob("data/trial_1/*.csv"):
+    for s in glob.glob("data/features/*.csv"):
         path = Path(s)
         train(path)
         # print(result)

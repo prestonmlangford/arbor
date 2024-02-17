@@ -48,5 +48,5 @@ if __name__ == '__main__':
         path = f"data/raw/set{set}.log"
         results = process_raw_data(path)
 
-        path = f"data/trial_1/set{set}.csv"
+        path = f"data/features/set{set}.csv"
         write_to_file(path, results)
