@@ -37,6 +37,9 @@ BAD_BATTLESHIP 	:= $(GAMES)/bad_battleship
 DICE 			:= $(GAMES)/dice
 RPS 			:= $(GAMES)/rps
 
+UT 				:= $(SRC)/ut
+UT_REVERSI 		:= $(UT)/reversi
+
 # removes duplicates in a list
 set=$(if $1,$(firstword $1) $(call set,$(filter-out $(firstword $1),$1)))
 
@@ -67,6 +70,9 @@ bad_battleship: $(call modules,$(ARBOR) $(BAD_BATTLESHIP) $(UTIL))
 	@$(link-objects)
 
 reversi: $(call modules,$(ARBOR) $(CLI) $(REVERSI) $(UTIL))
+	@$(link-objects)
+
+ut_reversi: $(call modules, $(UT_REVERSI))
 	@$(link-objects)
 
 $(OBJ)/%.o: $(SRC)/%.c
