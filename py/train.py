@@ -40,6 +40,7 @@ def train(path):
     for i,(m,s,c) in enumerate(zip(result.importances_mean,result.importances_std,reg.coef_[0])):
         coef.append(c)
         print(f"{i + 1:2d}: {100*m:.1f} {c:.3f}")
+    coef.append(reg.intercept_[0])
     print()
     # count = 0
     # w = reg.coef_
