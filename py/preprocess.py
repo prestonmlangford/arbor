@@ -44,7 +44,7 @@ def write_to_file(path,results):
             f.write(data)
 
 if __name__ == '__main__':
-    for set in [10,20,30,40,50]:
+    for set in range(60):
         path = f"data/raw/set{set}.log"
         results = process_raw_data(path)
 

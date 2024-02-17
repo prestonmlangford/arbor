@@ -16,7 +16,7 @@ def train(path):
     df = pandas.read_csv(path, header=None)
     arr = df.to_numpy()
     y = arr[:,0]
-    x = arr[:,[1,2,3,4,5,6,7,8,9,10,11]]
+    x = arr[:,[1,2,3]]
     # x = arr[:,[1,2,3,4,5,6]]
     # x = arr[:,[8,9,10]]
 
@@ -32,11 +32,13 @@ def train(path):
             count += 1
     f1 = metrics.f1_score(y_test, y_pred)
     acc = count/len(y_test)
+    coef = []
     print(f"f1 = {f1:.3f}")
     print(f"acc = {acc:.3f}")
     
     print(" i: importance, value")
     for i,(m,s,c) in enumerate(zip(result.importances_mean,result.importances_std,reg.coef_[0])):
+        coef.append(c)
         print(f"{i + 1:2d}: {100*m:.1f} {c:.3f}")
     print()
     # count = 0
@@ -58,6 +60,7 @@ def train(path):
     #     "coefficients" : reg.coef_.tolist(),
     #     "samples" : len(y)
     # }
+    return coef
 
 
 def update_file(set,result):
@@ -70,8 +73,15 @@ def update_file(set,result):
         json.dump(j,f,indent=4)
 
 if __name__ == '__main__':
-    for s in glob.glob("data/features/*.csv"):
-        path = Path(s)
-        train(path)
+    coefs = []
+    for set in range(5,60):
+        path = f"data/features/set{set}.csv"
+        print(path)
+        coef = train(path)
+        coefs.append(coef)
         # print(result)
         # update_file(path.stem,result)
+    
+    for coef in coefs:
+        c = ','.join(f"{f:>8.4f}" for f in coef)
+        print(f"{{{c}}},")
