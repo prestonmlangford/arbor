@@ -30,7 +30,7 @@ static int timed_ai(Arbor_Game game, Arbor_Game_Interface* ifc, int ms)
         .expansion = 0,
         .exploration = 2.0,
         .init = game,
-        .eval_policy = ARBOR_EVAL_ROLLOUT
+        .eval_policy = ARBOR_EVAL_CUSTOM
     };
 
     Arbor_Search search = arbor_search_new(&cfg, ifc);
