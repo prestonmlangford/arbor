@@ -182,6 +182,7 @@ int reversi_eval(Arbor_Game game)
         {
             sum += feat[i] * coef[i];
         }
+        sum += coef[i];
         
         if (sum > 0.0)
         {
