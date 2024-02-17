@@ -4,7 +4,8 @@ import pandas
 import numpy as np
 from pathlib import Path
 from sklearn import linear_model
-from sklearn.model_selection import train_test_split 
+from sklearn.model_selection import train_test_split
+from sklearn.inspection import permutation_importance
 from sklearn import metrics
 import math
 
@@ -15,22 +16,29 @@ def train(path):
     df = pandas.read_csv(path, header=None)
     arr = df.to_numpy()
     y = arr[:,0]
-    # x = arr[:,[1,2,3,4,5,6,7,8,9,10,11]]
+    x = arr[:,[1,2,3,4,5,6,7,8,9,10,11]]
     # x = arr[:,[1,2,3,4,5,6]]
-    x = arr[:,[8,9,10]]
+    # x = arr[:,[8,9,10]]
 
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.30, random_state=1)
     reg = linear_model.LogisticRegression()
     reg.fit(x_train, y_train)
+    result = permutation_importance(reg,x_test,y_test)
     
     y_pred = reg.predict(x_test)
     count = 0
     for pred,test in zip(y_pred,y_test):
         if pred == test:
             count += 1
-    print(metrics.f1_score(y_test, y_pred))
-    print(count/len(y_test))
+    f1 = metrics.f1_score(y_test, y_pred)
+    acc = count/len(y_test)
+    print(f"f1 = {f1:.3f}")
+    print(f"acc = {acc:.3f}")
     
+    print(" i: importance, value")
+    for i,(m,s,c) in enumerate(zip(result.importances_mean,result.importances_std,reg.coef_[0])):
+        print(f"{i + 1:2d}: {100*m:.1f} {c:.3f}")
+    print()
     # count = 0
     # w = reg.coef_
     # for x,y in zip(x_test,y_test):
@@ -40,9 +48,9 @@ def train(path):
 
     # print(count/len(y_test))
     # print(reg.coef_[0])
-    for i,c in enumerate(reg.coef_[0].tolist()):
-        print(i,c)
-    print()
+    # for i,c in enumerate(reg.coef_[0].tolist()):
+    #     print(i,c)
+    # print()
 
     # return {
     #     "f1_score" : metrics.f1_score(y_test, y_pred),
