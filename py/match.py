@@ -51,21 +51,23 @@ def mp_tournament(p1,p2,start,rounds):
 
 if __name__ == '__main__':
     # p2 = {
-    #     "name" : "andy",
+    #     "name" : "rust",
     #     "path" : "target/release/reversi",
-    #     "time" : 100
+    #     "time" : 100,
     # }
 
     p2 = {
-        "name" : "link",
+        "name" : "harry",
         "path" : "c/build/osx/bin/reversi",
-        "time" : 100
+        "time" : 100,
+        "policy" : "custom"
     }
 
     p1 = {
         "name" : "master",
         "path" : "c/baseline/master",
-        "time" : 100
+        "time" : 100,
+        "policy" : "rollout"
     }
 
     # results: with fred expansion 10, andy expansion 0

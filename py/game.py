@@ -9,11 +9,16 @@ class Game:
         self.p2 = p2
         self.history = []
 
-    def run(self,cmd,driver=None):
-        if driver is None:
-            driver = self.p1
+    def run(self,cmd,player=None):
+        if player is None:
+            player = self.p1
+        
+        opt = []
+        if "policy" in player:
+            policy = player["policy"]
+            opt += [f"policy:{policy}"]
 
-        c = [driver["path"]] + self.history + [cmd]
+        c = [player["path"]] + opt + self.history + [cmd]
         result = subprocess.run(c, capture_output=True)
         return result.stdout.decode('utf-8').strip()
 
