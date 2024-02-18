@@ -108,11 +108,12 @@ fn main() {
             }
         } else if arg.starts_with("mcts:time") {
             let s = arg.split(':').last().expect("no time for mcts");
-            let ms = u32::from_str_radix(s,10).expect("mcts time not an integer");
+            let ms = u64::from_str_radix(s,10).expect("mcts time not an integer");
             let ns = 1000_000 * ms;
-
+            let ns_u32 = (ns % 1000_000_000) as u32;
+            let s_u32 = ns / 1000_000_000;
             let mut mcts = MCTS::new(gamestate);
-            let duration = std::time::Duration::new(0, ns);
+            let duration = std::time::Duration::new(s_u32, ns_u32);
             let start = Instant::now();
             let mut count = 0;
 
