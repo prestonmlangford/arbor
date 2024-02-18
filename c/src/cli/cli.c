@@ -8,6 +8,8 @@
 #define NS_PER_SEC UINT64_C(1000000000)
 #define NS_PER_MS UINT64_C(1000000)
 
+static int eval_policy = ARBOR_EVAL_ROLLOUT;
+
 static int rollout(Arbor_Game game, Arbor_Game_Interface* ifc)
 {
     Arbor_Game sim = ifc->copy(game);
@@ -47,7 +49,7 @@ static int timed_ai(Arbor_Game game, Arbor_Game_Interface* ifc, int ms)
         .expansion = 0,
         .exploration = 2.0,
         .init = game,
-        .eval_policy = ARBOR_EVAL_ROLLOUT
+        .eval_policy = eval_policy
     };
 
     Arbor_Search search = arbor_search_new(&cfg, ifc);
@@ -121,6 +123,14 @@ int cli(Arbor_Game game, Arbor_Game_Interface* ifc, int argc, char* argv[])
         else if (strcmp(arg, "prob") == 0)
         {
             ifc->prob(game);
+        }
+        else if (strcmp(arg, "policy:rollout") == 0)
+        {
+            eval_policy = ARBOR_EVAL_ROLLOUT;
+        }
+        else if (strcmp(arg, "policy:custom") == 0)
+        {
+            eval_policy = ARBOR_EVAL_CUSTOM;
         }
         else if (sscanf(arg,"mcts:time:%d",&ms) == 1)
         {
