@@ -64,11 +64,13 @@ typedef struct Search_t
     Arbor_Game_Interface ifc;
 
     Arbor_Game sim;
-    Node* root;
-    Node* free_list;
+    Node* pool;
+    int pool_count;
+    int pool_limit;
 } Search;
 
 static int arbor_go(Search* search, Node* node);
+static int arbor_leaf(Search* search, Node* node);
 
 /*------------------------------------------------------------------------------
  * Private functions
@@ -76,29 +78,33 @@ static int arbor_go(Search* search, Node* node);
 
 static Node* arbor_new_node(Search* search, Arbor_Game game, int action)
 {
-    Node* node = ARBOR_MALLOC(sizeof(Node));
 
-    node->free_list = search->free_list;
-    search->free_list = node;
-
-    node->side = search->ifc.side(game);
-
-    if (node->side == ARBOR_NONE)
+    Node* node = NULL;
+    
+    if (search->pool_count < search->pool_limit)
     {
-        node->result = search->ifc.eval(game);
-    }
-    else
-    {
-        node->result = ARBOR_NONE;
-        node->actions = search->ifc.actions(game);
+        node = &(search->pool[search->pool_count]);
+
+        search->pool_count += 1;
+        node->side = search->ifc.side(game);
+
+        if (node->side == ARBOR_NONE)
+        {
+            node->result = search->ifc.eval(game);
+        }
+        else
+        {
+            node->result = ARBOR_NONE;
+            node->actions = search->ifc.actions(game);
+        }
+        
+        node->wins = 0;
+        node->visits = 0;
+        node->action = action;
+        node->sibling = NULL;
+        node->child = NULL;
     }
     
-    node->wins = 0;
-    node->visits = 0;
-    node->action = action;
-    node->sibling = NULL;
-    node->child = NULL;
-
     return node;
 }
 
@@ -120,9 +126,16 @@ static int arbor_branch(Search* search, Node* parent)
 
             child = arbor_new_node(search, search->sim, i);
 
-            *list = child;
+            if (child)
+            {
+                *list = child;
 
-            return arbor_go(search, child);
+                return arbor_go(search, child);
+            }
+            else // ran out of memory
+            {
+                return arbor_leaf(search, parent);
+            }
         }
         else if (child->side == ARBOR_NONE) // terminal condition
         {
@@ -232,7 +245,11 @@ Arbor_Search arbor_search_new(Arbor_Search_Config* cfg,
 
     search->cfg = *cfg;
     search->ifc = *ifc;
-    search->root = arbor_new_node(search, search->cfg.init, 0);
+    search->pool = ARBOR_MALLOC(cfg->size);
+    search->pool_count = 0;
+    search->pool_limit = cfg->size / sizeof(Node);
+
+    (void) arbor_new_node(search, search->cfg.init, 0);
 
     result.p = search;
 
@@ -245,14 +262,7 @@ void arbor_search_delete(Arbor_Search search)
 
     if (s)
     {
-        Node* list = s->free_list;
-        while (list)
-        {
-            Node* tmp = list->free_list;
-            s->ifc.delete(list->game);
-            ARBOR_FREE(list);
-            list = tmp;
-        }
+        ARBOR_FREE(s->pool);
         ARBOR_FREE(s);
     }
 }
@@ -260,7 +270,7 @@ void arbor_search_delete(Arbor_Search search)
 int arbor_search_best(Arbor_Search search)
 {
     Search* s = search.p;
-    Node* root = s->root;
+    Node* root = s->pool;
     Node* child = root->child;
     int best = child->action;
     double best_score = 0.0;
@@ -304,7 +314,7 @@ void arbor_search_ponder(Arbor_Search search)
 
     s->sim = s->ifc.copy(s->cfg.init);
 
-    arbor_go(s, s->root);
+    arbor_go(s, s->pool);
 
     s->ifc.delete(s->sim);
 }

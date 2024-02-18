@@ -5,6 +5,8 @@
 #include "random.h"
 #include "profile.h"
 
+#define KB 1024
+#define MB (KB * KB)
 #define NS_PER_SEC UINT64_C(1000000000)
 #define NS_PER_MS UINT64_C(1000000)
 
@@ -49,7 +51,8 @@ static int timed_ai(Arbor_Game game, Arbor_Game_Interface* ifc, int ms)
         .expansion = 0,
         .exploration = 2.0,
         .init = game,
-        .eval_policy = eval_policy
+        .eval_policy = eval_policy,
+        .size = 500 * MB
     };
 
     Arbor_Search search = arbor_search_new(&cfg, ifc);
