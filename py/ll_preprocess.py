@@ -14,18 +14,17 @@ def mp_worker(row):
         p1 = int(p1)
         p2 = int(p2)
 
-        if (p1 == 10000) or (p1 == 0):
-            return ""
-
         game = Game()
         for action in actions:
             game.make(action)
 
         x = game.vector()
-        # y = int(p1 > p2)
+
         p = p1/10000
+        p = min(p,0.99)
+        p = max(p,0.01)
         y = -math.log(1/p - 1)
-        
+
         return f"{y},{x}\n"
     else:
         return ""
@@ -51,7 +50,7 @@ def write_to_file(path,results):
 
 if __name__ == '__main__':
     # for set in range(60):
-    for set in [10,20,30,40,50]:
+    for set in range(5,56):
         path = f"data/raw/set{set}.log"
         results = process_raw_data(path)
 
