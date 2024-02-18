@@ -50,15 +50,21 @@ def mp_tournament(p1,p2,start,rounds):
 # 16 20301186039128
 
 if __name__ == '__main__':
-    p2 = {
-        "name" : "andy",
-        "path" : "target/release/reversi",
-        "time" : 100
-    }
+    # p2 = {
+    #     "name" : "andy",
+    #     "path" : "target/release/reversi",
+    #     "time" : 100
+    # }
 
     p1 = {
         "name" : "fred",
         "path" : "c/build/osx/bin/reversi",
+        "time" : 100
+    }
+
+    p2 = {
+        "name" : "pool",
+        "path" : "c/reversi-pool",
         "time" : 100
     }
 
@@ -70,23 +76,26 @@ if __name__ == '__main__':
     # fred 88
     # andy 92
 
-    andy = 0
-    fred = 0
+    p1_score = 0
+    p1_name = p1["name"]
+    p2_score = 0
+    p2_name = p2["name"]
+
     for result in mp_tournament(p1,p2,5,8*10):
-        p1, p2 = result
-        if p1 == "andy":
-            andy += 1
+        r1, r2 = result
+        if r1 == p1_name:
+            p1_score += 1
 
-        if p2 == "andy":
-            andy += 1
+        if r2 == p1_name:
+            p1_score += 1
 
-        if p1 == "fred":
-            fred += 1
+        if r1 == p2_name:
+            p2_score += 1
 
-        if p2 == "fred":
-            fred += 1
+        if r2 == p2_name:
+            p2_score += 1
         
         print(result)
 
-    print(f"fred {fred}")
-    print(f"andy {andy}")
+    print(f"{p1_name} {p1_score}")
+    print(f"{p2_name} {p2_score}")
