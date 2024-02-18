@@ -59,7 +59,11 @@ enum
 };
 
 /*------------------------------------------------------------------------------
- * @fnptr Arbor_Copy
+ * Required user implemented functions
+ *----------------------------------------------------------------------------*/
+
+/*------------------------------------------------------------------------------
+ * @fn Arbor_Copy
  *
  * @brief Allocate resources and deep copy the given game state. User can expect
  *        Arbor to copy and free the game state for each call to ponder. It may 
@@ -67,12 +71,12 @@ enum
  *
  * @param [in]  game  The game state.
  * 
- * @return A new Arbor_Game.
+ * @return A copy of an existing Arbor_Game.
  *----------------------------------------------------------------------------*/
-typedef Arbor_Game (*Arbor_Copy)(Arbor_Game game);
+Arbor_Game arbor_copy(Arbor_Game game);
 
 /*------------------------------------------------------------------------------
- * @fnptr Arbor_Delete
+ * @fn Arbor_Delete
  *
  * @brief Deallocate any user resources used to copy the initial game state.
  *
@@ -80,10 +84,10 @@ typedef Arbor_Game (*Arbor_Copy)(Arbor_Game game);
  * 
  * @return None.
  *----------------------------------------------------------------------------*/
-typedef void (*Arbor_Delete)(Arbor_Game game);
+void arbor_delete(Arbor_Game game);
 
 /*------------------------------------------------------------------------------
- * @fnptr Arbor_Make
+ * @fn Arbor_Make
  *
  * @brief Perform the action and advance the game state. The user game must
  *        enumerate all actions in the same order.
@@ -92,10 +96,10 @@ typedef void (*Arbor_Delete)(Arbor_Game game);
  * 
  * @return None.
  *----------------------------------------------------------------------------*/
-typedef void (*Arbor_Make)(Arbor_Game game, int action);
+void arbor_make(Arbor_Game game, int action);
 
 /*------------------------------------------------------------------------------
- * @fnptr Arbor_Actions
+ * @fn Arbor_Actions
  *
  * @brief Indicate the number of actions available to the current player. The 
  *        actions must be enumerated in a deterministic way by the game.
@@ -105,10 +109,10 @@ typedef void (*Arbor_Make)(Arbor_Game game, int action);
  * @return The number of actions available to the current player. Must be > 0
  *         if the side to play is != ARBOR_NONE.
  *----------------------------------------------------------------------------*/
-typedef int (*Arbor_Actions)(Arbor_Game game);
+int arbor_actions(Arbor_Game game);
 
 /*------------------------------------------------------------------------------
- * @fnptr Arbor_Side
+ * @fn Arbor_Side
  *
  * @brief Indicate side to play for the current game state.
  *
@@ -119,10 +123,10 @@ typedef int (*Arbor_Actions)(Arbor_Game game);
  *         ARBOR_P1   1st player won.
  *         ARBOR_P2   2nd player won.
  *----------------------------------------------------------------------------*/
-typedef int (*Arbor_Side)(Arbor_Game game);
+int arbor_side(Arbor_Game game);
 
 /*------------------------------------------------------------------------------
- * @fnptr Arbor_Eval
+ * @fn Arbor_Eval
  *
  * @brief Indicate result of game if in a terminal state, or pick a winner based
  * on the probability one side might win vs. the other.
@@ -134,10 +138,25 @@ typedef int (*Arbor_Side)(Arbor_Game game);
  *         ARBOR_P2   2nd player won.
  *         ARBOR_DRAW neither player won.
  *----------------------------------------------------------------------------*/
-typedef int (*Arbor_Eval)(Arbor_Game game);
+int arbor_eval(Arbor_Game game);
 
 /*------------------------------------------------------------------------------
- * @fnptr Arbor_Show
+ * Optional user implemented functions
+ *----------------------------------------------------------------------------*/
+
+/*------------------------------------------------------------------------------
+ * @fn Arbor_Copy
+ *
+ * @brief Start a new game.
+ *
+ * @param [in]  game  The game state.
+ * 
+ * @return A new Arbor_Game.
+ *----------------------------------------------------------------------------*/
+Arbor_Game arbor_new(void);
+
+/*------------------------------------------------------------------------------
+ * @fn Arbor_Show
  *
  * @brief emit a representation of the game to stdout.
  *
@@ -145,10 +164,10 @@ typedef int (*Arbor_Eval)(Arbor_Game game);
  * 
  * @return None.
  *----------------------------------------------------------------------------*/
-typedef void (*Arbor_Show)(Arbor_Game game);
+void arbor_show(Arbor_Game game);
 
 /*------------------------------------------------------------------------------
- * @fnptr Arbor_Vector
+ * @fn Arbor_Vector
  *
  * @brief emit a vector of features for training.
  *
@@ -156,10 +175,10 @@ typedef void (*Arbor_Show)(Arbor_Game game);
  * 
  * @return None.
  *----------------------------------------------------------------------------*/
-typedef void (*Arbor_Vector)(Arbor_Game game);
+void arbor_vector(Arbor_Game game);
 
 /*------------------------------------------------------------------------------
- * @fnptr Arbor_Prob
+ * @fn Arbor_Prob
  *
  * @brief emit win probability from heuristic.
  *
@@ -167,24 +186,11 @@ typedef void (*Arbor_Vector)(Arbor_Game game);
  * 
  * @return None.
  *----------------------------------------------------------------------------*/
-typedef void (*Arbor_Prob)(Arbor_Game game);
+void arbor_prob(Arbor_Game game);
 
 /*------------------------------------------------------------------------------
  * Lib functions
  *----------------------------------------------------------------------------*/
-
-typedef struct Arbor_Game_Interface_t
-{
-    Arbor_Copy      copy;
-    Arbor_Delete    delete;
-    Arbor_Make      make;
-    Arbor_Actions   actions;
-    Arbor_Side      side;
-    Arbor_Eval      eval;
-    Arbor_Show      show;
-    Arbor_Vector    vector;
-    Arbor_Prob      prob;
-} Arbor_Game_Interface;
 
 typedef struct Arbor_Search_Config_t
 {
@@ -205,8 +211,7 @@ typedef struct Arbor_Search_Config_t
  * 
  * @return A new Arbor_Search search object.
  *----------------------------------------------------------------------------*/
-Arbor_Search arbor_search_new(Arbor_Search_Config* cfg,
-                              Arbor_Game_Interface* ifc);
+Arbor_Search arbor_search_new(Arbor_Search_Config* cfg);
 
 /*------------------------------------------------------------------------------
  * @fn arbor_search_delete

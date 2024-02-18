@@ -1,30 +1,20 @@
 #include <stdio.h>
 #include "arbor.h"
 #include "random.h"
-#include "rps.h"
 
 int main (int argc, char* argv[])
 {
 
-    Arbor_Game_Interface ifc = {
-        .actions = rps_actions,
-        .copy = rps_copy,
-        .delete = rps_delete,
-        .make = rps_make,
-        .eval = rps_eval,
-        .side = rps_side
-    };
-
-    Arbor_Game game = rps_new();
+    Arbor_Game game = arbor_new();
 
     rand_seed_realtime();
 
     printf("Arbor - Rock, Paper, Scissors\n");
 
-    while (rps_side(game) != ARBOR_NONE)
+    while (arbor_side(game) != ARBOR_NONE)
     {
         int p1_action = 0;
-        if (rps_side(game) == ARBOR_P2)
+        if (arbor_side(game) == ARBOR_P2)
         {
             Arbor_Search_Config cfg = {
                 .expansion = 10,
@@ -33,7 +23,7 @@ int main (int argc, char* argv[])
                 .eval_policy = ARBOR_EVAL_ROLLOUT
             };
 
-            Arbor_Search search = arbor_search_new(&cfg, &ifc);
+            Arbor_Search search = arbor_search_new(&cfg);
             int i = 0;
             int best = 0;
 
@@ -47,18 +37,18 @@ int main (int argc, char* argv[])
 
             printf("%d ",best);
             fflush(stdout);
-            rps_make(game, best);
+            arbor_make(game, best);
         }
         else
         {
-            p1_action = (p1_action + 1) % rps_actions(game);
+            p1_action = (p1_action + 1) % arbor_actions(game);
             // p1_action = 0;
-            rps_make(game, p1_action);
+            arbor_make(game, p1_action);
         }
     }
 
     printf("\nGame Over!\n");
-    rps_delete(game);
+    arbor_delete(game);
 
     return 0;
 }

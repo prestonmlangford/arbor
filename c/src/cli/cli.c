@@ -12,21 +12,21 @@
 
 static int eval_policy = ARBOR_EVAL_ROLLOUT;
 
-static int rollout(Arbor_Game game, Arbor_Game_Interface* ifc)
+static int rollout(Arbor_Game game)
 {
-    Arbor_Game sim = ifc->copy(game);
+    Arbor_Game sim = arbor_copy(game);
     int result = ARBOR_NONE;
 
-    while (ifc->side(sim) != ARBOR_NONE)
+    while (arbor_side(sim) != ARBOR_NONE)
     {
-        int count = ifc->actions(sim);
+        int count = arbor_actions(sim);
         int action = rand_bound(count);
 
-        ifc->make(sim, action);
+        arbor_make(sim, action);
     }
 
-    result = ifc->eval(sim);
-    ifc->delete(sim);
+    result = arbor_eval(sim);
+    arbor_delete(sim);
 
     return result;
 }
@@ -45,7 +45,7 @@ static uint64_t time_ns(void)
     return ns;
 }
 
-static int timed_ai(Arbor_Game game, Arbor_Game_Interface* ifc, int ms)
+static int timed_ai(Arbor_Game game, int ms)
 {
     Arbor_Search_Config cfg = {
         .expansion = 0,
@@ -55,7 +55,7 @@ static int timed_ai(Arbor_Game game, Arbor_Game_Interface* ifc, int ms)
         .size = 500 * MB
     };
 
-    Arbor_Search search = arbor_search_new(&cfg, ifc);
+    Arbor_Search search = arbor_search_new(&cfg);
 	uint64_t now, future;
     int count = 0;
     int action = 0;
@@ -78,7 +78,7 @@ static int timed_ai(Arbor_Game game, Arbor_Game_Interface* ifc, int ms)
     return action;
 }
 
-static int bounded_ai(Arbor_Game game, Arbor_Game_Interface* ifc, int iter)
+static int bounded_ai(Arbor_Game game, int iter)
 {
     Arbor_Search_Config cfg = {
         .expansion = 0,
@@ -87,7 +87,7 @@ static int bounded_ai(Arbor_Game game, Arbor_Game_Interface* ifc, int iter)
         .eval_policy = ARBOR_EVAL_ROLLOUT
     };
 
-    Arbor_Search search = arbor_search_new(&cfg, ifc);
+    Arbor_Search search = arbor_search_new(&cfg);
     int count = 0;
     int action = 0;
 
@@ -105,27 +105,28 @@ static int bounded_ai(Arbor_Game game, Arbor_Game_Interface* ifc, int iter)
     return action;
 }
 
-int cli(Arbor_Game game, Arbor_Game_Interface* ifc, int argc, char* argv[])
+int main(int argc, char* argv[])
 {
     int i, ms, iter, result, action, side;
+    Arbor_Game game = arbor_new();
 
     for (i = 1; i < argc; i++)
     {
         const char* arg = argv[i];
 
-        side = ifc->side(game);
+        side = arbor_side(game);
 
         if (strcmp(arg, "show") == 0)
         {
-            ifc->show(game);
+            arbor_show(game);
         }
         else if (strcmp(arg, "vector") == 0)
         {
-            ifc->vector(game);
+            arbor_vector(game);
         }
         else if (strcmp(arg, "prob") == 0)
         {
-            ifc->prob(game);
+            arbor_prob(game);
         }
         else if (strcmp(arg, "policy:rollout") == 0)
         {
@@ -144,7 +145,7 @@ int cli(Arbor_Game game, Arbor_Game_Interface* ifc, int argc, char* argv[])
             }
             else
             {
-                action = timed_ai(game, ifc, ms);
+                action = timed_ai(game, ms);
                 printf("%d\n", action);
             }
         }
@@ -157,7 +158,7 @@ int cli(Arbor_Game game, Arbor_Game_Interface* ifc, int argc, char* argv[])
             }
             else
             {
-                action = bounded_ai(game, ifc, iter);
+                action = bounded_ai(game, iter);
                 printf("%d\n", action);
             }
         }
@@ -177,7 +178,7 @@ int cli(Arbor_Game game, Arbor_Game_Interface* ifc, int argc, char* argv[])
 
                 while (iter > 0)
                 {
-                    result = rollout(game, ifc);
+                    result = rollout(game);
                     if (result == ARBOR_P1)
                     {
                         p1++;
@@ -209,13 +210,13 @@ int cli(Arbor_Game game, Arbor_Game_Interface* ifc, int argc, char* argv[])
         }
         else if (strcmp(arg, "actions") == 0)
         {
-            printf("%d\n", ifc->actions(game));
+            printf("%d\n", arbor_actions(game));
         }
         else if (strcmp(arg, "result") == 0)
         {
             if (side == ARBOR_NONE)
             {
-                result = ifc->eval(game);
+                result = arbor_eval(game);
 
                 if (result == ARBOR_P1)
                 {
@@ -244,7 +245,7 @@ int cli(Arbor_Game game, Arbor_Game_Interface* ifc, int argc, char* argv[])
             }
             else
             {
-                ifc->make(game, action);
+                arbor_make(game, action);
             }
         }
         else

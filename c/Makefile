@@ -79,6 +79,8 @@ $(OBJ)/%.o: $(SRC)/%.c
 	@mkdir -p $(dir $@)
 	@$(CC) $(INC) -c -o $@ $< $(CFLAGS)
 
+all: dice bad_battleship reversi rps ut_reversi
+
 clean:
 	@rm -rf $(BLD)
 

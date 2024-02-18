@@ -56,13 +56,13 @@ if __name__ == '__main__':
     #     "time" : 100
     # }
 
-    p1 = {
-        "name" : "fred",
+    p2 = {
+        "name" : "link",
         "path" : "c/build/osx/bin/reversi",
         "time" : 100
     }
 
-    p2 = {
+    p1 = {
         "name" : "master",
         "path" : "c/baseline/master",
         "time" : 100

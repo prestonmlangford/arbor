@@ -61,7 +61,6 @@ typedef struct Node_t
 typedef struct Search_t
 {
     Arbor_Search_Config cfg;
-    Arbor_Game_Interface ifc;
 
     Arbor_Game sim;
     Node* pool;
@@ -86,16 +85,16 @@ static Node* arbor_new_node(Search* search, Arbor_Game game, int action)
         node = &(search->pool[search->pool_count]);
 
         search->pool_count += 1;
-        node->side = search->ifc.side(game);
+        node->side = arbor_side(game);
 
         if (node->side == ARBOR_NONE)
         {
-            node->result = search->ifc.eval(game);
+            node->result = arbor_eval(game);
         }
         else
         {
             node->result = ARBOR_NONE;
-            node->actions = search->ifc.actions(game);
+            node->actions = arbor_actions(game);
         }
         
         node->wins = 0;
@@ -122,7 +121,7 @@ static int arbor_branch(Search* search, Node* parent)
 
         if (child == NULL)
         {
-            search->ifc.make(search->sim, i);
+            arbor_make(search->sim, i);
 
             child = arbor_new_node(search, search->sim, i);
 
@@ -175,7 +174,7 @@ static int arbor_branch(Search* search, Node* parent)
         list  = &(child->sibling);
     }
 
-    search->ifc.make(search->sim, best->action);
+    arbor_make(search->sim, best->action);
 
     return arbor_go(search, best);
 }
@@ -184,16 +183,16 @@ static int arbor_leaf(Search* search, Node* node)
 {
     if (search->cfg.eval_policy == ARBOR_EVAL_ROLLOUT)
     {
-        while (search->ifc.side(search->sim) != ARBOR_NONE)
+        while (arbor_side(search->sim) != ARBOR_NONE)
         {
-            int count = search->ifc.actions(search->sim);
+            int count = arbor_actions(search->sim);
             int action = rand_bound(count);
 
-            search->ifc.make(search->sim, action);
+            arbor_make(search->sim, action);
         }
     }
 
-    return search->ifc.eval(search->sim);
+    return arbor_eval(search->sim);
 }
 
 static int arbor_go(Search* search, Node* node)
@@ -237,14 +236,12 @@ static int arbor_go(Search* search, Node* node)
 /*------------------------------------------------------------------------------
  * Public functions
  *----------------------------------------------------------------------------*/
-Arbor_Search arbor_search_new(Arbor_Search_Config* cfg,
-                              Arbor_Game_Interface* ifc)
+Arbor_Search arbor_search_new(Arbor_Search_Config* cfg)
 {
     Arbor_Search result = {};
     Search* search = ARBOR_MALLOC(sizeof(Search));
 
     search->cfg = *cfg;
-    search->ifc = *ifc;
     search->pool = ARBOR_MALLOC(cfg->size);
     search->pool_count = 0;
     search->pool_limit = cfg->size / sizeof(Node);
@@ -312,9 +309,9 @@ void arbor_search_ponder(Arbor_Search search)
 {
     Search* s = search.p;
 
-    s->sim = s->ifc.copy(s->cfg.init);
+    s->sim = arbor_copy(s->cfg.init);
 
     arbor_go(s, s->pool);
 
-    s->ifc.delete(s->sim);
+    arbor_delete(s->sim);
 }

@@ -1,6 +1,5 @@
 #include <assert.h>
 #include "arbor.h"
-#include "rps.h"
 #include "random.h"
 
 #define ABS(i) (((i) < 0) ? -(i) : (i))
@@ -25,7 +24,7 @@ typedef struct RPS_t
     int turn;
 } RPS;
 
-Arbor_Game rps_new(void)
+Arbor_Game arbor_new(void)
 {
     RPS* rps = malloc(sizeof(RPS));
 
@@ -35,7 +34,7 @@ Arbor_Game rps_new(void)
     return (Arbor_Game) {rps};
 }
 
-void rps_make(Arbor_Game game, int action)
+void arbor_make(Arbor_Game game, int action)
 {
     RPS* rps = game.p;
     int score = 0;
@@ -74,7 +73,7 @@ void rps_make(Arbor_Game game, int action)
     }
 }
 
-Arbor_Game rps_copy(Arbor_Game game)
+Arbor_Game arbor_copy(Arbor_Game game)
 {
     RPS* p = malloc(sizeof(RPS));
     RPS* t = game.p;
@@ -85,24 +84,24 @@ Arbor_Game rps_copy(Arbor_Game game)
     return copy;
 }
 
-void rps_delete(Arbor_Game game)
+void arbor_delete(Arbor_Game game)
 {
     free(game.p);
 }
 
-int rps_actions(Arbor_Game game)
+int arbor_actions(Arbor_Game game)
 {
     return ACTIONS;
 }
 
-int rps_side(Arbor_Game game)
+int arbor_side(Arbor_Game game)
 {
     RPS* rps = game.p;
 
     return rps->side;
 }
 
-int rps_eval(Arbor_Game game)
+int arbor_eval(Arbor_Game game)
 {
     RPS* rps = game.p;
 

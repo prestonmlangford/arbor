@@ -1,29 +1,19 @@
 #include <stdio.h>
 #include "arbor.h"
 #include "random.h"
-#include "bad_battleship.h"
 
 int main (int argc, char* argv[])
 {
 
-    Arbor_Game_Interface ifc = {
-        .actions = bb_actions,
-        .copy = bb_copy,
-        .delete = bb_delete,
-        .make = bb_make,
-        .eval = bb_eval,
-        .side = bb_side
-    };
-
-    Arbor_Game game = bb_new();
+    Arbor_Game game = arbor_new();
 
     rand_seed_realtime();
 
     printf("Arbor - Bad Battleship\n");
 
-    while (bb_side(game) != ARBOR_NONE)
+    while (arbor_side(game) != ARBOR_NONE)
     {
-        if (bb_side(game) == ARBOR_P1)
+        if (arbor_side(game) == ARBOR_P1)
         {
             Arbor_Search_Config cfg = {
                 .expansion = 10,
@@ -32,7 +22,7 @@ int main (int argc, char* argv[])
                 .eval_policy = ARBOR_EVAL_CUSTOM
             };
 
-            Arbor_Search search = arbor_search_new(&cfg, &ifc);
+            Arbor_Search search = arbor_search_new(&cfg);
             int i = 0;
             int best = 0;
 
@@ -46,16 +36,16 @@ int main (int argc, char* argv[])
 
             printf("%d ",best);
             fflush(stdout);
-            bb_make(game, best);
+            arbor_make(game, best);
         }
         else
         {
-            bb_make(game, 0);
+            arbor_make(game, 0);
         }
     }
 
     printf("\nGame Over!\n");
-    bb_delete(game);
+    arbor_delete(game);
 
     return 0;
 }

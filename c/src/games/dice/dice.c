@@ -1,6 +1,5 @@
 #include <assert.h>
 #include "arbor.h"
-#include "dice.h"
 #include "random.h"
 
 #define ABS(i) (((i) < 0) ? -(i) : (i))
@@ -15,7 +14,7 @@ typedef struct Dice_t
     int turn;
 } Dice;
 
-Arbor_Game dice_new(void)
+Arbor_Game arbor_new(void)
 {
     Dice* dice = malloc(sizeof(Dice));
 
@@ -27,7 +26,7 @@ Arbor_Game dice_new(void)
     return (Arbor_Game) {dice};
 }
 
-void dice_make(Arbor_Game game, int action)
+void arbor_make(Arbor_Game game, int action)
 {
     Dice* dice = game.p;
     int roll_1 = rand_range(1,7);
@@ -67,7 +66,7 @@ void dice_make(Arbor_Game game, int action)
     dice->turn += 1;
 }
 
-Arbor_Game dice_copy(Arbor_Game game)
+Arbor_Game arbor_copy(Arbor_Game game)
 {
     Dice* p = malloc(sizeof(Dice));
     Dice* dice = game.p;
@@ -78,24 +77,24 @@ Arbor_Game dice_copy(Arbor_Game game)
     return copy;
 }
 
-void dice_delete(Arbor_Game game)
+void arbor_delete(Arbor_Game game)
 {
     free(game.p);
 }
 
-int dice_actions(Arbor_Game game)
+int arbor_actions(Arbor_Game game)
 {
     return 11;
 }
 
-int dice_side(Arbor_Game game)
+int arbor_side(Arbor_Game game)
 {
     Dice* dice = game.p;
 
     return dice->side;
 }
 
-int dice_eval(Arbor_Game game)
+int arbor_eval(Arbor_Game game)
 {
     Dice* dice = game.p;
 

@@ -1,6 +1,5 @@
 #include <assert.h>
 #include "arbor.h"
-#include "bad_battleship.h"
 #include "random.h"
 
 #define NUM_PINS 16
@@ -26,7 +25,7 @@ static int bitcount(uint16_t u)
     return sum;
 }
 
-Arbor_Game bb_new(void)
+Arbor_Game arbor_new(void)
 {
     BB* bb = malloc(sizeof(BB));
 
@@ -37,7 +36,7 @@ Arbor_Game bb_new(void)
     return (Arbor_Game) {bb};
 }
 
-void bb_make(Arbor_Game game, int action)
+void arbor_make(Arbor_Game game, int action)
 {
     BB* bb = game.p;
     uint16_t pin = 1U << action;
@@ -68,7 +67,7 @@ void bb_make(Arbor_Game game, int action)
     }
 }
 
-Arbor_Game bb_copy(Arbor_Game game)
+Arbor_Game arbor_copy(Arbor_Game game)
 {
     BB* p = malloc(sizeof(BB));
     BB* bb = game.p;
@@ -78,28 +77,26 @@ Arbor_Game bb_copy(Arbor_Game game)
     return (Arbor_Game){p};
 }
 
-void bb_delete(Arbor_Game game)
+void arbor_delete(Arbor_Game game)
 {
     free(game.p);
 }
 
-int bb_actions(Arbor_Game game)
+int arbor_actions(Arbor_Game game)
 {
     return NUM_PINS;
 }
 
-int bb_side(Arbor_Game game)
+int arbor_side(Arbor_Game game)
 {
     BB* bb = game.p;
 
     return bb->side;
 }
 
-int bb_eval(Arbor_Game game)
+int arbor_eval(Arbor_Game game)
 {
     BB* bb = game.p;
-    uint16_t p1 = bb->p1_pins;
-    uint16_t p2 = bb->p1_pins;
 
     if (bb->side == ARBOR_NONE)
     {

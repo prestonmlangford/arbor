@@ -1,4 +1,4 @@
-#include "reversi_bb.c"
+#include "reversi_bb.h"
 #include <assert.h>
 
 /*

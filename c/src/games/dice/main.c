@@ -1,29 +1,18 @@
 #include <stdio.h>
 #include "arbor.h"
-#include "dice.h"
 #include "random.h"
 
 int main (int argc, char* argv[])
 {
-
-    Arbor_Game_Interface ifc = {
-        .actions = dice_actions,
-        .copy = dice_copy,
-        .delete = dice_delete,
-        .make = dice_make,
-        .eval = dice_eval,
-        .side = dice_side
-    };
-
-    Arbor_Game game = dice_new();
+    Arbor_Game game = arbor_new();
 
     rand_seed_realtime();
 
     printf("Arbor - Dice 21\n");
 
-    while (dice_side(game) != ARBOR_NONE)
+    while (arbor_side(game) != ARBOR_NONE)
     {
-        if (dice_side(game) == ARBOR_P1)
+        if (arbor_side(game) == ARBOR_P1)
         {
             Arbor_Search_Config cfg = {
                 .expansion = 10,
@@ -32,7 +21,7 @@ int main (int argc, char* argv[])
                 .eval_policy = ARBOR_EVAL_ROLLOUT
             };
 
-            Arbor_Search search = arbor_search_new(&cfg, &ifc);
+            Arbor_Search search = arbor_search_new(&cfg);
             int i = 0;
             int best = 0;
 
@@ -46,16 +35,16 @@ int main (int argc, char* argv[])
 
             printf("%d ",best);
             fflush(stdout);
-            dice_make(game, best);
+            arbor_make(game, best);
         }
         else
         {
-            dice_make(game, 0);
+            arbor_make(game, 0);
         }
     }
 
     printf("\nGame Over!\n");
-    dice_delete(game);
+    arbor_delete(game);
 
     return 0;
 }
