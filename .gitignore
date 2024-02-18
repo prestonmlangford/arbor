@@ -6,5 +6,6 @@ c/a.out
 c/a.out.dSYM/*
 c/build
 c/xcode/*
+c/baseline
 *.cfg
 data

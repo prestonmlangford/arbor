@@ -63,8 +63,8 @@ if __name__ == '__main__':
     }
 
     p2 = {
-        "name" : "pool",
-        "path" : "c/reversi-pool",
+        "name" : "master",
+        "path" : "c/baseline/master",
         "time" : 100
     }
 
