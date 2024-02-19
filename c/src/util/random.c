@@ -93,3 +93,12 @@ int rand_bound(int bound)
     // modulo bias since random state >> range
     return random_state % bound;
 }
+
+int rand_bernoulli(float p)
+{
+    uint32_t u = UINT32_MAX * p;
+
+    random_state = xorshift(random_state);
+
+    return random_state < u;
+}
