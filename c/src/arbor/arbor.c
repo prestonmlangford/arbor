@@ -98,6 +98,7 @@ static Node* arbor_new_node(Search* search, Arbor_Game game, int action)
         }
         
         node->wins = 0;
+        node->losses = 0;
         node->visits = 0;
         node->action = action;
         node->sibling = NULL;
