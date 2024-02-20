@@ -84,7 +84,8 @@ static int bounded_ai(Arbor_Game game, int iter)
         .expansion = 0,
         .exploration = 2.0,
         .init = game,
-        .eval_policy = ARBOR_EVAL_ROLLOUT
+        .eval_policy = ARBOR_EVAL_ROLLOUT,
+        .size = 500 * MB
     };
 
     Arbor_Search search = arbor_search_new(&cfg);
