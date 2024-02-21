@@ -36,12 +36,6 @@
 /*------------------------------------------------------------------------------
  * Private Types
  *----------------------------------------------------------------------------*/
-enum
-{
-    ARBOR_TERMINAL,
-    ARBOR_LEAF,
-    ARBOR_BRANCH
-};
 
 typedef struct Node_t
 {
@@ -54,8 +48,6 @@ typedef struct Node_t
     int visits;
     struct Node_t* sibling;
     struct Node_t* child;
-    struct Node_t* free_list;
-    Arbor_Game game;
 } Node;
 
 typedef struct Search_t
@@ -77,33 +69,27 @@ static int arbor_leaf(Search* search, Node* node);
 
 static Node* arbor_new_node(Search* search, Arbor_Game game, int action)
 {
+    Node* node = &(search->pool[search->pool_count]);
 
-    Node* node = NULL;
-    
-    if (search->pool_count < search->pool_limit)
+    search->pool_count += 1;
+    node->side = arbor_side(game);
+
+    if (node->side == ARBOR_NONE)
     {
-        node = &(search->pool[search->pool_count]);
-
-        search->pool_count += 1;
-        node->side = arbor_side(game);
-
-        if (node->side == ARBOR_NONE)
-        {
-            node->result = arbor_eval(game);
-        }
-        else
-        {
-            node->result = ARBOR_NONE;
-            node->actions = arbor_actions(game);
-        }
-        
-        node->wins = 0;
-        node->losses = 0;
-        node->visits = 0;
-        node->action = action;
-        node->sibling = NULL;
-        node->child = NULL;
+        node->result = arbor_eval(game);
     }
+    else
+    {
+        node->result = ARBOR_NONE;
+        node->actions = arbor_actions(game);
+    }
+    
+    node->wins = 0;
+    node->losses = 0;
+    node->visits = 0;
+    node->action = action;
+    node->sibling = NULL;
+    node->child = NULL;
     
     return node;
 }
@@ -122,12 +108,12 @@ static int arbor_branch(Search* search, Node* parent)
 
         if (child == NULL)
         {
-            arbor_make(search->sim, i);
-
-            child = arbor_new_node(search, search->sim, i);
-
-            if (child)
+            if (search->pool_count < search->pool_limit)
             {
+                arbor_make(search->sim, i);
+
+                child = arbor_new_node(search, search->sim, i);
+
                 *list = child;
 
                 return arbor_go(search, child);
