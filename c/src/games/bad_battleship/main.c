@@ -19,7 +19,8 @@ int main (int argc, char* argv[])
                 .expansion = 10,
                 .exploration = 2.0,
                 .init = game,
-                .eval_policy = ARBOR_EVAL_CUSTOM
+                .eval_policy = ARBOR_EVAL_CUSTOM,
+                .size = 1024 * 1024
             };
 
             Arbor_Search search = arbor_search_new(&cfg);
