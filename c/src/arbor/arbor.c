@@ -28,6 +28,7 @@
  *----------------------------------------------------------------------------*/
 #include <math.h>
 #include <stdlib.h>
+#include <string.h>
 #include <stdio.h>
 #include <assert.h>
 #include "arbor.h"
@@ -42,9 +43,8 @@ typedef struct Node_t
     int side;
     int result;
     int action;
-    int actions;
-    int wins;
-    int losses;
+    int p1_wins;
+    int p2_wins;
     int visits;
     struct Node_t* sibling;
     struct Node_t* child;
@@ -67,103 +67,107 @@ static int arbor_leaf(Search* search, Node* node);
  * Private functions
  *----------------------------------------------------------------------------*/
 
-static Node* arbor_new_node(Search* search, Arbor_Game game, int action)
+static void arbor_expand(Search* search, Node* parent)
 {
-    Node* node = &(search->pool[search->pool_count]);
+    Node** list = &(parent->child);
+    int actions = arbor_actions(search->sim);
+    int i = 0;
 
-    search->pool_count += 1;
-    node->side = arbor_side(game);
+    for (i = 0; i < actions; i++)
+    {
+        if (search->pool_count < search->pool_limit)
+        {
+            Node* next = &(search->pool[search->pool_count]);
 
-    if (node->side == ARBOR_NONE)
-    {
-        node->result = arbor_eval(game);
+            search->pool_count += 1;
+            next->action = i;
+            *list = next;
+            list = &(next->sibling);
+        }
     }
-    else
-    {
-        node->result = ARBOR_NONE;
-        node->actions = arbor_actions(game);
-    }
-    
-    node->wins = 0;
-    node->losses = 0;
-    node->visits = 0;
-    node->action = action;
-    node->sibling = NULL;
-    node->child = NULL;
-    
-    return node;
 }
 
 static int arbor_branch(Search* search, Node* parent)
 {
-    Node** list = &(parent->child);
-    Node* best = *list;
-    double logN = log(parent->visits);
+    Node* child = parent->child;
+    Node* best = NULL;
     double best_uct = 0.0;
-    int i = 0;
+    double logN = log(parent->visits);
 
-    for (i = 0; i < parent->actions; i++)
+    if ((child == NULL) && (search->pool_count < search->pool_limit))
     {
-        Node* child = *list;
+        arbor_expand(search, parent);
+        child = parent->child;
+    }
 
-        if (child == NULL)
+    while (child)
+    {
+        double visits = (double) child->visits;
+        double c = search->cfg.exploration;
+        double exploration = sqrt(c*logN/visits);
+        double wins = 0.0;
+        double uct = 0.0;
+        double exploitation = 0.0;
+
+        if (child->visits == 0)
         {
-            if (search->pool_count < search->pool_limit)
-            {
-                arbor_make(search->sim, i);
-
-                child = arbor_new_node(search, search->sim, i);
-
-                *list = child;
-
-                return arbor_go(search, child);
-            }
-            else // ran out of memory
-            {
-                return arbor_leaf(search, parent);
-            }
+            best = child;
+            break;
         }
-        else if (child->side == ARBOR_NONE) // terminal condition
+        else if (child->side == ARBOR_NONE)
         {
-            if (parent->side == child->result)
+            if (child->result == parent->side)
             {
-                return child->result;
+                wins = (double) visits;
+            }
+            else
+            {
+                wins = 0.0;
             }
         }
         else
         {
-            double visits = (double) child->visits;
-            double c = search->cfg.exploration;
-            double exploration = sqrt(c*logN/visits);
-            double uct = 0.0;
-            double exploitation = 0.0;
-
-            if (parent->side == child->side)
+            switch (parent->side)
             {
-                double wins = (double) child->wins;
-                exploitation = 0.5 * wins / visits;
-            }
-            else
-            {
-                double losses = (double) child->losses;
-                exploitation = 0.5 * losses / visits;
-            }
+            case ARBOR_P1:
+                wins = child->p1_wins;
+                break;
 
-            uct = exploitation + exploration;
-
-            if (best_uct < uct)
-            {
-                best_uct = uct;
-                best = child;
+            case ARBOR_P2:
+                wins = child->p2_wins;
+                break;
+            
+            default:
+                // this should never happen!
+                assert(false);
+                break;
             }
         }
 
-        list  = &(child->sibling);
+        exploitation = wins / visits;
+
+        uct = exploitation + exploration;
+
+        if (best_uct < uct)
+        {
+            best_uct = uct;
+            best = child;
+        }
+
+        child = child->sibling;
     }
 
-    arbor_make(search->sim, best->action);
+    if (best)
+    {
+        arbor_make(search->sim, best->action);
 
-    return arbor_go(search, best);
+        return arbor_go(search, best);
+    }
+    else
+    {
+        // ran out of memory
+        return arbor_leaf(search, parent);
+    }
 }
 
 static int arbor_leaf(Search* search, Node* node)
@@ -186,6 +190,20 @@ static int arbor_go(Search* search, Node* node)
 {
     int result = ARBOR_NONE;
 
+    if (node->visits == 0)
+    {
+        node->side = arbor_side(search->sim);
+
+        if (node->side == ARBOR_NONE)
+        {
+            node->result = arbor_eval(search->sim);
+        }
+        else
+        {
+            node->result = ARBOR_NONE;
+        }
+    }
+
     if (node->side == ARBOR_NONE)
     {
         result = node->result;
@@ -200,19 +218,23 @@ static int arbor_go(Search* search, Node* node)
         result = arbor_leaf(search, node);
     }
 
-    if (result == ARBOR_DRAW)
+    switch (result)
     {
-        /* do nothing */
-        node->wins += 1;
-        node->losses += 1;
-    }
-    else if (result == node->side)
-    {
-        node->wins += 2;
-    }
-    else
-    {
-        node->losses += 2;
+    case ARBOR_P1:
+        node->p1_wins += 1;
+        break;
+
+    case ARBOR_P2:
+        node->p2_wins += 1;
+        break;
+
+    case ARBOR_DRAW:
+        break;
+    
+    default:
+        // should never happen!
+        assert(false);
+        break;
     }
 
     node->visits += 1;
@@ -225,19 +247,16 @@ static int arbor_go(Search* search, Node* node)
  *----------------------------------------------------------------------------*/
 Arbor_Search arbor_search_new(Arbor_Search_Config* cfg)
 {
-    Arbor_Search result = {};
     Search* search = ARBOR_MALLOC(sizeof(Search));
 
     search->cfg = *cfg;
     search->pool = ARBOR_MALLOC(cfg->size);
-    search->pool_count = 0;
+    search->pool_count = 1;
     search->pool_limit = cfg->size / sizeof(Node);
 
-    (void) arbor_new_node(search, search->cfg.init, 0);
+    memset(search->pool, 0, cfg->size);
 
-    result.p = search;
-
-    return result;
+    return (Arbor_Search){search};
 }
 
 void arbor_search_delete(Arbor_Search search)
@@ -263,22 +282,39 @@ int arbor_search_best(Arbor_Search search)
     {
         double visits = (double) child->visits;
         double score = 0.0;
+        double wins = 0.0;
 
-        if (child->result == root->side)
+        if (child->side == ARBOR_NONE)
         {
-            return child->action;
-        }
-
-        if (root->side == child->side)
-        {
-            double wins = (double) child->wins;
-            score = 0.5 * wins/visits;
+            if (child->result == root->side)
+            {
+                wins = visits;
+            }
+            else
+            {
+                wins = 0.0;
+            }
         }
         else
         {
-            double losses = (double) child->losses;
-            score = 0.5 * losses/visits;
+            switch (root->side)
+            {
+            case ARBOR_P1:
+                wins = (double) child->p1_wins;
+                break;
+
+            case ARBOR_P2:
+                wins = (double) child->p2_wins;
+                break;
+
+            default:
+                // should never happen!
+                assert(false);
+                break;
+            }
         }
+
+        score = wins / visits;
 
         if (best_score < score)
         {
