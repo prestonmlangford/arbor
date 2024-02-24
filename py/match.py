@@ -59,16 +59,19 @@ if __name__ == '__main__':
     p1 = {
         "name" : "alice",
         "path" : "c/baseline/master",
+        "time" : 1000,
         "policy" : "rollout"
     }
 
     p2 = {
         "name" : "bob",
         "path" : "c/baseline/master",
+        "time" : 1000,
         "policy" : "rollout"
     }
 
-    time = int(sys.argv[1])
+    p1["time"] = int(sys.argv[1])
+    p2["time"] = int(sys.argv[1])
     p1["path"] = sys.argv[2]
     p2["path"] = sys.argv[3]
 
