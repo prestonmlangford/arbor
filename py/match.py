@@ -70,17 +70,18 @@ if __name__ == '__main__':
         "policy" : "rollout"
     }
 
-    p1["time"] = int(sys.argv[1])
-    p2["time"] = int(sys.argv[1])
-    p1["path"] = sys.argv[2]
-    p2["path"] = sys.argv[3]
+    n = int(sys.argv[1])
+    p1["time"] = int(sys.argv[2])
+    p2["time"] = int(sys.argv[2])
+    p1["path"] = sys.argv[3]
+    p2["path"] = sys.argv[4]
 
     p1_score = 0
     p1_name = p1["name"]
     p2_score = 0
     p2_name = p2["name"]
 
-    for result in mp_tournament(p1,p2,5,8*50):
+    for result in mp_tournament(p1,p2,5,8*n):
         r1, r2 = result
         if r1 == p1_name:
             p1_score += 1
