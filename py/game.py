@@ -1,7 +1,8 @@
 import subprocess
 import random
+from player import Player
 
-BACKEND = {"path" : "c/baseline/master"}
+BACKEND = Player("baseline", path="c/baseline/master")
 
 class Game:
     def __init__(self,p1=BACKEND,p2=BACKEND) -> None:
@@ -14,11 +15,10 @@ class Game:
             player = BACKEND
         
         opt = []
-        if "policy" in player:
-            policy = player["policy"]
-            opt += [f"policy:{policy}"]
 
-        c = [player["path"]] + opt + self.history + [cmd]
+        opt += [f"policy:{player.policy}"]
+
+        c = [player.path] + opt + self.history + [cmd]
         result = subprocess.run(c, capture_output=True)
         return result.stdout.decode('utf-8').strip()
 
@@ -33,8 +33,7 @@ class Game:
         return self.run("vector")
 
     def choose(self, player):
-        time = player["time"]
-        return self.run(f"mcts:time:{time}", player)
+        return self.run(f"mcts:time:{player.time}", player)
         # return self.run(f"mcts:iter:{time*100}", player)
 
     def side(self):
@@ -94,9 +93,9 @@ class Game:
         result = self.outcome()
 
         if result == "p1":
-            winner = self.p1["name"]
+            winner = self.p1.name
         elif result == "p2":
-            winner = self.p2["name"]
+            winner = self.p2.name
         else:
             winner = "draw"
 

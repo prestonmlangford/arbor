@@ -1,8 +1,9 @@
 import sys
-import re
+import json
 import multiprocessing
 from game import Game
 from tqdm import tqdm
+from player import Player
 
 def pair_match(info):
     p1,p2,depth = info
@@ -52,50 +53,33 @@ def mp_tournament(p1,p2,start,rounds):
 # 15 1891832540064
 # 16 20301186039128
 
+
+def main():
+
+    cfg = json.loads(sys.argv[1])
+    p1 = Player.from_cfg(cfg["p1"])
+    p2 = Player.from_cfg(cfg["p2"])
+    rounds = cfg.get("rounds",10)
+    cores = multiprocessing.cpu_count()
+    start = cfg.get("start",5)
+
+    for r1, r2 in mp_tournament(p1,p2,start,rounds*cores):
+        if r1 == p1.name:
+            p1.score += 1
+
+        if r2 == p1.name:
+            p1.score += 1
+
+        if r1 == p2.name:
+            p2.score += 1
+
+        if r2 == p2.name:
+            p2.score += 1
+
+    print("")
+    print(p1)
+    print(p2)
+
 if __name__ == '__main__':
-
-    time = 1000
-
-    p1 = {
-        "name" : "alice",
-        "path" : "c/baseline/master",
-        "time" : 1000,
-        "policy" : "rollout"
-    }
-
-    p2 = {
-        "name" : "bob",
-        "path" : "c/baseline/master",
-        "time" : 1000,
-        "policy" : "rollout"
-    }
-
-    n = int(sys.argv[1])
-    p1["time"] = int(sys.argv[2])
-    p2["time"] = int(sys.argv[2])
-    p1["path"] = sys.argv[3]
-    p2["path"] = sys.argv[4]
-
-    p1_score = 0
-    p1_name = p1["name"]
-    p2_score = 0
-    p2_name = p2["name"]
-
-    for result in mp_tournament(p1,p2,5,8*n):
-        r1, r2 = result
-        if r1 == p1_name:
-            p1_score += 1
-
-        if r2 == p1_name:
-            p1_score += 1
-
-        if r1 == p2_name:
-            p2_score += 1
-
-        if r2 == p2_name:
-            p2_score += 1
-        
-        print(result)
-
-    print(f"{p1_name} {p1_score}")
-    print(f"{p2_name} {p2_score}")
+    main()
+    # print(sys.argv[1])
