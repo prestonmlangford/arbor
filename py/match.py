@@ -10,6 +10,7 @@ def pair_match(info):
     game.random_start(depth)
     round_1 = game.play_match()
 
+    game.swap()
     game.revert(depth)
     round_2 = game.play_match()
 
@@ -50,25 +51,32 @@ def mp_tournament(p1,p2,start,rounds):
 # 16 20301186039128
 
 if __name__ == '__main__':
-    # p2 = {
-    #     "name" : "rust",
-    #     "path" : "target/release/reversi",
-    #     "time" : 100,
-    # }
-
     p2 = {
-        "name" : "harry",
-        "path" : "c/build/osx/bin/reversi",
+        "name" : "rust",
+        "path" : "target/release/reversi",
         "time" : 100,
-        "policy" : "custom"
     }
 
     p1 = {
-        "name" : "master",
-        "path" : "c/baseline/master",
+        "name" : "harry",
+        "path" : "c/build/osx/bin/reversi",
         "time" : 100,
         "policy" : "rollout"
     }
+
+    # p2 = {
+    #     "name" : "barry",
+    #     "path" : "c/build/osx/bin/reversi",
+    #     "time" : 100,
+    #     "policy" : "rollout"
+    # }
+
+    # p1 = {
+    #     "name" : "master",
+    #     "path" : "c/baseline/master",
+    #     "time" : 100,
+    #     "policy" : "rollout"
+    # }
 
     # results: with fred expansion 10, andy expansion 0
     # fred 74
@@ -83,7 +91,7 @@ if __name__ == '__main__':
     p2_score = 0
     p2_name = p2["name"]
 
-    for result in mp_tournament(p1,p2,5,8*10):
+    for result in mp_tournament(p1,p2,5,8*50):
         r1, r2 = result
         if r1 == p1_name:
             p1_score += 1

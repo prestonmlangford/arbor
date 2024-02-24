@@ -43,8 +43,7 @@ typedef struct Node_t
     int side;
     int result;
     int action;
-    int p1_wins;
-    int p2_wins;
+    double value;
     int visits;
     struct Node_t* sibling;
     struct Node_t* child;
@@ -91,7 +90,7 @@ static int arbor_branch(Search* search, Node* parent)
 {
     Node* child = parent->child;
     Node* best = NULL;
-    double best_uct = 0.0;
+    double best_uct = -1.0;
     double logN = log(parent->visits);
 
     if ((child == NULL) && (search->pool_count < search->pool_limit))
@@ -105,7 +104,7 @@ static int arbor_branch(Search* search, Node* parent)
         double visits = (double) child->visits;
         double c = search->cfg.exploration;
         double exploration = sqrt(c*logN/visits);
-        double wins = 0.0;
+        double value = 0.0;
         double uct = 0.0;
         double exploitation = 0.0;
 
@@ -114,37 +113,25 @@ static int arbor_branch(Search* search, Node* parent)
             best = child;
             break;
         }
-        else if (child->side == ARBOR_NONE)
+        else if (child->result == parent->side)
         {
-            if (child->result == parent->side)
-            {
-                wins = (double) visits;
-            }
-            else
-            {
-                wins = 0.0;
-            }
+            exploitation = 1.0;
         }
-        else
+        else if (child->result == ARBOR_DRAW)
         {
-            switch (parent->side)
-            {
-            case ARBOR_P1:
-                wins = child->p1_wins;
-                break;
-
-            case ARBOR_P2:
-                wins = child->p2_wins;
-                break;
-            
-            default:
-                // this should never happen!
-                assert(false);
-                break;
-            }
+            exploitation = 0.5;
+        }
+        else if (parent->side)
+        {
+            value = child->value;
         }
 
-        exploitation = wins / visits;
+        exploitation = value / visits;
+
+        if (parent->side == ARBOR_P2)
+        {
+            exploitation = 1.0 - exploitation;
+        }
 
         uct = exploitation + exploration;
 
@@ -221,14 +208,14 @@ static int arbor_go(Search* search, Node* node)
     switch (result)
     {
     case ARBOR_P1:
-        node->p1_wins += 1;
+        node->value += 1.0;
         break;
 
     case ARBOR_P2:
-        node->p2_wins += 1;
         break;
 
     case ARBOR_DRAW:
+        node->value += 0.5;
         break;
     
     default:
@@ -281,49 +268,50 @@ int arbor_search_best(Arbor_Search search)
     while (child)
     {
         double visits = (double) child->visits;
-        double score = 0.0;
-        double wins = 0.0;
+        double exploitation = 0.0;
+        double value = 0.0;
 
-        if (child->side == ARBOR_NONE)
+        if (child->result == ARBOR_P1)
         {
-            if (child->result == root->side)
-            {
-                wins = visits;
-            }
-            else
-            {
-                wins = 0.0;
-            }
+            value = visits;
+        }
+        else if (child->result == ARBOR_P2)
+        {
+            value = 0.0;
+        }
+        else if (child->result == ARBOR_DRAW)
+        {
+            value = 0.5 * visits;
         }
         else
         {
-            switch (root->side)
-            {
-            case ARBOR_P1:
-                wins = (double) child->p1_wins;
-                break;
-
-            case ARBOR_P2:
-                wins = (double) child->p2_wins;
-                break;
-
-            default:
-                // should never happen!
-                assert(false);
-                break;
-            }
+            value = child->value;
         }
 
-        score = wins / visits;
+        exploitation = value / visits;
 
-        if (best_score < score)
+        if (root->side == ARBOR_P2)
         {
-            best_score = score;
+            exploitation = 1.0 - exploitation;
+        }
+
+        if (best_score < exploitation)
+        {
+            best_score = exploitation;
             best = child->action;
         }
 
         child = child->sibling;
     }
+
+#if 0
+    {
+        size_t sz = sizeof(Node);
+        size_t kb = (sz * s->pool_count) / 1024;
+
+        fprintf(stderr,"kb: %lu\n",kb);
+    }
+#endif 
 
     return best;
 }

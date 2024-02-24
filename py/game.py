@@ -1,7 +1,7 @@
 import subprocess
 import random
 
-BACKEND = {"path" : "c/build/osx/bin/reversi"}
+BACKEND = {"path" : "c/baseline/master"}
 
 class Game:
     def __init__(self,p1=BACKEND,p2=BACKEND) -> None:
@@ -11,7 +11,7 @@ class Game:
 
     def run(self,cmd,player=None):
         if player is None:
-            player = self.p1
+            player = BACKEND
         
         opt = []
         if "policy" in player:
@@ -35,6 +35,7 @@ class Game:
     def choose(self, player):
         time = player["time"]
         return self.run(f"mcts:time:{time}", player)
+        # return self.run(f"mcts:iter:{time*100}", player)
 
     def side(self):
         return self.run("side")
@@ -53,6 +54,11 @@ class Game:
 
     def unmake(self):
         self.history.pop()
+
+    def swap(self):
+        tmp = self.p1
+        self.p1 = self.p2
+        self.p2 = tmp
 
     def revert(self, depth):
         self.history = self.history[:depth]

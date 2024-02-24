@@ -52,7 +52,7 @@ static int timed_ai(Arbor_Game game, int ms)
         .exploration = 2.0,
         .init = game,
         .eval_policy = eval_policy,
-        .size = 500 * MB
+        .size = 10 * MB
     };
 
     Arbor_Search search = arbor_search_new(&cfg);
@@ -85,7 +85,7 @@ static int bounded_ai(Arbor_Game game, int iter)
         .exploration = 2.0,
         .init = game,
         .eval_policy = ARBOR_EVAL_ROLLOUT,
-        .size = 500 * MB
+        .size = 10 * MB
     };
 
     Arbor_Search search = arbor_search_new(&cfg);
