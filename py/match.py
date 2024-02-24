@@ -68,9 +68,9 @@ if __name__ == '__main__':
         "policy" : "rollout"
     }
 
-    time = int(sys.argv[0])
-    p1["path"] = sys.argv[1]
-    p2["path"] = sys.argv[2]
+    time = int(sys.argv[1])
+    p1["path"] = sys.argv[2]
+    p2["path"] = sys.argv[3]
 
     p1_score = 0
     p1_name = p1["name"]
