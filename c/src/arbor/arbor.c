@@ -47,16 +47,15 @@ typedef struct Node_t
     int visits;
     struct Node_t* sibling;
     struct Node_t* child;
+    struct Node_t* free;
 } Node;
 
 typedef struct Search_t
 {
     Arbor_Search_Config cfg;
-
     Arbor_Game sim;
-    Node* pool;
-    int pool_count;
-    int pool_limit;
+    Node* root;
+    Node* free;
 } Search;
 
 static int arbor_go(Search* search, Node* node);
@@ -66,6 +65,18 @@ static int arbor_leaf(Search* search, Node* node);
  * Private functions
  *----------------------------------------------------------------------------*/
 
+static Node* arbor_node(Search* search)
+{
+    Node* node = ARBOR_MALLOC(sizeof(Node));
+    
+    (void) memset(node, 0, sizeof(Node));
+
+    node->free = search->free;
+    search->free = node;
+
+    return node;
+}
+
 static void arbor_expand(Search* search, Node* parent)
 {
     Node** list = &(parent->child);
@@ -74,15 +85,11 @@ static void arbor_expand(Search* search, Node* parent)
 
     for (i = 0; i < actions; i++)
     {
-        if (search->pool_count < search->pool_limit)
-        {
-            Node* next = &(search->pool[search->pool_count]);
+        Node* next = arbor_node(search);
 
-            search->pool_count += 1;
-            next->action = i;
-            *list = next;
-            list = &(next->sibling);
-        }
+        next->action = i;
+        *list = next;
+        list = &(next->sibling);
     }
 }
 
@@ -93,7 +100,7 @@ static int arbor_branch(Search* search, Node* parent)
     double best_uct = -1.0;
     double logN = log(parent->visits);
 
-    if ((child == NULL) && (search->pool_count < search->pool_limit))
+    if (child == NULL)
     {
         arbor_expand(search, parent);
         child = parent->child;
@@ -144,17 +151,9 @@ static int arbor_branch(Search* search, Node* parent)
         child = child->sibling;
     }
 
-    if (best)
-    {
-        arbor_make(search->sim, best->action);
+    arbor_make(search->sim, best->action);
 
-        return arbor_go(search, best);
-    }
-    else
-    {
-        // ran out of memory
-        return arbor_leaf(search, parent);
-    }
+    return arbor_go(search, best);
 }
 
 static int arbor_leaf(Search* search, Node* node)
@@ -237,11 +236,8 @@ Arbor_Search arbor_search_new(Arbor_Search_Config* cfg)
     Search* search = ARBOR_MALLOC(sizeof(Search));
 
     search->cfg = *cfg;
-    search->pool = ARBOR_MALLOC(cfg->size);
-    search->pool_count = 1;
-    search->pool_limit = cfg->size / sizeof(Node);
-
-    memset(search->pool, 0, cfg->size);
+    search->free = NULL;
+    search->root = arbor_node(search);
 
     return (Arbor_Search){search};
 }
@@ -252,7 +248,15 @@ void arbor_search_delete(Arbor_Search search)
 
     if (s)
     {
-        ARBOR_FREE(s->pool);
+        Node* f = s->free;
+
+        while (f)
+        {
+            Node* tmp = f->free;
+            ARBOR_FREE(f);
+            f = tmp;
+        }
+
         ARBOR_FREE(s);
     }
 }
@@ -260,7 +264,7 @@ void arbor_search_delete(Arbor_Search search)
 int arbor_search_best(Arbor_Search search)
 {
     Search* s = search.p;
-    Node* root = s->pool;
+    Node* root = s->root;
     Node* child = root->child;
     int best = child->action;
     double best_score = 0.0;
@@ -322,7 +326,7 @@ void arbor_search_ponder(Arbor_Search search)
 
     s->sim = arbor_copy(s->cfg.init);
 
-    arbor_go(s, s->pool);
+    arbor_go(s, s->root);
 
     arbor_delete(s->sim);
 }
