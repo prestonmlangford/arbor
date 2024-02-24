@@ -1,5 +1,6 @@
 #include <time.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <string.h>
 #include "arbor.h"
 #include "random.h"
