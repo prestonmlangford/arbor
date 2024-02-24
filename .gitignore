@@ -9,4 +9,4 @@ c/xcode/*
 c/baseline
 *.cfg
 data
-ci/*
+ci
