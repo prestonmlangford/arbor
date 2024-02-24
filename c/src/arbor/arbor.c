@@ -43,7 +43,7 @@ typedef struct Node_t
     int side;
     int result;
     int action;
-    double value;
+    int value;
     int visits;
     struct Node_t* sibling;
     struct Node_t* child;
@@ -111,7 +111,6 @@ static int arbor_branch(Search* search, Node* parent)
         double visits = (double) child->visits;
         double c = search->cfg.exploration;
         double exploration = sqrt(c*logN/visits);
-        double value = 0.0;
         double uct = 0.0;
         double exploitation = 0.0;
 
@@ -120,20 +119,23 @@ static int arbor_branch(Search* search, Node* parent)
             best = child;
             break;
         }
-        else if (child->result == parent->side)
+        else if (child->result == ARBOR_P1)
         {
             exploitation = 1.0;
+        }
+        else if (child->result == ARBOR_P2)
+        {
+            exploitation = 0.0;
         }
         else if (child->result == ARBOR_DRAW)
         {
             exploitation = 0.5;
         }
-        else if (parent->side)
+        else
         {
-            value = child->value;
+            double value = 0.5 * ((double) child->value);
+            exploitation = value / visits;
         }
-
-        exploitation = value / visits;
 
         if (parent->side == ARBOR_P2)
         {
@@ -207,14 +209,14 @@ static int arbor_go(Search* search, Node* node)
     switch (result)
     {
     case ARBOR_P1:
-        node->value += 1.0;
+        node->value += 2;
         break;
 
     case ARBOR_P2:
         break;
 
     case ARBOR_DRAW:
-        node->value += 0.5;
+        node->value += 1;
         break;
     
     default:
@@ -273,26 +275,24 @@ int arbor_search_best(Arbor_Search search)
     {
         double visits = (double) child->visits;
         double exploitation = 0.0;
-        double value = 0.0;
 
         if (child->result == ARBOR_P1)
         {
-            value = visits;
+            exploitation = 1.0;
         }
         else if (child->result == ARBOR_P2)
         {
-            value = 0.0;
+            exploitation = 0.0;
         }
         else if (child->result == ARBOR_DRAW)
         {
-            value = 0.5 * visits;
+            exploitation = 0.5;
         }
         else
         {
-            value = child->value;
+            double value = 0.5 * ((double) child->value);
+            exploitation = value / visits;
         }
-
-        exploitation = value / visits;
 
         if (root->side == ARBOR_P2)
         {
