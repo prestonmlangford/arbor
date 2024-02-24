@@ -76,6 +76,7 @@ def main():
         if r2 == p2.name:
             p2.score += 1
 
+    print("")
     print(p1)
     print(p2)
 
