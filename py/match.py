@@ -1,3 +1,5 @@
+import sys
+import re
 import multiprocessing
 from game import Game
 from tqdm import tqdm
@@ -51,40 +53,24 @@ def mp_tournament(p1,p2,start,rounds):
 # 16 20301186039128
 
 if __name__ == '__main__':
-    p2 = {
-        "name" : "rust",
-        "path" : "target/release/reversi",
-        "time" : 100,
-    }
+
+    time = 1000
 
     p1 = {
-        "name" : "harry",
-        "path" : "c/build/osx/bin/reversi",
-        "time" : 100,
+        "name" : "alice",
+        "path" : "c/baseline/master",
         "policy" : "rollout"
     }
 
-    # p2 = {
-    #     "name" : "barry",
-    #     "path" : "c/build/osx/bin/reversi",
-    #     "time" : 100,
-    #     "policy" : "rollout"
-    # }
+    p2 = {
+        "name" : "bob",
+        "path" : "c/baseline/master",
+        "policy" : "rollout"
+    }
 
-    # p1 = {
-    #     "name" : "master",
-    #     "path" : "c/baseline/master",
-    #     "time" : 100,
-    #     "policy" : "rollout"
-    # }
-
-    # results: with fred expansion 10, andy expansion 0
-    # fred 74
-    # andy 109
-
-    # results: with fred expansion 0, andy expansion 0
-    # fred 88
-    # andy 92
+    time = int(sys.argv[0])
+    p1["path"] = sys.argv[1]
+    p2["path"] = sys.argv[2]
 
     p1_score = 0
     p1_name = p1["name"]
