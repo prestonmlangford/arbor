@@ -194,8 +194,6 @@ fn main() {
                 });
                 gamestate = gamestate.make(action);
             }
-        } else {
-            panic!("invalid arg {}", arg);
         }
     }
 }
