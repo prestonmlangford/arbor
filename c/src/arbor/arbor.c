@@ -43,6 +43,7 @@ typedef struct Node_t
     int side;
     int result;
     int action;
+    int actions;
     int value;
     int visits;
     struct Node_t* sibling;
@@ -80,11 +81,25 @@ static int arbor_leaf(Search* search, Node* node);
  * Private functions
  *----------------------------------------------------------------------------*/
 
-static Node* arbor_node(Search* search)
+static Node* arbor_node(Search* search, int action)
 {
     Node* node = ARBOR_MALLOC(sizeof(Node));
     
     (void) memset(node, 0, sizeof(Node));
+
+    node->action = action;
+    node->side = arbor_side(search->sim);
+
+    if (node->side == ARBOR_NONE)
+    {
+        node->result = arbor_eval(search->sim);
+        node->actions = 0;
+    }
+    else
+    {
+        node->result = ARBOR_NONE;
+        node->actions = arbor_actions(search->sim);
+    }
 
     node->free = search->free;
     search->free = node;
@@ -96,84 +111,63 @@ static Node* arbor_node(Search* search)
     return node;
 }
 
-static void arbor_expand(Search* search, Node* parent)
-{
-    Node** list = &(parent->child);
-    int actions = arbor_actions(search->sim);
-    int i = 0;
-
-#ifdef ARBOR_METRICS
-    search->metrics.num_branches++;
-#endif //ARBOR_METRICS
-
-    for (i = 0; i < actions; i++)
-    {
-        Node* next = arbor_node(search);
-
-        next->action = i;
-        *list = next;
-        list = &(next->sibling);
-    }
-}
-
 static int arbor_branch(Search* search, Node* parent, int depth)
 {
-    Node* child = parent->child;
-    Node* best = NULL;
+    Node** list = &(parent->child);
+    Node* child = *list;
+    Node* best = child;
     double best_uct = -1.0;
     double logN = log(parent->visits);
+    int i = 0;
 
-    if (child == NULL)
+    for (i = 0; i < parent->actions; i++)
     {
-        arbor_expand(search, parent);
-        child = parent->child;
-    }
+        if (child == NULL)
+        {
+            arbor_make(search->sim, i);
 
-    while (child)
-    {
-        double visits = (double) child->visits;
-        double c = search->cfg.exploration;
-        double exploration = sqrt(c*logN/visits);
-        double uct = 0.0;
-        double exploitation = 0.0;
+            child = arbor_node(search, i);
 
-        if (child->visits == 0)
-        {
-            best = child;
-            break;
+            *list = child;
+
+            return arbor_go(search, child, depth + 1);
         }
-        else if (child->result == ARBOR_P1)
+        else if (child->result == parent->side)
         {
-            exploitation = 1.0;
-        }
-        else if (child->result == ARBOR_P2)
-        {
-            exploitation = 0.0;
+            return child->result;
         }
         else if (child->result == ARBOR_DRAW)
         {
-            exploitation = 0.5;
+            if (best_uct < 0.0)
+            {
+                best = child;
+            }
         }
-        else
+        else if (child->result == ARBOR_NONE)
         {
+            double visits = (double) child->visits;
+            double c = search->cfg.exploration;
+            double exploration = sqrt(c*logN/visits);
+            double uct = 0.0;
             double value = 0.5 * ((double) child->value);
-            exploitation = value / visits;
+            double exploitation = value / visits;
+
+            if (parent->side == ARBOR_P2)
+            {
+                exploitation = 1.0 - exploitation;
+            }
+
+            uct = exploitation + exploration;
+
+            if (best_uct < uct)
+            {
+                best_uct = uct;
+                best = child;
+            }
+
+            list = &(child->sibling);
+            child = *list;
         }
-
-        if (parent->side == ARBOR_P2)
-        {
-            exploitation = 1.0 - exploitation;
-        }
-
-        uct = exploitation + exploration;
-
-        if (best_uct < uct)
-        {
-            best_uct = uct;
-            best = child;
-        }
-
-        child = child->sibling;
     }
 
     arbor_make(search->sim, best->action);
@@ -200,20 +194,6 @@ static int arbor_leaf(Search* search, Node* node)
 static int arbor_go(Search* search, Node* node, int depth)
 {
     int result = ARBOR_NONE;
-
-    if (node->visits == 0)
-    {
-        node->side = arbor_side(search->sim);
-
-        if (node->side == ARBOR_NONE)
-        {
-            node->result = arbor_eval(search->sim);
-        }
-        else
-        {
-            node->result = ARBOR_NONE;
-        }
-    }
 
     if (node->side == ARBOR_NONE)
     {
@@ -271,7 +251,10 @@ Arbor_Search arbor_search_new(Arbor_Search_Config* cfg)
 
     search->cfg = *cfg;
     search->free = NULL;
-    search->root = arbor_node(search);
+    
+    search->sim = arbor_copy(search->cfg.init);
+    search->root = arbor_node(search,0);
+    arbor_delete(search->sim);
 
 #ifdef ARBOR_METRICS
     search->metrics.size_node = sizeof(Node);
@@ -304,7 +287,7 @@ int arbor_search_best(Arbor_Search search)
     Search* s = search.p;
     Node* root = s->root;
     Node* child = root->child;
-    int best = child->action;
+    int best = 0;
     double best_score = 0.0;
 
     while (child)
@@ -312,11 +295,11 @@ int arbor_search_best(Arbor_Search search)
         double visits = (double) child->visits;
         double exploitation = 0.0;
 
-        if (child->result == ARBOR_P1)
+        if (child->result == root->side)
         {
-            exploitation = 1.0;
+            return child->action;
         }
-        else if (child->result == ARBOR_P2)
+        else if (child->result == child->side)
         {
             exploitation = 0.0;
         }
