@@ -50,15 +50,30 @@ typedef struct Node_t
     struct Node_t* free;
 } Node;
 
+#ifdef ARBOR_METRICS
+typedef struct Metrics_t
+{   
+    int size_node;
+    int num_nodes;
+    int num_branches;
+    int max_depth;
+} Metrics;
+#endif //ARBOR_METRICS
+
 typedef struct Search_t
 {
     Arbor_Search_Config cfg;
     Arbor_Game sim;
     Node* root;
     Node* free;
+
+#ifdef ARBOR_METRICS
+    Metrics metrics;
+#endif //ARBOR_METRICS
+
 } Search;
 
-static int arbor_go(Search* search, Node* node);
+static int arbor_go(Search* search, Node* node, int depth);
 static int arbor_leaf(Search* search, Node* node);
 
 /*------------------------------------------------------------------------------
@@ -74,6 +89,10 @@ static Node* arbor_node(Search* search)
     node->free = search->free;
     search->free = node;
 
+#ifdef ARBOR_METRICS
+    search->metrics.num_nodes++;
+#endif //ARBOR_METRICS
+
     return node;
 }
 
@@ -82,6 +101,10 @@ static void arbor_expand(Search* search, Node* parent)
     Node** list = &(parent->child);
     int actions = arbor_actions(search->sim);
     int i = 0;
+
+#ifdef ARBOR_METRICS
+    search->metrics.num_branches++;
+#endif //ARBOR_METRICS
 
     for (i = 0; i < actions; i++)
     {
@@ -93,7 +116,7 @@ static void arbor_expand(Search* search, Node* parent)
     }
 }
 
-static int arbor_branch(Search* search, Node* parent)
+static int arbor_branch(Search* search, Node* parent, int depth)
 {
     Node* child = parent->child;
     Node* best = NULL;
@@ -155,7 +178,7 @@ static int arbor_branch(Search* search, Node* parent)
 
     arbor_make(search->sim, best->action);
 
-    return arbor_go(search, best);
+    return arbor_go(search, best, depth + 1);
 }
 
 static int arbor_leaf(Search* search, Node* node)
@@ -174,7 +197,7 @@ static int arbor_leaf(Search* search, Node* node)
     return arbor_eval(search->sim);
 }
 
-static int arbor_go(Search* search, Node* node)
+static int arbor_go(Search* search, Node* node, int depth)
 {
     int result = ARBOR_NONE;
 
@@ -198,7 +221,7 @@ static int arbor_go(Search* search, Node* node)
     }
     else if (node->visits > search->cfg.expansion)
     {
-        result = arbor_branch(search, node);
+        result = arbor_branch(search, node, depth);
     }
     else
     {
@@ -225,6 +248,13 @@ static int arbor_go(Search* search, Node* node)
         break;
     }
 
+#ifdef ARBOR_METRICS
+    if (search->metrics.max_depth < depth)
+    {
+        search->metrics.max_depth = depth;
+    }
+#endif //ARBOR_METRICS
+
     node->visits += 1;
 
     return result;
@@ -237,9 +267,15 @@ Arbor_Search arbor_search_new(Arbor_Search_Config* cfg)
 {
     Search* search = ARBOR_MALLOC(sizeof(Search));
 
+    (void) memset(search, 0, sizeof(Search));
+
     search->cfg = *cfg;
     search->free = NULL;
     search->root = arbor_node(search);
+
+#ifdef ARBOR_METRICS
+    search->metrics.size_node = sizeof(Node);
+#endif //ARBOR_METRICS
 
     return (Arbor_Search){search};
 }
@@ -308,15 +344,6 @@ int arbor_search_best(Arbor_Search search)
         child = child->sibling;
     }
 
-#if 0
-    {
-        size_t sz = sizeof(Node);
-        size_t kb = (sz * s->pool_count) / 1024;
-
-        fprintf(stderr,"kb: %lu\n",kb);
-    }
-#endif 
-
     return best;
 }
 
@@ -326,7 +353,28 @@ void arbor_search_ponder(Arbor_Search search)
 
     s->sim = arbor_copy(s->cfg.init);
 
-    arbor_go(s, s->root);
+    arbor_go(s, s->root, 0);
 
     arbor_delete(s->sim);
 }
+
+#ifdef ARBOR_METRICS
+void arbor_show_metrics(Arbor_Search search)
+{
+    Search* s = search.p;
+    double value = 0.5 * ((double) s->root->value);
+    double visits = (double) s->root->visits;
+    double p1_value = 100.0 * value / visits;
+    double p2_value = 100.0 - p1_value;
+
+    printf("----------------------------------\n");
+    printf("size_node    = %d\n", s->metrics.size_node);
+    printf("num_nodes    = %d\n", s->metrics.num_nodes);
+    printf("num_branches = %d\n", s->metrics.num_branches);
+    printf("max_depth    = %d\n", s->metrics.max_depth);
+    printf("iterations   = %d\n", s->root->visits);
+    printf("p1           = %2.1f\n", p1_value);
+    printf("p2           = %2.1f\n", p2_value);
+    printf("----------------------------------\n");
+}
+#endif //ARBOR_METRICS

@@ -58,7 +58,6 @@ static int timed_ai(Arbor_Game game, int ms)
 
     Arbor_Search search = arbor_search_new(&cfg);
 	uint64_t now, future;
-    int count = 0;
     int action = 0;
 
     now = time_ns();
@@ -68,10 +67,12 @@ static int timed_ai(Arbor_Game game, int ms)
     {
         arbor_search_ponder(search);
         now = time_ns();
-        count++;
     }
 
-    fprintf(stderr, "c iterations %d\n", count);
+#ifdef ARBOR_METRICS
+    arbor_show_metrics(search);
+#endif //ARBOR_METRICS
+
     action = arbor_search_best(search);
 
     arbor_search_delete(search);
@@ -98,6 +99,10 @@ static int bounded_ai(Arbor_Game game, int iter)
         arbor_search_ponder(search);
         count++;
     }
+
+#ifdef ARBOR_METRICS
+    arbor_show_metrics(search);
+#endif //ARBOR_METRICS
 
     // fprintf(stderr, "c iterations %d\n", count);
     action = arbor_search_best(search);

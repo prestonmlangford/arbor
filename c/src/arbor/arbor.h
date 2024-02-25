@@ -245,4 +245,15 @@ int arbor_search_best(Arbor_Search search);
  *----------------------------------------------------------------------------*/
 void arbor_search_ponder(Arbor_Search search);
 
+#ifdef ARBOR_METRICS
+/*------------------------------------------------------------------------------
+ * @fn arbor_show_metrics
+ * 
+ * @brief Shows metrics accumulated during search.
+ * 
+ * @param [in] search  Handle for the active search.
+ *----------------------------------------------------------------------------*/
+void arbor_show_metrics(Arbor_Search search);
+#endif //ARBOR_METRICS
+
 #endif // ARBOR_H
